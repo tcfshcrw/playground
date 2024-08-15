@@ -1446,16 +1446,6 @@ namespace User.PluginSdkDemo
             {
                 checkbox_enable_wheelslip.IsChecked = false;
             }
-
-            if (dap_config_st[indexOfSelectedPedal_u].payloadPedalConfig_.OTA_flag == 1)
-            {
-                OTA_update_check.IsChecked = true;
-            }
-            else
-            { 
-                OTA_update_check.IsChecked = false;
-            }
-
             if (dap_config_st[indexOfSelectedPedal_u].payloadPedalConfig_.enableReboot_u8 == 1)
             {
                 EnableReboot_check.IsChecked = true;
@@ -6394,6 +6384,77 @@ namespace User.PluginSdkDemo
             {
                 Plugin.Settings.Serial_auto_clean = false;
             }
+        }
+
+ unsafe private void btn_OTA_enable_Click(object sender, RoutedEventArgs e)
+        {
+            // compute checksum
+            DAP_action_st tmp;
+            tmp.payloadHeader_.version = (byte)Constants.pedalConfigPayload_version;
+            tmp.payloadHeader_.payloadType = (byte)Constants.pedalActionPayload_type;
+            tmp.payloadHeader_.PedalTag = (byte)indexOfSelectedPedal_u;
+            tmp.payloadPedalAction_.system_action_u8 = 3; //1=reset pedal position, 2 =restart esp, 3=enable wifi OTA
+
+            DAP_action_st* v = &tmp;
+            byte* p = (byte*)v;
+            tmp.payloadFooter_.checkSum = Plugin.checksumCalc(p, sizeof(payloadHeader) + sizeof(payloadPedalAction));
+            int length = sizeof(DAP_action_st);
+            byte[] newBuffer = new byte[length];
+            newBuffer = Plugin.getBytes_Action(tmp);
+            if (Plugin.Settings.Pedal_ESPNow_Sync_flag[indexOfSelectedPedal_u])
+            {
+                if (Plugin.ESPsync_serialPort.IsOpen)
+                {
+                    try
+                    {
+                        // clear inbuffer 
+                        Plugin.ESPsync_serialPort.DiscardInBuffer();
+
+                        // send query command
+                        Plugin.ESPsync_serialPort.Write(newBuffer, 0, newBuffer.Length);
+                    }
+                    catch (Exception caughtEx)
+                    {
+                        string errorMessage = caughtEx.Message;
+                        TextBox_debugOutput.Text = errorMessage;
+                    }
+                }
+            }
+            else
+            {
+                if (Plugin._serialPort[indexOfSelectedPedal_u].IsOpen)
+                {
+                    try
+                    {
+                        // clear inbuffer 
+                        Plugin._serialPort[indexOfSelectedPedal_u].DiscardInBuffer();
+
+                        // send query command
+                        Plugin._serialPort[indexOfSelectedPedal_u].Write(newBuffer, 0, newBuffer.Length);
+                    }
+                    catch (Exception caughtEx)
+                    {
+                        string errorMessage = caughtEx.Message;
+                        TextBox_debugOutput.Text = errorMessage;
+                    }
+                }
+            }
+            string MSG_tmp = "Connect to ";
+            if (indexOfSelectedPedal_u == 0)
+            {
+                MSG_tmp += "FFBPedalClutch";
+            }
+            if (indexOfSelectedPedal_u == 1)
+            {
+                MSG_tmp += "FFBPedalBrake";
+            }
+            if (indexOfSelectedPedal_u == 2)
+            {
+                MSG_tmp += "FFBPedalGas";
+            }
+            MSG_tmp += " wifi hotspot, then go to 192.168.2.1 to upload firmware.bin";
+
+            System.Windows.MessageBox.Show(MSG_tmp, "OTA warning", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
     

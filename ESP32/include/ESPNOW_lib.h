@@ -21,6 +21,7 @@ bool ESPNow_update= false;
 bool ESPNow_no_device=false;
 bool ESPNow_config_request=false;
 bool ESPNow_restart=false;
+bool ESPNow_OTA_enable=false;
 uint8_t ESPNow_error_code=0;
 
 
@@ -202,7 +203,11 @@ void onRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len)
                 {
                   ESPNow_restart = true;
                 }
-
+                //3= Wifi OTA
+                if (dap_actions_st.payloadPedalAction_.system_action_u8==3)
+                {
+                  ESPNow_OTA_enable = true;
+                }
                 // trigger ABS effect
                 if (dap_actions_st.payloadPedalAction_.triggerAbs_u8)
                 {
@@ -364,6 +369,7 @@ void ESPNow_initialize()
     ESPNow.reg_recv_cb(onRecv);
     ESPNow.reg_send_cb(OnSent);
     ESPNow_initial_status=true;
+    ESPNOW_status=true;
     Serial.println("ESPNow Initialized");
   
 }
