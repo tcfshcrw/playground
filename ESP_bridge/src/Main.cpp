@@ -471,19 +471,7 @@ delay(5);
               
         DAP_config_st * dap_config_st_local_ptr;
         dap_config_st_local_ptr = &dap_config_st;
-        Serial.readBytes((char*)dap_config_st_local_ptr, sizeof(DAP_config_st));
-        /*
-        Serial.print("Bridge Payload type expected: ");
-        Serial.print(DAP_PAYLOAD_TYPE_ACTION);
-        Serial.print(",Bridge Payload type received: ");
-        Serial.println(dap_config_st.payLoadHeader_.payloadType);
-        Serial.print("Bridge Config version expected: ");
-        Serial.print(DAP_VERSION_CONFIG);
-        Serial.print(",Bridge Config version received: ");
-        Serial.println(dap_config_st.payLoadHeader_.version);
-        Serial.print("Bridge Minimun position: ");
-        Serial.println(dap_config_st.payLoadPedalConfig_.pedalStartPosition);  
-        */                     
+        Serial.readBytes((char*)dap_config_st_local_ptr, sizeof(DAP_config_st));        
         // check if data is plausible          
         if ( dap_config_st.payLoadHeader_.payloadType != DAP_PAYLOAD_TYPE_CONFIG )
         { 
@@ -606,6 +594,14 @@ delay(5);
     Serial.print("\r\n");
     ESPNow_request_config_b=false;
     Serial.print("config returned");
+  }
+  if(ESPNow_error_b)
+  {
+    Serial.print("Pedal:");
+    Serial.print(dap_state_basic_st.payLoadHeader_.PedalTag);
+    Serial.print(" E:");
+    Serial.println(dap_state_basic_st.payloadPedalState_Basic_.erroe_code_u8);
+    
   }
   // set joysitck value
   #ifdef Using_analog_output

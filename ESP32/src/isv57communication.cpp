@@ -116,6 +116,7 @@ void isv57communication::sendTunedServoParameters() {
   {
     Serial.println("Servo registered in NVM have been updated! Please power cycle the servo and the ESP!");
     modbus.holdingRegisterWrite(slaveId, 0x019A, 0x5555); // store the settings to servos NVM
+    system_error_code=11;
     delay(2000);
   }
 

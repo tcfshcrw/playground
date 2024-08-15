@@ -48,6 +48,7 @@ struct payloadPedalState_Basic {
   uint16_t pedalPosition_u16;
   uint16_t pedalForce_u16;
   uint16_t joystickOutput_u16;
+  uint8_t erroe_code_u8;
 };
 
 struct payloadPedalState_Extended {

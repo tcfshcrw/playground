@@ -1102,7 +1102,15 @@ void pedalUpdateTask( void * pvParameters )
         dap_state_basic_st.payLoadHeader_.version = DAP_VERSION_CONFIG;
         dap_state_basic_st.payloadFooter_.checkSum = checksumCalculator((uint8_t*)(&(dap_state_basic_st.payLoadHeader_)), sizeof(dap_state_basic_st.payLoadHeader_) + sizeof(dap_state_basic_st.payloadPedalState_Basic_));
         dap_state_basic_st.payLoadHeader_.PedalTag=dap_config_st.payLoadPedalConfig_.pedal_type;
-
+        dap_state_basic_st.payloadPedalState_Basic_.erroe_code_u8=0;
+        if(ESPNow_error_code!=0)
+        {
+          dap_state_basic_st.payloadPedalState_Basic_.erroe_code_u8=ESPNow_error_code;
+        }
+        if(system_error_code!=0)
+        {
+          dap_state_basic_st.payloadPedalState_Basic_.erroe_code_u8=system_error_code;
+        }
         // update extended struct 
         dap_state_extended_st.payloadPedalState_Extended_.timeInMs_u32 = millis();
         dap_state_extended_st.payloadPedalState_Extended_.pedalForce_raw_fl32 =  loadcellReading;

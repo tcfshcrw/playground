@@ -21,6 +21,7 @@ bool ESPNow_update= false;
 bool ESPNow_no_device=false;
 bool ESPNow_config_request=false;
 bool ESPNow_restart=false;
+uint8_t ESPNow_error_code=0;
 
 
 
