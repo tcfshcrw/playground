@@ -600,7 +600,8 @@ delay(5);
     Serial.print("Pedal:");
     Serial.print(dap_state_basic_st.payLoadHeader_.PedalTag);
     Serial.print(" E:");
-    Serial.println(dap_state_basic_st.payloadPedalState_Basic_.erroe_code_u8);
+    Serial.println(dap_state_basic_st.payloadPedalState_Basic_.error_code_u8);
+    ESPNow_error_b=false;
     
   }
   // set joysitck value

@@ -115,7 +115,7 @@ void onRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len)
     memcpy(&dap_state_basic_st, data, sizeof(dap_state_basic_st));
     Joystick_value[dap_state_basic_st.payLoadHeader_.PedalTag]=dap_state_basic_st.payloadPedalState_Basic_.joystickOutput_u16;
     update_basic_state=true;
-    if(dap_state_basic_st.payloadPedalState_Basic_.erroe_code_u8!=0)
+    if(dap_state_basic_st.payloadPedalState_Basic_.error_code_u8!=0)
     {
       ESPNow_error_b=true;
     }

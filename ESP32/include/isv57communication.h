@@ -55,7 +55,7 @@ class isv57communication {
     bool checkCommunication();
     bool findServosSlaveId();
     bool clearServoAlarms();
-
+    
 
 
     void setZeroPos();
@@ -69,6 +69,7 @@ class isv57communication {
     int16_t servo_pos_error_p = 0;
     int16_t servo_current_percent = 0;
     int16_t servo_voltage_0p1V = 0;
+    bool isv57_update_parameter_b=false;
 
   private:
     // declare variables

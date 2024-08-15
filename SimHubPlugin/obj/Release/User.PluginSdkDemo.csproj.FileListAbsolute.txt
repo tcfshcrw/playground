@@ -70,6 +70,6 @@ C:\Users\tcfshcrw\Documents\GitHub\playground\SimHubPlugin\obj\Release\DiyActive
 C:\Users\tcfshcrw\Documents\GitHub\playground\SimHubPlugin\obj\Release\User.PluginSdkDemo.Properties.Resources.resources
 C:\Users\tcfshcrw\Documents\GitHub\playground\SimHubPlugin\obj\Release\User.PluginSdkDemo.csproj.GenerateResource.cache
 C:\Users\tcfshcrw\Documents\GitHub\playground\SimHubPlugin\obj\Release\User.PluginSdkDemo.csproj.CoreCompileInputs.cache
-C:\Users\tcfshcrw\Documents\GitHub\playground\SimHubPlugin\obj\Release\User.PluginSdkDemo.csproj.CopyComplete
 C:\Users\tcfshcrw\Documents\GitHub\playground\SimHubPlugin\obj\Release\DiyActivePedal.dll
 C:\Users\tcfshcrw\Documents\GitHub\playground\SimHubPlugin\obj\Release\DiyActivePedal.pdb
+C:\Users\tcfshcrw\Documents\GitHub\playground\SimHubPlugin\obj\Release\User.Plu.EBCE15C6.Up2Date

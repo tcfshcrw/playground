@@ -819,7 +819,7 @@ namespace User.PluginSdkDemo
                         {
                             ESPsync_serialPort.DiscardInBuffer();  
                             ESPsync_serialPort.Write(newBuffer, 0, newBuffer.Length);
-                            System.Threading.Thread.Sleep(5);
+                            System.Threading.Thread.Sleep(30);
                         }
                     }
                     else

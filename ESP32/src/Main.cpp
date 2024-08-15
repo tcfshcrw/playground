@@ -1107,9 +1107,10 @@ void pedalUpdateTask( void * pvParameters )
         {
           dap_state_basic_st.payloadPedalState_Basic_.erroe_code_u8=ESPNow_error_code;
         }
-        if(system_error_code!=0)
+        //dap_state_basic_st.payloadPedalState_Basic_.erroe_code_u8=200;
+        if(isv57.isv57_update_parameter_b)
         {
-          dap_state_basic_st.payloadPedalState_Basic_.erroe_code_u8=system_error_code;
+          dap_state_basic_st.payloadPedalState_Basic_.erroe_code_u8=11;
         }
         // update extended struct 
         dap_state_extended_st.payloadPedalState_Extended_.timeInMs_u32 = millis();

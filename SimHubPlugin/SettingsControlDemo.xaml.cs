@@ -5923,7 +5923,7 @@ namespace User.PluginSdkDemo
 
                     if (Plugin.Settings.Serial_auto_clean)
                     {
-                        if (TextBox_serialMonitor.LineCount > 300)
+                        if (TextBox_serialMonitor.LineCount > 100)
                         {
                             TextBox_serialMonitor.Clear();
                         }
