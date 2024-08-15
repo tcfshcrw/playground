@@ -71,6 +71,7 @@ public struct payloadPedalState_Basic
     public UInt16 pedalPosition_u16;
     public UInt16 pedalForce_u16;
     public UInt16 joystickOutput_u16;
+    public byte erroe_code_u8;
 
 };
 
