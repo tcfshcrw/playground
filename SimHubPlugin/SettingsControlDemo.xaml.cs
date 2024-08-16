@@ -1018,7 +1018,7 @@ namespace User.PluginSdkDemo
                 Label_min_force.Content = "Preload:\n" + dap_config_st[indexOfSelectedPedal_u].payloadPedalConfig_.preloadForce + "kg";
             }
 
-            label_damping.Content = "Damping: " + dap_config_st[indexOfSelectedPedal_u].payloadPedalConfig_.dampingPress;
+            label_damping.Content = "Damping: " + (float)(dap_config_st[indexOfSelectedPedal_u].payloadPedalConfig_.dampingPress * 0.00015f);
             Slider_damping.Value = dap_config_st[indexOfSelectedPedal_u].payloadPedalConfig_.dampingPress;
             Slider_LC_rate.Value = dap_config_st[indexOfSelectedPedal_u].payloadPedalConfig_.loadcell_rating * 2;
             label_LC_rate.Content = "Loadcell rate: " + dap_config_st[indexOfSelectedPedal_u].payloadPedalConfig_.loadcell_rating*2+"kg";
@@ -5543,7 +5543,7 @@ namespace User.PluginSdkDemo
         {
             dap_config_st[indexOfSelectedPedal_u].payloadPedalConfig_.dampingPress = (Byte)e.NewValue;
             dap_config_st[indexOfSelectedPedal_u].payloadPedalConfig_.dampingPull = (Byte)e.NewValue;
-            label_damping.Content = "Damping: " + dap_config_st[indexOfSelectedPedal_u].payloadPedalConfig_.dampingPress;
+            label_damping.Content = "Damping: " + (float)(dap_config_st[indexOfSelectedPedal_u].payloadPedalConfig_.dampingPress * 0.00015f);
         }
 
         private void Slider_LC_rate_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
