@@ -211,7 +211,7 @@
   #define SENSORLESS_HOMING true
   #define ISV57_TXPIN 26 //17
   #define ISV57_RXPIN 27 // 16
-
+  #define ESPNOW_Enable
   #define BLUETOOTH_GAMEPAD
   //#define USB_JOYSTICK
   #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 3
@@ -256,7 +256,7 @@
 
   //#define BLUETOOTH_GAMEPAD
   #define USB_JOYSTICK
-
+  #define ESPNOW_Enable
   #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 5
 #endif
 
@@ -293,7 +293,7 @@
   #define ISV57_RXPIN 9//26 // 16
 
   #define Using_analog_output_ESP32_S3
-
+  #define ESPNOW_Enable
   //#define BLUETOOTH_GAMEPAD
   #define USB_JOYSTICK
 
