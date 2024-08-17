@@ -93,29 +93,44 @@ struct_message myData;
 void OnDataRecv(const uint8_t *mac_addr, const uint8_t *incomingData, int len) {
 
 //void OnDataRecv(const esp_now_recv_info *info, const uint8_t *incomingData, int len) {
-	memcpy(&myData, incomingData, sizeof(myData));
-	pedal_status=myData.pedal_status;
-	#ifdef ACTIVATE_JOYSTICK_OUTPUT
-	// normalize controller output
-	int32_t joystickNormalizedToInt32 = NormalizeControllerOutputValue(myData.controllerValue_i32, 0, 10000, 100); 
-	if(mac_addr[5]==Clu_mac[5])
+	if(len==sizeof(myData))
 	{
-		pedal_cluth_value=joystickNormalizedToInt32;
-		Joystick_value[0]=myData.controllerValue_i32;
-		//joystick_update=true;
+		memcpy(&myData, incomingData, sizeof(myData));
+		pedal_status=myData.pedal_status;
+		#ifdef ACTIVATE_JOYSTICK_OUTPUT
+		// normalize controller output
+		int32_t joystickNormalizedToInt32 = NormalizeControllerOutputValue(myData.controllerValue_i32, 0, 10000, 100); 
+		if(mac_addr[5]==Clu_mac[5])
+		{
+			pedal_cluth_value=joystickNormalizedToInt32;
+			Joystick_value[0]=myData.controllerValue_i32;
+			//joystick_update=true;
+		}
+		if(mac_addr[5]==Brk_mac[5])
+		{
+			pedal_brake_value=joystickNormalizedToInt32;
+			Joystick_value[1]=myData.controllerValue_i32;
+			//joystick_update=true;
+		}
+		if(mac_addr[5]==Gas_mac[5])
+		{
+			pedal_throttle_value=joystickNormalizedToInt32;
+			Joystick_value[2]=myData.controllerValue_i32;
+			//joystick_update=true;
+		}
+		#else
+		Serial.print("Bytes received: ");
+		Serial.println(len);
+		Serial.print("CycleCnt: ");
+		Serial.println(myData.cycleCnt_u64);
+		Serial.print("TimeSinceBoot in ms (shared): ");
+		Serial.println(myData.timeSinceBoot_i64);
+		Serial.print("controllerValue_i32: ");
+		Serial.println(myData.controllerValue_i32);	
+		Serial.println();
+		#endif
 	}
-	if(mac_addr[5]==Brk_mac[5])
-	{
-		pedal_brake_value=joystickNormalizedToInt32;
-		Joystick_value[1]=myData.controllerValue_i32;
-		//joystick_update=true;
-	}
-	if(mac_addr[5]==Gas_mac[5])
-	{
-		pedal_throttle_value=joystickNormalizedToInt32;
-		Joystick_value[2]=myData.controllerValue_i32;
-		//joystick_update=true;
-	}
+	
 	// send controller output
 	
 	//if (IsControllerReady()) 
@@ -170,17 +185,7 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *incomingData, int len) {
 	//Serial.println(myData.controllerValue_i32);	
 
 
-	#else
-	Serial.print("Bytes received: ");
-	Serial.println(len);
-	Serial.print("CycleCnt: ");
-	Serial.println(myData.cycleCnt_u64);
-	Serial.print("TimeSinceBoot in ms (shared): ");
-	Serial.println(myData.timeSinceBoot_i64);
-	Serial.print("controllerValue_i32: ");
-	Serial.println(myData.controllerValue_i32);	
-	Serial.println();
-	#endif
+
 
 
 	//Serial.print("Bytes received: ");
@@ -236,33 +241,7 @@ void setup()
 	ESPNow.add_peer(Clu_mac);
 	ESPNow.add_peer(Brk_mac);
 	ESPNow.add_peer(Gas_mac);
-	/*
-	if(ESPNow.add_peer(Clu_mac)== ESP_OK)
-    {
-      Serial.println("Sucess to add peer:Clutch");
-    }
-	delay(300);
-	if(ESPNow.add_peer(Brk_mac)== ESP_OK)
-    {
-      Serial.println("Sucess to add peer:Brake");
-    }
-	delay(300);
-	if(ESPNow.add_peer(Gas_mac)== ESP_OK)
-    {
-      Serial.println("Sucess to add peer:Throttle");
-    }
-	delay(300);
-	*/
-	// Set device as a Wi-Fi Station
-  	
-
-	// Init ESP-NOW
-	/*
-	if (esp_now_init() != ESP_OK) {
-		Serial.println("Error initializing ESP-NOW");
-		return;
-	}
-	*/
+	
 
 	
 	// Register for a callback function that will be called when data is received
