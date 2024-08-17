@@ -80,12 +80,9 @@ DAP_actions_st dap_actions_st;
 #include "CycleTimer.h"
 
 
-
-
-
 #include "RTDebugOutput.h"
-
-
+#include "Wire.h"
+#include "SPI.h"
 /**********************************************************************************************/
 /*                                                                                            */
 /*                         iterpolation  definitions                                          */
@@ -179,8 +176,7 @@ static SemaphoreHandle_t semaphore_updatePedalStates=NULL;
 /*                                                                                            */
 /**********************************************************************************************/
 
-#include "LoadCell.h"
-LoadCell_ADS1256* loadcell = NULL;
+
 
 
 
@@ -929,9 +925,8 @@ uint8_t error_out;
 void ESPNOW_SyncTask( void * pvParameters )
 {
   for(;;)
-  {
-      
-      delay(2);
+  {    
+      delay(1);
   }
 }
 #endif

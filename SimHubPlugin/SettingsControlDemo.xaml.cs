@@ -936,6 +936,18 @@ namespace User.PluginSdkDemo
                         info_text = "Wireless Sync";
                     }
                 }
+                else
+                {
+                    if (Plugin.Settings.Pedal_ESPNow_auto_connect_flag)
+                    {
+                        info_text = info_text_connection;
+                    }
+                    else
+                    {
+                        info_text = "Waiting...";
+                    }
+
+                }
                 info_text += "\n" + Constants.pedalConfigPayload_version+"\n"+plugin_version;
                 if (Plugin.Rudder_status)
                 {
@@ -1018,7 +1030,7 @@ namespace User.PluginSdkDemo
                 Label_min_force.Content = "Preload:\n" + dap_config_st[indexOfSelectedPedal_u].payloadPedalConfig_.preloadForce + "kg";
             }
 
-            label_damping.Content = "Damping: " + (float)(dap_config_st[indexOfSelectedPedal_u].payloadPedalConfig_.dampingPress * 0.00015f);
+            label_damping.Content = "Damping factor: " + (float)(dap_config_st[indexOfSelectedPedal_u].payloadPedalConfig_.dampingPress * 0.00015f)+"s";
             Slider_damping.Value = dap_config_st[indexOfSelectedPedal_u].payloadPedalConfig_.dampingPress;
             Slider_LC_rate.Value = dap_config_st[indexOfSelectedPedal_u].payloadPedalConfig_.loadcell_rating * 2;
             label_LC_rate.Content = "Loadcell rate: " + dap_config_st[indexOfSelectedPedal_u].payloadPedalConfig_.loadcell_rating*2+"kg";
@@ -5543,7 +5555,7 @@ namespace User.PluginSdkDemo
         {
             dap_config_st[indexOfSelectedPedal_u].payloadPedalConfig_.dampingPress = (Byte)e.NewValue;
             dap_config_st[indexOfSelectedPedal_u].payloadPedalConfig_.dampingPull = (Byte)e.NewValue;
-            label_damping.Content = "Damping: " + (float)(dap_config_st[indexOfSelectedPedal_u].payloadPedalConfig_.dampingPress * 0.00015f);
+            label_damping.Content = "Damping factor: " + (float)(dap_config_st[indexOfSelectedPedal_u].payloadPedalConfig_.dampingPress * 0.00015f) + "s";
         }
 
         private void Slider_LC_rate_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
