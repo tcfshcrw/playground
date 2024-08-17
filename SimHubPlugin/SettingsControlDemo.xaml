@@ -944,6 +944,7 @@
                                 <Label Content="Wireless Sync to Bridge" Height="20" Width="130" Padding="0,0,0,0" VerticalContentAlignment="Center" FontFamily="Arial" HorizontalAlignment="Left" FontSize="10" Margin="4,0,0,0"/>
                             </StackPanel>
                             <styles:SHButtonPrimary x:Name="btn_OTA_enable" Click="btn_OTA_enable_Click" Width="160" Content="Enable FIrmware OTA" Height="28" Margin="0,4,0,0" HorizontalAlignment="Center" />
+                            <styles:SHButtonPrimary x:Name="btn_Bridge_restart" Click="btn_Bridge_restart_Click" Width="160" Content="Bridge Restart" Height="28" Margin="0,4,0,0" HorizontalAlignment="Center" />
                         </StackPanel>
                     </Border>
                 </TabItem>

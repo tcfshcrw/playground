@@ -126,8 +126,8 @@
   //analog output pin
   //#define D_O 25   
   //MCP4725 SDA SCL
-  #define MCP_SDA 48
-  #define MCP_SCL 47
+  #define MCP_SDA 4
+  #define MCP_SCL 5
   
   // endstop pins
   #define minPin 12
@@ -137,8 +137,9 @@
   #define SENSORLESS_HOMING true
   #define ISV57_TXPIN 10//27 //17
   #define ISV57_RXPIN 9//26 // 16
-
-  #define Using_analog_output_ESP32_S3
+  #define ESPNOW_Enable
+  #define Using_MCP4728
+  //#define Using_analog_output_ESP32_S3
 
   //#define BLUETOOTH_GAMEPAD
   #define USB_JOYSTICK

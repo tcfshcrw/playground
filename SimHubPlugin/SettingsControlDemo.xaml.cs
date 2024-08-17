@@ -6468,6 +6468,15 @@ namespace User.PluginSdkDemo
 
             System.Windows.MessageBox.Show(MSG_tmp, "OTA warning", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
+
+        private void btn_Bridge_restart_Click(object sender, RoutedEventArgs e)
+        {
+            Plugin.ESPsync_serialPort.DtrEnable = true;
+            Plugin.ESPsync_serialPort.RtsEnable = true;
+            System.Threading.Thread.Sleep(100);
+            Plugin.ESPsync_serialPort.DtrEnable = false;
+            Plugin.ESPsync_serialPort.RtsEnable = false;
+        }
     }
     
 }

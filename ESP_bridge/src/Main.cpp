@@ -634,14 +634,19 @@ delay(5);
   }
   // set joysitck value
   #ifdef Using_analog_output
-    dacWrite(Analog_brk,(uint16_t)(Joystick_value[1]/JOYSTICK_RANGE*255));
-    dacWrite(Analog_gas,(uint16_t)(Joystick_value[2]/JOYSTICK_RANGE*255));
+
+    dacWrite(Analog_brk,(uint16_t)((float)((Joystick_value[1])/(float)(JOYSTICK_RANGE))*255));
+    dacWrite(Analog_gas,(uint16_t)((float)((Joystick_value[2])/(float)(JOYSTICK_RANGE))*255));
   #endif
   //set MCP4728 analog value
   #ifdef Using_MCP4728
-    mcp.setChannelValue(MCP4728_CHANNEL_A, (uint16_t)(Joystick_value[0]/JOYSTICK_RANGE*4096));
-    mcp.setChannelValue(MCP4728_CHANNEL_B, (uint16_t)(Joystick_value[1]/JOYSTICK_RANGE*4096));
-    mcp.setChannelValue(MCP4728_CHANNEL_C, (uint16_t)(Joystick_value[2]/JOYSTICK_RANGE*4096));
+    if(MCP_status)
+    {
+      mcp.setChannelValue(MCP4728_CHANNEL_A, (uint16_t)((float)Joystick_value[0]/(float)JOYSTICK_RANGE*4096));
+      mcp.setChannelValue(MCP4728_CHANNEL_B, (uint16_t)((float)Joystick_value[1]/(float)JOYSTICK_RANGE*4096));
+      mcp.setChannelValue(MCP4728_CHANNEL_C, (uint16_t)((float)Joystick_value[2]/(float)JOYSTICK_RANGE*4096));
+    }
+
   #endif
 
   /*

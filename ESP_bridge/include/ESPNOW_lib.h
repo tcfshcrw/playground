@@ -40,7 +40,7 @@ typedef struct struct_message {
 
 // Create a struct_message called myData
 struct_message myData;
-
+struct_message broadcast_incoming;
 ESPNow_Send_Struct _ESPNow_Recv;
 ESPNow_Send_Struct _ESPNow_Send;
 bool sendMessageToMaster(int32_t controllerValue)
@@ -110,10 +110,33 @@ bool sendMessageToMaster(int32_t controllerValue)
 }
 void onRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len) 
 {
+  if(data_len==sizeof(myData))
+  {
+    memcpy(&broadcast_incoming, data, sizeof(broadcast_incoming));
+
+    if(mac_addr[5]==Clu_mac[5])
+    {
+      Joystick_value[0]=broadcast_incoming.controllerValue_i32;
+      //pedal_cluth_value=joystickNormalizedToInt32;
+      //joystick_update=true;
+    }
+    if(mac_addr[5]==Brk_mac[5])
+    {
+      Joystick_value[1]=broadcast_incoming.controllerValue_i32;
+      //joystick_update=true;
+    }
+    if(mac_addr[5]==Gas_mac[5])
+    {
+      Joystick_value[2]=broadcast_incoming.controllerValue_i32;
+      //joystick_update=true;
+    }
+
+  }
+
   if(data_len==sizeof(dap_state_basic_st))
   {
     memcpy(&dap_state_basic_st, data, sizeof(dap_state_basic_st));
-    Joystick_value[dap_state_basic_st.payLoadHeader_.PedalTag]=dap_state_basic_st.payloadPedalState_Basic_.joystickOutput_u16;
+    //Joystick_value[dap_state_basic_st.payLoadHeader_.PedalTag]=dap_state_basic_st.payloadPedalState_Basic_.joystickOutput_u16;
     update_basic_state=true;
     if(dap_state_basic_st.payloadPedalState_Basic_.error_code_u8!=0)
     {
