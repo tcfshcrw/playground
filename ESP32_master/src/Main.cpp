@@ -35,7 +35,8 @@
 //  	readMacAddress();
 //}
 
-
+#include "Arduino.h"
+#include "Main.h"
 #define SerialOutput
 /**********************************************************************************************/
 /*                                                                                            */
@@ -131,72 +132,7 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *incomingData, int len) {
 		#endif
 	}
 	
-	// send controller output
 	
-	//if (IsControllerReady()) 
-	//{	
-		// check whether sender was clutch, brake or throttle
-		//check last macadress to identufy pedal
-		//if(mac_addr[5]==0x32)
-		//{
-		//	SetControllerOutputValueAccelerator(joystickNormalizedToInt32);
-		//}
-		//if(mac_addr[5]==0x33)
-		//{
-		//	SetControllerOutputValueBrake(joystickNormalizedToInt32);
-		//}
-		//if(mac_addr[5]==0x34)
-		//{
-			//SetControllerOutputValueThrottle(joystickNormalizedToInt32);
-		//}
-		//boolean clutchCheck_b = true;
-		//boolean brakeCheck_b = true;
-		//boolean throttleCheck_b = true;
-
-		// Check if sender was brake, thottle or cluth
-		//for (uint8_t byteIdx_u8 = 0; byteIdx_u8 < 6; byteIdx_u8++ )
-		//{
-		//	clutchCheck_b &= info->src_addr[byteIdx_u8] == Clu_mac[byteIdx_u8];
-		//	brakeCheck_b &= info->src_addr[byteIdx_u8] == Brk_mac[byteIdx_u8];
-		//	throttleCheck_b &= info->src_addr[byteIdx_u8] == Gas_mac[byteIdx_u8];
-		//}
-
-		/*
-		if (clutchCheck_b)
-		{
-			SetControllerOutputValueAccelerator(joystickNormalizedToInt32);
-		}
-
-		if (brakeCheck_b)
-		{
-			SetControllerOutputValueBrake(joystickNormalizedToInt32);
-		}
-
-		if (throttleCheck_b)
-		{
-			SetControllerOutputValueThrottle(joystickNormalizedToInt32);
-		}
-		*/
-
-		//joystickSendState();
-		
-	//}
-	//Serial.print("controllerValue_i32: ");
-	//Serial.println(myData.controllerValue_i32);	
-
-
-
-
-
-	//Serial.print("Bytes received: ");
-	//Serial.println(len);
-	//Serial.print("CycleCnt: ");
-	//Serial.println(myData.cycleCnt_u64);
-	//Serial.print("TimeSinceBoot in ms (shared): ");
-	//Serial.println(myData.timeSinceBoot_i64);
-	//Serial.print("controllerValue_i32: ");
-	//Serial.println(myData.controllerValue_i32);	
-	//Serial.println();
 
 
 
@@ -212,6 +148,7 @@ void setup()
 
 	// Initialize Serial Monitor
   	Serial.begin(921600);
+	
 #ifdef ACTIVATE_JOYSTICK_OUTPUT
 	SetupController();
 #endif
