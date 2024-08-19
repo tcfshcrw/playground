@@ -260,10 +260,9 @@
   #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 5
 #endif
 
-// V3 version of dev PCB for ESP32 S3
+// For Gilphilbert PCBA design
 // flash instructions, see https://hutscape.com/tutorials/hello-arduino-esp32s3
-// 1. ESP32S3 Dev Module
-// 2. USB CDC On Boot Enabled
+// 1. USB CDC On Boot Enabled
 #if PCB_VERSION == 7
   // ADC defines
   #define PIN_DRDY 15//19// 19 --> DRDY
@@ -286,7 +285,13 @@
   // endstop pins
   #define minPin 12
   #define maxPin 13
+  // Pedal assignment pin
+  #define PEDAL_ASSIGNMENT
+  #define CFG1 1
+  #define CFG2 2
 
+  #define EMERGENCY_BUTTON
+  #define ShutdownPin 6
   // level shifter is present on this PCB design
   #define SENSORLESS_HOMING true
   #define ISV57_TXPIN 10//27 //17
