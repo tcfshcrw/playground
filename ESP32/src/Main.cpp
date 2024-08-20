@@ -1630,7 +1630,7 @@ void ESPNOW_SyncTask( void * pvParameters )
       ESP.restart();
     }
 
-    if(ESPNOW_count>4)
+    if(ESPNOW_count>8)
     {
       basic_state_send_b=true;
       ESPNOW_count=0;
