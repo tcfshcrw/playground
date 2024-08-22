@@ -330,7 +330,15 @@ void ESPNow_initialize()
     ESPNow.init();
     Serial.println("wait  for ESPNOW initialized");
     delay(3000);
-    esp_wifi_config_espnow_rate(WIFI_IF_STA, WIFI_PHY_RATE_MCS0_LGI);
+    #ifdef ESPNow_S3
+      //esp_wifi_config_espnow_rate(WIFI_IF_STA, WIFI_PHY_RATE_11M_L);
+      esp_wifi_config_espnow_rate(WIFI_IF_STA, WIFI_PHY_RATE_54M);
+    #endif
+    #ifdef ESPNow_ESP32
+      esp_wifi_config_espnow_rate(WIFI_IF_STA, WIFI_PHY_RATE_MCS0_LGI);
+      //esp_wifi_config_espnow_rate(WIFI_IF_STA, 	WIFI_PHY_RATE_54M);
+    #endif
+    
     if(dap_config_st.payLoadPedalConfig_.pedal_type==1)
     {
       Recv_mac=Gas_mac;      

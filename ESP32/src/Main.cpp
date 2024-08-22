@@ -1654,8 +1654,12 @@ void ESPNOW_SyncTask( void * pvParameters )
 
       if(basic_state_send_b)
       {
-        ESPNow.send_message(broadcast_mac,(uint8_t *) & dap_state_basic_st,sizeof(dap_state_basic_st));
+        esp_err_t result = ESPNow.send_message(broadcast_mac,(uint8_t *) & dap_state_basic_st,sizeof(dap_state_basic_st));
         basic_state_send_b=false;
+        if (result != ESP_OK) 
+        {
+          Serial.println("Error sending the data");
+        }   
       }
       if(ESPNow_config_request)
       {

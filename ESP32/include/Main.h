@@ -152,6 +152,7 @@
   #define Using_analog_output
   //#define Using_I2C_Sync
   #define ESPNOW_Enable
+  #define ESPNow_ESP32
   #define I2C_slave_address 0x15
   #define BLUETOOTH_GAMEPAD
   //#define USB_JOYSTICK
@@ -260,6 +261,7 @@
   //#define BLUETOOTH_GAMEPAD
   #define USB_JOYSTICK
   #define ESPNOW_Enable
+  #define ESPNow_S3
   #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 5
 #endif
 
@@ -300,8 +302,9 @@
   #define ISV57_TXPIN 10//27 //17
   #define ISV57_RXPIN 9//26 // 16
 
-  #define Using_analog_output_ESP32_S3
+  //#define Using_analog_output_ESP32_S3
   #define ESPNOW_Enable
+  #define ESPNow_S3
   //#define BLUETOOTH_GAMEPAD
   #define USB_JOYSTICK
 
