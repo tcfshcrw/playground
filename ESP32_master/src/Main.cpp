@@ -173,7 +173,7 @@ void setup()
 	delay(300);
 	ESPNow.init();
     Serial.println("wait 10s for ESPNOW initialized");
-	esp_wifi_config_espnow_rate(WIFI_IF_STA, WIFI_PHY_RATE_MCS0_LGI);
+	esp_wifi_config_espnow_rate(WIFI_IF_STA, WIFI_PHY_RATE_54M);
 	delay(3000);
 	ESPNow.add_peer(Clu_mac);
 	ESPNow.add_peer(Brk_mac);
