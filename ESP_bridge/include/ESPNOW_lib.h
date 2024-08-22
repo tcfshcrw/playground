@@ -2,6 +2,7 @@
 #include <esp_wifi.h>
 #include <Arduino.h>
 #include "ESPNowW.h"
+#include "Main.h"
 //#define ESPNow_debug
 uint8_t esp_master[] = {0x36, 0x33, 0x33, 0x33, 0x33, 0x31};
 //uint8_t esp_master[] = {0xdc, 0xda, 0x0c, 0x22, 0x8f, 0xd8}; // S3
@@ -110,29 +111,7 @@ bool sendMessageToMaster(int32_t controllerValue)
 }
 void onRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len) 
 {
-  if(data_len==sizeof(myData))
-  {
-    memcpy(&broadcast_incoming, data, sizeof(broadcast_incoming));
-
-    if(mac_addr[5]==Clu_mac[5])
-    {
-      Joystick_value[0]=broadcast_incoming.controllerValue_i32;
-      //pedal_cluth_value=joystickNormalizedToInt32;
-      //joystick_update=true;
-    }
-    if(mac_addr[5]==Brk_mac[5])
-    {
-      Joystick_value[1]=broadcast_incoming.controllerValue_i32;
-      //joystick_update=true;
-    }
-    if(mac_addr[5]==Gas_mac[5])
-    {
-      Joystick_value[2]=broadcast_incoming.controllerValue_i32;
-      //joystick_update=true;
-    }
-
-  }
-
+  
   if(data_len==sizeof(dap_state_basic_st))
   {
     memcpy(&dap_state_basic_st, data, sizeof(dap_state_basic_st));
@@ -169,7 +148,14 @@ void ESPNow_initialize()
     ESPNow.init();
     Serial.println("wait  for ESPNOW initialized");
     delay(3000);
+    #ifdef Using_Board_ESP32
     esp_wifi_config_espnow_rate(WIFI_IF_STA, WIFI_PHY_RATE_MCS0_LGI);
+    #endif
+    
+    #ifdef Using_Board_ESP32S3
+    esp_wifi_config_espnow_rate(WIFI_IF_STA, WIFI_PHY_RATE_54M);
+    #endif
+
 
     if(ESPNow.add_peer(Brk_mac)== ESP_OK)
     {

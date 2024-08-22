@@ -96,7 +96,8 @@
   #define Using_analog_output
   //#define Using_I2C_Sync
   #define ESPNOW_Enable
-  #define Using_MCP4728
+  //#define Using_MCP4728
+  #define Using_Board_ESP32
   #define BLUETOOTH_GAMEPAD
   //#define USB_JOYSTICK
   #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 1
@@ -138,7 +139,8 @@
   #define ISV57_TXPIN 10//27 //17
   #define ISV57_RXPIN 9//26 // 16
   #define ESPNOW_Enable
-  #define Using_MCP4728
+  #define Using_Board_ESP32S3
+  //#define Using_MCP4728
   //#define Using_analog_output_ESP32_S3
 
   //#define BLUETOOTH_GAMEPAD

@@ -229,7 +229,7 @@ void setup()
 
   #if PCB_VERSION == 6
     Serial.setTxTimeoutMs(0);
-    //Serial.begin(921600);
+    Serial.begin(921600);
   #else
     Serial.begin(921600);
     Serial.setTimeout(5);
