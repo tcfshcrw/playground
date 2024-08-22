@@ -142,7 +142,7 @@
   //#define Using_analog_output_ESP32_S3
 
   //#define BLUETOOTH_GAMEPAD
-  #define USB_JOYSTICK
+  //#define USB_JOYSTICK
 
   #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 5
 #endif

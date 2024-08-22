@@ -229,6 +229,7 @@ void setup()
 
   #if PCB_VERSION == 6
     Serial.setTxTimeoutMs(0);
+    //Serial.begin(921600);
   #else
     Serial.begin(921600);
     Serial.setTimeout(5);
@@ -316,20 +317,8 @@ void setup()
 
   disableCore0WDT();
 
-  //create a task that will be executed in the Task2code() function, with priority 1 and executed on core 1
 
-  /*
-  xTaskCreatePinnedToCore(
-                    serialCommunicationTask,   
-                    "serialCommunicationTask", 
-                    10000,  
-                    //STACK_SIZE_FOR_TASK_2,    
-                    NULL,      
-                    1,         
-                    &Task2,    
-                    0);     
-  delay(500);
-  */
+  
 
 
 
@@ -927,6 +916,7 @@ void serialCommunicationTask( void * pvParameters )
     //Serial.print("Joy 1");
     delay( SERIAL_COOMUNICATION_TASK_DELAY_IN_MS );
           //Serial.print(" 2");
+    /*
     if(semaphore_updateJoystick!=NULL)
     {
       if(xSemaphoreTake(semaphore_updateJoystick, (TickType_t)1)==pdTRUE)
@@ -936,6 +926,8 @@ void serialCommunicationTask( void * pvParameters )
         xSemaphoreGive(semaphore_updateJoystick);
       }
     }
+    */
+    /*
     if (IsControllerReady()) 
     {
 
@@ -949,6 +941,7 @@ void serialCommunicationTask( void * pvParameters )
     
       
     }
+    */
 
   /*#ifdef SERIAL_TIMEOUT
     delay(10);
