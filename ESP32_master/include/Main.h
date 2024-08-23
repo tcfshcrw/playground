@@ -61,61 +61,6 @@
 
 
 
-/********************************************************************/
-/*                      PIN defines                                 */
-/********************************************************************/
-// initial version of dev PCB for regular ESP32
-#if PCB_VERSION == 1
-  // ADC defines
-  #define PIN_DRDY 17// 17 --> DRDY
-  #define PIN_RST  16 // X --> X
-  #define PIN_SCK 18 // 18 -->SCLK
-  #define PIN_MISO 19 // 19 --> DOUT
-  #define PIN_MOSI 23 // 23 --> DIN
-  #define PIN_CS 5 // 5 --> CS
-
-  // stepper pins
-  #define dirPinStepper    0
-  #define stepPinStepper   4
-
-  // endstop pins
-  #define minPin 34
-  #define maxPin 35
-
-  // level shifter not present on this PCB design
-  #define SENSORLESS_HOMING false
-
-  #define BLUETOOTH_GAMEPAD
-  //#define USB_JOYSTICK
-  #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 1
-#endif
-
-
-// initial version of dev PCB for ESP32 S2 mini
-#if PCB_VERSION == 2
-  // ADC defines
-  #define PIN_DRDY 37// 37 --> DRDY
-  #define PIN_RST  16 // X --> X
-  #define PIN_SCK 18 // 18 -->SCLK
-  #define PIN_MISO 35 // 35 --> DOUT
-  #define PIN_MOSI 33 // 33 --> DIN
-  #define PIN_CS 39 // 39 --> CS
-
-  // stepper pins
-  #define dirPinStepper    8
-  #define stepPinStepper   9
-
-  // endstop pins
-  #define minPin 11
-  #define maxPin 10
-
-  // level shifter not present on this PCB design
-  #define SENSORLESS_HOMING false
-
-  //#define BLUETOOTH_GAMEPAD
-  #define USB_JOYSTICK
-  #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 1
-#endif
 
 
 
@@ -147,76 +92,24 @@
   #define ISV57_TXPIN 27 //17
   #define ISV57_RXPIN 26 // 16
 
+//MCP4728 IIC
+  #define MCP_SDA 21
+  #define MCP_SCL 22
+
   #define Using_analog_output
+  #define Using_ESP32
   //#define Using_I2C_Sync
   #define ESPNOW_Enable
   #define I2C_slave_address 0x15
-  #define BLUETOOTH_GAMEPAD
+  //#define BLUETOOTH_GAMEPAD
+  #define Using_MCP4728
   //#define USB_JOYSTICK
   #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 1
 #endif
 
 
 
-// speedcrafter PCB V1.3
-#if PCB_VERSION == 4
-  // ADC defines
-  #define PIN_DRDY 27// 19 --> DRDY
-  #define PIN_RST  5 // X --> X
-  #define PIN_SCK 14 // 16 -->SCLK
-  #define PIN_MISO 12 // 18 --> DOUT
-  #define PIN_MOSI 13 // 17 --> DIN
-  #define PIN_CS 15 // 21 --> CS
 
-  // stepper pins
-  #define dirPinStepper    32
-  #define stepPinStepper   33
-  
-  // endstop pins
-  #define minPin 35
-  #define maxPin 34
-
-  // level shifter is present on this PCB design
-  #define SENSORLESS_HOMING true
-  #define ISV57_TXPIN 27 //17
-  #define ISV57_RXPIN 26 // 16
-
-  #define BLUETOOTH_GAMEPAD
-  //#define USB_JOYSTICK
-
-  #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 1
-#endif
-
-
-
-
-// Speedcrafters PCB V1.4
-#if PCB_VERSION == 5
-  // ADC defines
-  #define PIN_DRDY 19// 19 --> DRDY
-  #define PIN_RST  34 // X --> X
-  #define PIN_SCK 15 // 16 -->SCLK
-  #define PIN_MISO 18 // 18 --> DOUT
-  #define PIN_MOSI 13 // 17 --> DIN
-  #define PIN_CS 21 // 21 --> CS
-
-  // stepper pins
-  #define dirPinStepper    22
-  #define stepPinStepper   23
-  
-  // endstop pins
-  #define minPin 35
-  #define maxPin 34
-
-  // level shifter is present on this PCB design
-  #define SENSORLESS_HOMING true
-  #define ISV57_TXPIN 26 //17
-  #define ISV57_RXPIN 27 // 16
-
-  #define BLUETOOTH_GAMEPAD
-  //#define USB_JOYSTICK
-  #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 1
-#endif
 
 
 
@@ -254,10 +147,10 @@
   #define ISV57_RXPIN 9//26 // 16
 
   #define Using_analog_output_ESP32_S3
-
+  #define Using_ESP32S3
   //#define BLUETOOTH_GAMEPAD
   #define USB_JOYSTICK
-
+  #define ACTIVATE_JOYSTICK_OUTPUT
   #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 5
 #endif
 

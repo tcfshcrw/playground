@@ -43,10 +43,10 @@
 /*                         controller  definitions                                            */
 /*                                                                                            */
 /**********************************************************************************************/
-#define ACTIVATE_JOYSTICK_OUTPUT
-#ifdef ACTIVATE_JOYSTICK_OUTPUT
+
+
 #include "Controller.h"
-#endif
+
 
 /**********************************************************************************************/
 /*                                                                                            */
@@ -54,12 +54,12 @@
 /*                                                                                            */
 /**********************************************************************************************/
 //#include <esp_now.h>
-#define Using_MCP4728
 #include <WiFi.h>
 #include <esp_wifi.h>
 #include <ESPNowW.h>
 #include "Wire.h"
 #include "SPI.h"
+//#define ESPNow_debug
 #ifdef Using_MCP4728
   #include <Adafruit_MCP4728.h>
   Adafruit_MCP4728 mcp;
@@ -80,6 +80,7 @@ uint16_t pedal_throttle_rudder_value=0;
 uint8_t pedal_status=0;
 bool joystick_update=false;
 uint16_t Joystick_value[]={0,0,0};
+
 typedef struct struct_message {
     uint64_t cycleCnt_u64;
     int64_t timeSinceBoot_i64;
@@ -98,7 +99,7 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *incomingData, int len) {
 	{
 		memcpy(&myData, incomingData, sizeof(myData));
 		pedal_status=myData.pedal_status;
-		#ifdef ACTIVATE_JOYSTICK_OUTPUT
+		//#ifdef ACTIVATE_JOYSTICK_OUTPUT
 		// normalize controller output
 		int32_t joystickNormalizedToInt32 = NormalizeControllerOutputValue(myData.controllerValue_i32, 0, 10000, 100); 
 		if(mac_addr[5]==Clu_mac[5])
@@ -119,7 +120,7 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *incomingData, int len) {
 			Joystick_value[2]=myData.controllerValue_i32;
 			//joystick_update=true;
 		}
-		#else
+		#ifdef ESPNow_debug
 		Serial.print("Bytes received: ");
 		Serial.println(len);
 		Serial.print("CycleCnt: ");
@@ -173,7 +174,13 @@ void setup()
 	delay(300);
 	ESPNow.init();
     Serial.println("wait 10s for ESPNOW initialized");
+#ifdef Using_ESP32S3
 	esp_wifi_config_espnow_rate(WIFI_IF_STA, WIFI_PHY_RATE_54M);
+#endif
+
+#ifdef Using_ESP32
+	esp_wifi_config_espnow_rate(WIFI_IF_STA, WIFI_PHY_RATE_MCS0_LGI);
+#endif
 	delay(3000);
 	ESPNow.add_peer(Clu_mac);
 	ESPNow.add_peer(Brk_mac);
@@ -248,7 +255,7 @@ void loop() {
 	cycleCntr_u64++;
 	//Serial.println(cycleCntr_u64);
 	
-	
+#ifdef USB_JOYSTICK
 	if(IsControllerReady())
 	{
 		if(pedal_status==0)
@@ -292,8 +299,9 @@ void loop() {
 
 		joystickSendState();
 	}
+#endif
 #ifdef Using_MCP4728
-if(MCP_status)
+	if(MCP_status)
 	{
 		mcp.setChannelValue(MCP4728_CHANNEL_A, (uint16_t)((float)Joystick_value[0]/(float)JOYSTICK_RANGE*4096));
 		mcp.setChannelValue(MCP4728_CHANNEL_B, (uint16_t)((float)Joystick_value[1]/(float)JOYSTICK_RANGE*4096));

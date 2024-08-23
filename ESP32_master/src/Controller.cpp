@@ -4,7 +4,7 @@
 
 
 
-#define USB_JOYSTICK
+//#define USB_JOYSTICK
 #ifdef USB_JOYSTICK
   #include <Joystick_ESP32S2.h>
   
