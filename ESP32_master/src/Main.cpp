@@ -193,7 +193,7 @@ void setup()
 	ESPNow.reg_recv_cb(OnDataRecv);
 	Serial.println("ESPNow Comunication Starting");
 	#ifdef Using_MCP4728
-    MCP4728_I2C.begin(MCP_SDA,MCP_SCL,400000);
+    MCP4728_I2C.begin(MCP_SDA,MCP_SCL,100000);
     uint8_t i2c_address[8]={0x60,0x61,0x62,0x63,0x64,0x65,0x66,0x67};
     int index_address=0;
     int found_address=0;
@@ -201,11 +201,13 @@ void setup()
     for(index_address=0;index_address<8;index_address++)
     {
       MCP4728_I2C.beginTransmission(i2c_address[index_address]);
+	  //MCP4728_I2C.beginTransmission(index_address);
       error = MCP4728_I2C.endTransmission();
       if (error == 0)
       {
         Serial.print("I2C device found at address");
         Serial.print(i2c_address[index_address]);
+		//Serial.print(index_address);
         Serial.println("  !");
         found_address=index_address;
         break;
@@ -215,6 +217,7 @@ void setup()
       {
         Serial.print("try address");
         Serial.println(i2c_address[index_address]);
+		//Serial.println(index_address);
       }
     }
     
@@ -222,6 +225,8 @@ void setup()
     {
       Serial.println("Couldn't find MCP4728, will not have analog output");
       MCP_status=false;
+	  delay(10000);
+	  ESP.restart();
     }
     else
     {
@@ -303,9 +308,9 @@ void loop() {
 #ifdef Using_MCP4728
 	if(MCP_status)
 	{
-		mcp.setChannelValue(MCP4728_CHANNEL_A, (uint16_t)((float)Joystick_value[0]/(float)JOYSTICK_RANGE*4096));
-		mcp.setChannelValue(MCP4728_CHANNEL_B, (uint16_t)((float)Joystick_value[1]/(float)JOYSTICK_RANGE*4096));
-		mcp.setChannelValue(MCP4728_CHANNEL_C, (uint16_t)((float)Joystick_value[2]/(float)JOYSTICK_RANGE*4096));
+		mcp.setChannelValue(MCP4728_CHANNEL_A, (uint16_t)((float)Joystick_value[0]/(float)JOYSTICK_RANGE*0.8f*4096));
+		mcp.setChannelValue(MCP4728_CHANNEL_B, (uint16_t)((float)Joystick_value[1]/(float)JOYSTICK_RANGE*0.8f*4096));
+		mcp.setChannelValue(MCP4728_CHANNEL_C, (uint16_t)((float)Joystick_value[2]/(float)JOYSTICK_RANGE*0.8f*4096));
 	}
 
 #endif
