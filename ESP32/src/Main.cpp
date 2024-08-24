@@ -1859,7 +1859,7 @@ void servoCommunicationTask( void * pvParameters )
 
           // When the servo turned off during driving, the servo loses its zero position and the correction might not be valid anymore. If still applied, the servo will somehow srive against the block
           // resulting in excessive servo load --> current load. We'll detect whether min or max block was reached, depending on the position error sign
-          bool servoCurrentLow_b = abs(isv57.servo_current_percent) < 20;
+          bool servoCurrentLow_b = abs(isv57.servo_current_percent) < 200;
           if (!servoCurrentLow_b)
           {
 
