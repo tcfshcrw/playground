@@ -120,7 +120,9 @@ void ESPNow_initialize()
     #endif
     
     #ifdef Using_Board_ESP32S3
-    esp_wifi_config_espnow_rate(WIFI_IF_STA, WIFI_PHY_RATE_54M);
+    //esp_wifi_config_espnow_rate(WIFI_IF_STA, WIFI_PHY_RATE_54M);
+    esp_wifi_config_espnow_rate(WIFI_IF_STA, WIFI_PHY_RATE_11M_L);
+    	
     #endif
 
 

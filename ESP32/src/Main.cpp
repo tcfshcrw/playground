@@ -756,7 +756,9 @@ void pedalUpdateTask( void * pvParameters )
     timeNow_pedalUpdateTask_l = millis();
     int64_t timeDiff_pedalUpdateTask_l = ( timePrevious_pedalUpdateTask_l + REPETITION_INTERVAL_PEDALUPDATE_TASK) - timeNow_pedalUpdateTask_l;
     uint32_t targetWaitTime_u32 = constrain(timeDiff_pedalUpdateTask_l, 0, REPETITION_INTERVAL_PEDALUPDATE_TASK);
-    delay(targetWaitTime_u32);
+    const TickType_t xDelay = targetWaitTime_u32 / portTICK_PERIOD_MS;
+    vTaskDelay(xDelay);
+    //delay(targetWaitTime_u32);
     timePrevious_pedalUpdateTask_l = millis();
 
 
@@ -1234,7 +1236,9 @@ void serialCommunicationTask( void * pvParameters )
     timeNow_serialCommunicationTask_l = millis();
     int64_t timeDiff_serialCommunicationTask_l = ( timePrevious_serialCommunicationTask_l + REPETITION_INTERVAL_SERIALCOMMUNICATION_TASK) - timeNow_serialCommunicationTask_l;
     uint32_t targetWaitTime_u32 = constrain(timeDiff_serialCommunicationTask_l, 0, REPETITION_INTERVAL_SERIALCOMMUNICATION_TASK);
-    delay(targetWaitTime_u32);
+    const TickType_t xDelay = targetWaitTime_u32 / portTICK_PERIOD_MS;
+    vTaskDelay(xDelay);
+    //delay(targetWaitTime_u32);
     timePrevious_serialCommunicationTask_l = millis();
 
 
@@ -1624,7 +1628,9 @@ void ESPNOW_SyncTask( void * pvParameters )
     timeNow_espNowTask_l = millis();
     int64_t timeDiff_espNowTask_l = ( timePrevious_espNowTask_l + REPETITION_INTERVAL_ESPNOW_TASK) - timeNow_espNowTask_l;
     uint32_t targetWaitTime_u32 = constrain(timeDiff_espNowTask_l, 0, REPETITION_INTERVAL_ESPNOW_TASK);
-    delay(targetWaitTime_u32);
+    const TickType_t xDelay = targetWaitTime_u32 / portTICK_PERIOD_MS;
+    //delay(targetWaitTime_u32);
+    vTaskDelay(xDelay);
     timePrevious_espNowTask_l = millis();
     //restart from espnow
     if(ESPNow_restart)
@@ -1735,7 +1741,7 @@ void ESPNOW_SyncTask( void * pvParameters )
           
                
     #endif
-    //delay(2);
+    //delay(1);
   }
 }
 #endif
@@ -1759,7 +1765,8 @@ void servoCommunicationTask( void * pvParameters )
 {
   
   for(;;){
-
+    const TickType_t xDelay_all = 1 / portTICK_PERIOD_MS;
+    vTaskDelay(xDelay_all);
     if (dap_config_st.payLoadPedalConfig_.debug_flags_0 & DEBUG_INFO_0_CYCLE_TIMER) 
     {
       static CycleTimer timerServoCommunication("Servo Com. cycle time");
@@ -1788,7 +1795,9 @@ void servoCommunicationTask( void * pvParameters )
         {
           isv57.setupServoStateReading();
           previousIsv57LifeSignal_b = true;
-          delay(50);
+          const TickType_t xDelay = 50 / portTICK_PERIOD_MS;
+          vTaskDelay(xDelay);
+          //delay(50);
         }
         
 
@@ -1968,7 +1977,9 @@ void servoCommunicationTask( void * pvParameters )
     else
     {
       Serial.println("Servo communication lost!");
-      delay(100);
+      const TickType_t xDelay = 100 / portTICK_PERIOD_MS;
+      vTaskDelay(xDelay);
+      //delay(100);
       previousIsv57LifeSignal_b = false;
       isv57_not_live_b=true;
     }
