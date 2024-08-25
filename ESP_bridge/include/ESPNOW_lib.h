@@ -21,6 +21,7 @@ bool ESPNow_initial_status=false;
 bool ESPNow_update= false;
 bool ESPNow_no_device=false;
 bool update_basic_state=false;
+bool update_extend_state=false;
 uint16_t Joystick_value[]={0,0,0};
 bool ESPNow_request_config_b=false;
 bool ESPNow_error_b=false;
@@ -67,47 +68,7 @@ bool sendMessageToMaster(int32_t controllerValue)
   }
   esp_now_send(broadcast_mac, (uint8_t *) &myData, sizeof(myData));
   return true;
-  // Send message via ESP-NOW
-  /*
-  if(ESPNOW_status)
-  {
-    esp_err_t result = esp_now_send(esp_master, (uint8_t *) &myData, sizeof(myData));
-    if(result == ESP_OK)
-    {
-      return true;
-    }
-    else
-    {
-      return false;
-    }
-  }
-  else
-  {
-    return false;
-  }
-  */
   
-  
-  
-  //esp_now_send(esp_master, (uint8_t *) &myData, sizeof(myData));
-  /*
-  if (result != ESP_OK) 
-  {
-    ESPNow_no_device=true;
-    //Serial.println("Failed send data to ESP_Master");
-  }
-  else
-  {
-    ESPNow_no_device=false;
-  }
-  */
-  
-  /*if (result == ESP_OK) {
-    Serial.println("Sent with success");
-  }
-  else {
-    Serial.println("Error sending the data");
-  }*/
 }
 void onRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len) 
 {
@@ -121,6 +82,12 @@ void onRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len)
     {
       ESPNow_error_b=true;
     }
+  }
+
+  if(data_len==sizeof(dap_state_extended_st))
+  {
+    memcpy(&dap_state_extended_st, data, sizeof(dap_state_extended_st));
+    update_extend_state=true;
   }
 
   if(data_len==sizeof(dap_config_st))

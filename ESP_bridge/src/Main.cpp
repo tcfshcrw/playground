@@ -600,6 +600,13 @@ delay(5);
     Serial.write((char*)&dap_state_basic_st, sizeof(DAP_state_basic_st));
     Serial.print("\r\n");
   }
+  if(update_extend_state)
+  {
+    update_extend_state=false;
+    Serial.write((char*)&dap_state_extended_st, sizeof(dap_state_extended_st));
+    Serial.print("\r\n");
+
+  }
   if(ESPNow_request_config_b)
   {
     DAP_config_st * dap_config_st_local_ptr;
