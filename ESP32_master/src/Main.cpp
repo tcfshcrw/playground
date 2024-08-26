@@ -175,7 +175,7 @@ void setup()
 	ESPNow.init();
     Serial.println("wait 10s for ESPNOW initialized");
 #ifdef Using_ESP32S3
-	esp_wifi_config_espnow_rate(WIFI_IF_STA, WIFI_PHY_RATE_54M);
+	esp_wifi_config_espnow_rate(WIFI_IF_STA, WIFI_PHY_RATE_11M_L);
 #endif
 
 #ifdef Using_ESP32
