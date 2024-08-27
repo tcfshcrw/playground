@@ -3,6 +3,7 @@
 #include <Arduino.h>
 #include "ESPNowW.h"
 #include "Main.h"
+
 //#define ESPNow_debug
 uint8_t esp_master[] = {0x36, 0x33, 0x33, 0x33, 0x33, 0x31};
 //uint8_t esp_master[] = {0xdc, 0xda, 0x0c, 0x22, 0x8f, 0xd8}; // S3
@@ -15,6 +16,7 @@ uint8_t esp_Host[] = {0x36, 0x33, 0x33, 0x33, 0x33, 0x35};
 uint8_t* Recv_mac;
 uint16_t ESPNow_send=0;
 uint16_t ESPNow_recieve=0;
+int rssi_display;
 //bool MAC_get=false;
 bool ESPNOW_status =false;
 bool ESPNow_initial_status=false;
@@ -26,7 +28,7 @@ uint16_t Joystick_value[]={0,0,0};
 bool ESPNow_request_config_b=false;
 bool ESPNow_error_b=false;
 
-//https://github.com/nickgammon/I2C_Anything/tree/master
+
 struct ESPNow_Send_Struct
 { 
   uint16_t pedal_position;
@@ -101,6 +103,21 @@ void OnSent(const uint8_t *mac_addr, esp_now_send_status_t status)
 {
 
 }
+
+// The callback that does the magic
+void promiscuous_rx_cb(void *buf, wifi_promiscuous_pkt_type_t type) {
+  // All espnow traffic uses action frames which are a subtype of the mgmnt frames so filter out everything else.
+  if (type != WIFI_PKT_MGMT)
+    return;
+
+  const wifi_promiscuous_pkt_t *ppkt = (wifi_promiscuous_pkt_t *)buf;
+  //const wifi_ieee80211_packet_t *ipkt = (wifi_ieee80211_packet_t *)ppkt->payload;
+  //const wifi_ieee80211_mac_hdr_t *hdr = &ipkt->hdr;
+
+  int rssi = ppkt->rx_ctrl.rssi;
+  rssi_display = rssi;
+}
+
 void ESPNow_initialize()
 {
 
@@ -171,6 +188,9 @@ void ESPNow_initialize()
     }
     ESPNow.reg_recv_cb(onRecv);
     ESPNow.reg_send_cb(OnSent);
+    //rssi calculate
+    esp_wifi_set_promiscuous(true);
+    esp_wifi_set_promiscuous_rx_cb(&promiscuous_rx_cb);
     ESPNow_initial_status=true;
     Serial.println("ESPNow Initialized");
   

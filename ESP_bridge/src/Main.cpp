@@ -409,6 +409,7 @@ void setup()
 /*                                                                                            */
 /**********************************************************************************************/
 uint32_t loop_count=0;
+bool basic_rssi_update=false;
 void loop() {
   taskYIELD();
   /*
@@ -430,6 +431,15 @@ delay(5);
 */
   uint16_t crc;
   uint8_t n = Serial.available();
+  if(loop_count>100)
+  {
+    basic_rssi_update=true;
+    loop_count=0;
+  }
+  else
+  {
+    loop_count++;
+  }
   bool structChecker = true;
   if (n > 0)
   {
@@ -599,6 +609,25 @@ delay(5);
     update_basic_state=false;
     Serial.write((char*)&dap_state_basic_st, sizeof(DAP_state_basic_st));
     Serial.print("\r\n");
+
+    if(basic_rssi_update)
+    {
+      if(rssi_display<-80)
+      {
+        Serial.println("Warning: BAD WIRELESS CONNECTION");
+        Serial.print("Pedal:");
+        Serial.print(dap_state_basic_st.payLoadHeader_.PedalTag);
+        Serial.print(" RSSI:");
+        Serial.println(rssi_display);  
+      }
+      #ifdef ESPNow_debug
+        Serial.print("Pedal:");
+        Serial.print(dap_state_basic_st.payLoadHeader_.PedalTag);
+        Serial.print(" RSSI:");
+        Serial.println(rssi_display);        
+      #endif
+      basic_rssi_update=false;
+    }
   }
   if(update_extend_state)
   {
