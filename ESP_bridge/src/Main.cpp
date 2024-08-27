@@ -76,6 +76,7 @@ DAP_calculationVariables_st dap_calculationVariables_st;
 DAP_state_basic_st dap_state_basic_st;
 DAP_state_extended_st dap_state_extended_st;
 DAP_actions_st dap_actions_st;
+DAP_bridge_state_st dap_bridge_state_st;
 
 #include "CycleTimer.h"
 
@@ -213,12 +214,14 @@ TaskHandle_t Task4;
 #endif
 
 bool dap_action_update= false;
-
+#include "MovingAverageFilter.h"
+MovingAverageFilter rssi_filter(30);
 /**********************************************************************************************/
 /*                                                                                            */
 /*                         setup function                                                     */
 /*                                                                                            */
 /**********************************************************************************************/
+
 void setup()
 {
   //Serial.begin(115200);
@@ -429,6 +432,7 @@ void loop() {
   ESPNow.send_message(Gas_mac,(uint8_t *) &_dap_actions,sizeof(_dap_actions));
 delay(5);
 */
+
   uint16_t crc;
   uint8_t n = Serial.available();
   if(loop_count>100)
@@ -609,25 +613,6 @@ delay(5);
     update_basic_state=false;
     Serial.write((char*)&dap_state_basic_st, sizeof(DAP_state_basic_st));
     Serial.print("\r\n");
-
-    if(basic_rssi_update)
-    {
-      if(rssi_display<-80)
-      {
-        Serial.println("Warning: BAD WIRELESS CONNECTION");
-        Serial.print("Pedal:");
-        Serial.print(dap_state_basic_st.payLoadHeader_.PedalTag);
-        Serial.print(" RSSI:");
-        Serial.println(rssi_display);  
-      }
-      #ifdef ESPNow_debug
-        Serial.print("Pedal:");
-        Serial.print(dap_state_basic_st.payLoadHeader_.PedalTag);
-        Serial.print(" RSSI:");
-        Serial.println(rssi_display);        
-      #endif
-      basic_rssi_update=false;
-    }
   }
   if(update_extend_state)
   {
@@ -655,9 +640,41 @@ delay(5);
     Serial.print(dap_state_basic_st.payLoadHeader_.PedalTag);
     Serial.print(" E:");
     Serial.println(dap_state_basic_st.payloadPedalState_Basic_.error_code_u8);
-    ESPNow_error_b=false;
-    
+    ESPNow_error_b=false;    
   }
+  if(basic_rssi_update)
+  {
+    int rssi_filter_value=constrain(rssi_filter.process(rssi_display),-100,0) ;
+    dap_bridge_state_st.payloadBridgeState_.Pedal_RSSI=(uint8_t)(rssi_filter_value+101);
+    dap_bridge_state_st.payLoadHeader_.PedalTag=5; //5 means bridge
+    dap_bridge_state_st.payLoadHeader_.payloadType=DAP_PAYLOAD_TYPE_BRIDGE_STATE;
+    dap_bridge_state_st.payLoadHeader_.version=DAP_VERSION_CONFIG;
+    crc = checksumCalculator((uint8_t*)(&(dap_bridge_state_st.payLoadHeader_)), sizeof(dap_bridge_state_st.payLoadHeader_) + sizeof(dap_bridge_state_st.payloadBridgeState_));
+    dap_bridge_state_st.payloadFooter_.checkSum=crc;
+    DAP_bridge_state_st * dap_bridge_st_local_ptr;
+    dap_bridge_st_local_ptr = &dap_bridge_state_st;
+    Serial.write((char*)dap_bridge_st_local_ptr, sizeof(DAP_bridge_state_st));
+    Serial.print("\r\n");
+    basic_rssi_update=false;
+    if(rssi_filter_value<-88)
+    {
+      Serial.println("Warning: BAD WIRELESS CONNECTION");
+      //Serial.print("Pedal:");
+      //Serial.print(dap_state_basic_st.payLoadHeader_.PedalTag);
+      Serial.print(" RSSI:");
+      Serial.println(rssi_filter_value);  
+    }
+      #ifdef ESPNow_debug
+        Serial.print("Pedal:");
+        Serial.print(dap_state_basic_st.payLoadHeader_.PedalTag);
+        Serial.print(" RSSI:");
+        Serial.println(rssi_filter_value);        
+      #endif
+      
+  }
+
+
+
   // set joysitck value
   #ifdef Using_analog_output
 
