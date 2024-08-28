@@ -216,6 +216,9 @@ TaskHandle_t Task4;
 bool dap_action_update= false;
 #include "MovingAverageFilter.h"
 MovingAverageFilter rssi_filter(30);
+
+unsigned long pedal_last_update[3]={1,1,1};
+uint8_t pedal_avaliable[3]={0,0,0};
 /**********************************************************************************************/
 /*                                                                                            */
 /*                         setup function                                                     */
@@ -251,18 +254,10 @@ void setup()
 
 
 
-// initialize configuration and update local variables
-  dap_config_st.initialiseDefaults();
 
-  // Load config from EEPROM, if valid, overwrite initial config
-  //EEPROM.begin(2048);
-  //dap_config_st.loadConfigFromEprom(dap_config_st_local);
+  //dap_config_st.initialiseDefaults();
 
-
-  // check validity of data from EEPROM  
   
-
-
 
 
 
@@ -270,28 +265,7 @@ void setup()
   
 
 
-  // interprete config values
   
-
-
-
-  
-  
-
-
-
-
-
-
-
-
-  
-
-  
-
-  
-
-
 
 
   // setup multi tasking
@@ -387,13 +361,13 @@ void setup()
     }
     
   #endif
-    
-      
-    
-
-    
-
- 
+        
+  //initialize time_record
+  uint8_t pedalIDX;
+  for(pedalIDX=0;pedalIDX<3;pedalIDX++)
+  {
+    pedal_last_update[pedalIDX]=millis();
+  }
 
   Serial.println("Setup end");
   
@@ -413,37 +387,20 @@ void setup()
 /**********************************************************************************************/
 uint32_t loop_count=0;
 bool basic_rssi_update=false;
+unsigned long bridge_state_last_update=millis();
 void loop() {
-  taskYIELD();
-  /*
-  #ifdef OTA_update
-  server.handleClient();
-  //delay(1);
-  #endif
-  */
- /*
-  DAP_actions_st _dap_actions;
-  _dap_actions.payLoadHeader_.payloadType=DAP_PAYLOAD_TYPE_ACTION;
-  _dap_actions.payLoadHeader_.version=DAP_VERSION_CONFIG;
-  _dap_actions.payloadPedalAction_.G_value=128;
-  _dap_actions.payloadPedalAction_.triggerAbs_u8=1;
-  _dap_actions.payloadFooter_.checkSum=checksumCalculator((uint8_t*)(&(_dap_actions.payLoadHeader_)), sizeof(_dap_actions.payLoadHeader_) + sizeof(_dap_actions.payloadPedalAction_));
-  ESPNow.send_message(Brk_mac,(uint8_t *) &_dap_actions,sizeof(_dap_actions));
-  ESPNow.send_message(Gas_mac,(uint8_t *) &_dap_actions,sizeof(_dap_actions));
-delay(5);
-*/
+  //taskYIELD();
+
 
   uint16_t crc;
   uint8_t n = Serial.available();
-  if(loop_count>100)
+  unsigned long current_time=millis();
+  if(current_time-bridge_state_last_update>200)
   {
     basic_rssi_update=true;
-    loop_count=0;
+    bridge_state_last_update=millis();
   }
-  else
-  {
-    loop_count++;
-  }
+
   bool structChecker = true;
   if (n > 0)
   {
@@ -480,22 +437,7 @@ delay(5);
         }
         if (structChecker == true)
         {
-          dap_action_update=true;
-          // trigger return pedal position
-          /*
-          if (dap_actions_st.payloadPedalAction_.returnPedalConfig_u8)
-          {
-            DAP_config_st * dap_config_st_local_ptr;
-            dap_config_st_local_ptr = &dap_config_st;
-            //uint16_t crc = checksumCalculator((uint8_t*)(&(dap_config_st.payLoadHeader_)), sizeof(dap_config_st.payLoadHeader_) + sizeof(dap_config_st.payLoadPedalConfig_));
-            crc = checksumCalculator((uint8_t*)(&(dap_config_st.payLoadHeader_)), sizeof(dap_config_st.payLoadHeader_) + sizeof(dap_config_st.payLoadPedalConfig_));
-            dap_config_st_local_ptr->payloadFooter_.checkSum = crc;
-            Serial.write((char*)dap_config_st_local_ptr, sizeof(DAP_config_st));
-            Serial.print("\r\n");
-          }
-          */
-          
-                
+          dap_action_update=true;                
         }
         break;
 
@@ -613,6 +555,14 @@ delay(5);
     update_basic_state=false;
     Serial.write((char*)&dap_state_basic_st, sizeof(DAP_state_basic_st));
     Serial.print("\r\n");
+    if(dap_bridge_state_st.payloadBridgeState_.Pedal_availability[dap_state_basic_st.payLoadHeader_.PedalTag]==0)
+    {
+      Serial.print("Found Pedal:");
+      Serial.println(dap_state_basic_st.payLoadHeader_.PedalTag);
+    }
+    dap_bridge_state_st.payloadBridgeState_.Pedal_availability[dap_state_basic_st.payLoadHeader_.PedalTag]=1;
+    pedal_last_update[dap_state_basic_st.payLoadHeader_.PedalTag]=millis();
+
   }
   if(update_extend_state)
   {
@@ -691,18 +641,23 @@ delay(5);
     }
 
   #endif
+  uint8_t pedalIDX;
+  for(pedalIDX=0;pedalIDX<3;pedalIDX++)
+  {
+    unsigned long current_time=millis();
+    if(dap_bridge_state_st.payloadBridgeState_.Pedal_availability[pedalIDX]==1)
+    {
+      if(current_time-pedal_last_update[pedalIDX]>3000)
+      {
+        Serial.print("Pedal:");
+        Serial.print(pedalIDX);
+        Serial.println(" Disconnected");
+        dap_bridge_state_st.payloadBridgeState_.Pedal_availability[pedalIDX]=0;
+      }
+    }
 
-  /*
-  if(loop_count>3000)
-  {
-    Serial.println("Serial is still alive");
-    loop_count=0;
   }
-  else
-  {
-    loop_count++;
-  }
-  */
+  
   delay(2);
   
 }
