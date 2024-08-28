@@ -98,7 +98,7 @@ void DAP_config_st::initialiseDefaults() {
 
   payLoadPedalConfig_.invertMotorDirection_u8 = 0;
   payLoadPedalConfig_.pedal_type=4;
-  payLoadPedalConfig_.OTA_flag=0;
+  //payLoadPedalConfig_.OTA_flag=0;
   payLoadPedalConfig_.enableReboot_u8=1;
   //payLoadPedalConfig_.Joystick_ESPsync_to_ESP=0;
 }
@@ -178,10 +178,10 @@ void DAP_calculationVariables_st::updateFromConfig(DAP_config_st& config_st) {
   WS_amp=((float)config_st.payLoadPedalConfig_.WS_amp) / 20.0f;
   WS_freq=(float)config_st.payLoadPedalConfig_.WS_freq;
   // update force variables
-  Force_Min = ((float)config_st.payLoadPedalConfig_.preloadForce);
-  Force_Max = ((float)config_st.payLoadPedalConfig_.maxForce); 
+  Force_Min = ((float)config_st.payLoadPedalConfig_.preloadForce)/10.0f;
+  Force_Max = ((float)config_st.payLoadPedalConfig_.maxForce)/10.0f; 
   Force_Range = Force_Max - Force_Min;
-  Force_Max_default=((float)config_st.payLoadPedalConfig_.maxForce); 
+  Force_Max_default=((float)config_st.payLoadPedalConfig_.maxForce)/10.0f; 
   pedal_type=config_st.payLoadPedalConfig_.pedal_type;
 }
 
