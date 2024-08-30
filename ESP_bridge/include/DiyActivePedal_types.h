@@ -3,7 +3,7 @@
 #include <stdint.h>
 
 // define the payload revision
-#define DAP_VERSION_CONFIG 140
+#define DAP_VERSION_CONFIG 141
 
 // define the payload types
 #define DAP_PAYLOAD_TYPE_CONFIG 100
@@ -76,8 +76,8 @@ struct payloadPedalConfig {
   uint8_t pedalEndPosition;
 
   // configure pedal forces
-  uint16_t maxForce;
-  uint16_t preloadForce;
+  float maxForce;
+  float preloadForce;
   
   // design force vs travel curve
   // In percent
