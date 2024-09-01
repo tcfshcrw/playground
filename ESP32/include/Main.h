@@ -311,3 +311,45 @@
   #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 5
 #endif
 
+#if PCB_VERSION == 8
+  // ADC defines
+  #define PIN_DRDY 4//19// 19 --> DRDY
+  #define PIN_RST  6 // X --> X
+  #define PIN_SCK 1//16 // 16 -->SCLK
+  #define PIN_MISO 3 // 18 --> DOUT
+  #define PIN_MOSI 2 // 17 --> DIN
+  #define PIN_CS 5//21 // 21 --> CS
+
+  // stepper pins
+  #define dirPinStepper    6//22
+  #define stepPinStepper   7//23
+
+  //analog output pin
+  //#define D_O 25   
+  //MCP4725 SDA SCL
+  //#define MCP_SDA 5
+  //#define MCP_SCL 4
+  
+  // endstop pins
+  #define minPin 8
+  #define maxPin 9
+  // Pedal assignment pin
+  #define PEDAL_ASSIGNMENT
+  #define CFG1 10
+  #define CFG2 11
+
+  //#define EMERGENCY_BUTTON
+  //#define ShutdownPin 6
+  // level shifter is present on this PCB design
+  #define SENSORLESS_HOMING true
+  #define ISV57_TXPIN 12//27 //17
+  #define ISV57_RXPIN 13//26 // 16
+
+  //#define Using_analog_output_ESP32_S3
+  #define ESPNOW_Enable
+  #define ESPNow_S3
+  //#define BLUETOOTH_GAMEPAD
+  #define USB_JOYSTICK
+
+  #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 5
+#endif
