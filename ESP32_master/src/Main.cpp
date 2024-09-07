@@ -66,6 +66,8 @@
   TwoWire MCP4728_I2C= TwoWire(1);
   bool MCP_status =false;
 #endif
+
+
 // Set your new MAC Address
 //uint8_t newMACAddress[] = {0x32, 0xAE, 0xA4, 0x07, 0x0D, 0x66};
 uint8_t esp_master[] = {0x36, 0x33, 0x33, 0x33, 0x33, 0x31};
@@ -92,7 +94,8 @@ typedef struct struct_message {
 struct_message myData;
 
 // Callback when data is received
-void OnDataRecv(const uint8_t *mac_addr, const uint8_t *incomingData, int len) {
+void OnDataRecv(const uint8_t *mac_addr, const uint8_t *incomingData, int len) 
+{
 
 //void OnDataRecv(const esp_now_recv_info *info, const uint8_t *incomingData, int len) {
 	if(len==sizeof(myData))
@@ -137,6 +140,21 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *incomingData, int len) {
 
 
 
+}
+// The callback that does the magic
+int rssi_display=0;
+void promiscuous_rx_cb(void *buf, wifi_promiscuous_pkt_type_t type) 
+{
+  // All espnow traffic uses action frames which are a subtype of the mgmnt frames so filter out everything else.
+  if (type != WIFI_PKT_MGMT)
+    return;
+
+  const wifi_promiscuous_pkt_t *ppkt = (wifi_promiscuous_pkt_t *)buf;
+  //const wifi_ieee80211_packet_t *ipkt = (wifi_ieee80211_packet_t *)ppkt->payload;
+  //const wifi_ieee80211_mac_hdr_t *hdr = &ipkt->hdr;
+
+  int rssi = ppkt->rx_ctrl.rssi;
+  rssi_display = rssi;
 }
 
 /**********************************************************************************************/
@@ -191,6 +209,9 @@ void setup()
 	// Register for a callback function that will be called when data is received
 	//esp_now_register_recv_cb(esp_now_recv_cb_t(OnDataRecv));
 	ESPNow.reg_recv_cb(OnDataRecv);
+	//rssi calculate
+    esp_wifi_set_promiscuous(true);
+    esp_wifi_set_promiscuous_rx_cb(&promiscuous_rx_cb);
 	Serial.println("ESPNow Comunication Starting");
 	#ifdef Using_MCP4728
     MCP4728_I2C.begin(MCP_SDA,MCP_SCL,100000);
@@ -255,11 +276,17 @@ int32_t joystickNormalizedToInt32_local = 0;
 /*                                                                                            */
 /**********************************************************************************************/
 uint64_t cycleCntr_u64 = 0;
+unsigned long joystick_last_update_time = millis();
+bool Joystick_debug_report_b = false;
 void loop() {
 	delay(2);
 	cycleCntr_u64++;
 	//Serial.println(cycleCntr_u64);
-	
+	unsigned long joystick_now = millis();
+	if(joystick_now-joystick_last_update_time>2000)
+	{
+		Joystick_debug_report_b= true;
+	}
 #ifdef USB_JOYSTICK
 	if(IsControllerReady())
 	{
@@ -313,6 +340,27 @@ void loop() {
 		mcp.setChannelValue(MCP4728_CHANNEL_C, (uint16_t)((float)Joystick_value[2]/(float)JOYSTICK_RANGE*0.8f*4096));
 	}
 
+#endif
+#ifdef JOYSTICK_DEBUG_OUT
+	if(Joystick_debug_report_b)
+	{
+		Joystick_debug_report_b=false;
+		joystick_last_update_time=joystick_now;
+		Serial.print("Boot in");
+		Serial.print(joystick_last_update_time);
+		Serial.print(" ms, ");
+		Serial.print("RSSI:");
+		Serial.print(rssi_display);
+		Serial.println(" -dBm");
+		int index=0;
+		for(index=0;index<3;index++)
+		{
+			Serial.print("Pedal:");
+			Serial.print(index);
+			Serial.print(" value:");
+			Serial.println(Joystick_value[index]);
+		}
+	}
 #endif
 	
 	

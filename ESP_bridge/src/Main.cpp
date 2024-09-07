@@ -593,7 +593,9 @@ void loop() {
     Serial.write((char*)dap_config_st_local_ptr, sizeof(DAP_config_st));
     Serial.print("\r\n");
     ESPNow_request_config_b=false;
-    Serial.print("config returned");
+    Serial.print("Pedal:");
+    Serial.print(dap_config_st.payLoadHeader_.PedalTag);
+    Serial.println("config returned");
   }
   if(ESPNow_error_b)
   {
@@ -617,6 +619,7 @@ void loop() {
     Serial.write((char*)dap_bridge_st_local_ptr, sizeof(DAP_bridge_state_st));
     Serial.print("\r\n");
     basic_rssi_update=false;
+    /*
     if(rssi_filter_value<-88)
     {
       Serial.println("Warning: BAD WIRELESS CONNECTION");
@@ -625,6 +628,7 @@ void loop() {
       Serial.print(" RSSI:");
       Serial.println(rssi_filter_value);  
     }
+    */
       #ifdef ESPNow_debug
         Serial.print("Pedal:");
         Serial.print(dap_state_basic_st.payLoadHeader_.PedalTag);

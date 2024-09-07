@@ -653,7 +653,7 @@ void setup()
   #ifdef ESPNOW_Enable
   dap_calculationVariables_st.rudder_brake_status=false;
   
-  if(dap_config_st.payLoadPedalConfig_.pedal_type==1||dap_config_st.payLoadPedalConfig_.pedal_type==2||dap_config_st.payLoadPedalConfig_.pedal_type==3)
+  if(dap_config_st.payLoadPedalConfig_.pedal_type==0||dap_config_st.payLoadPedalConfig_.pedal_type==1||dap_config_st.payLoadPedalConfig_.pedal_type==2)
   {
     ESPNow_initialize();
     xTaskCreatePinnedToCore(
@@ -709,6 +709,7 @@ void updatePedalCalcParameters()
 /*                         Main function                                                      */
 /*                                                                                            */
 /**********************************************************************************************/
+unsigned long joystick_state_last_update=millis();
 void loop() {
   taskYIELD();
   /*

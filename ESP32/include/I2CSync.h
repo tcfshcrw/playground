@@ -60,7 +60,7 @@ void SynconRequest()
 
 void I2C_initialize()
 {
-    Wire.begin(I2C_SDA,I2C_SCL,I2C_rate);
+    //Wire.begin(I2C_SDA,I2C_SCL,I2C_rate);
     delay(3000);
     Serial.println("Sync as Master");
 }
@@ -69,7 +69,7 @@ void I2C_initialize_slave()
 {
     Wire.onReceive(SynconReceive);
     Wire.onRequest(SynconRequest);
-    Wire.begin((uint8_t)I2C_slave_address,I2C_SDA,I2C_SCL,I2C_rate);
+    //Wire.begin((uint8_t)I2C_slave_address,I2C_SDA,I2C_SCL,I2C_rate);
     //I2C_sync.begin(I2C_SDA,I2C_SCL,(uint8_t)I2C_slave_address);
     Serial.println("Sync as Slave");
 }
