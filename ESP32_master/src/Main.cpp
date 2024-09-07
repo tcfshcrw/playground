@@ -341,6 +341,11 @@ void loop() {
 	}
 
 #endif
+
+#ifdef Using_analog_output
+	dacWrite(Analog_brk,(uint16_t)((float)((Joystick_value[1])/(float)(JOYSTICK_RANGE))*255));
+	dacWrite(Analog_gas,(uint16_t)((float)((Joystick_value[2])/(float)(JOYSTICK_RANGE))*255));
+#endif
 #ifdef JOYSTICK_DEBUG_OUT
 	if(Joystick_debug_report_b)
 	{
