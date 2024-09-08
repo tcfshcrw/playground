@@ -342,23 +342,30 @@ void ESPNow_initialize()
     
     if(dap_config_st.payLoadPedalConfig_.pedal_type==1)
     {
-      Recv_mac=Gas_mac;      
+      Recv_mac=Gas_mac;
+      ESPNow.add_peer(Recv_mac);    
     }
 
     if(dap_config_st.payLoadPedalConfig_.pedal_type==2)
     {
       Recv_mac=Brk_mac;
+      ESPNow.add_peer(Recv_mac);
     }
-    if(ESPNow.add_peer(Recv_mac)== ESP_OK)
+    /*
+    if(dap_config_st.payLoadPedalConfig_.pedal_type==2||dap_config_st.payLoadPedalConfig_.pedal_type==1)
     {
-      ESPNOW_status=true;
-      Serial.println("Sucess to add peer");
-    }
-    else
-    {
-      ESPNOW_status=false;
-      Serial.println("Fail to add peer");
-    }
+      if(ESPNow.add_peer(Recv_mac)== ESP_OK)
+      {
+        ESPNOW_status=true;
+        Serial.println("Sucess to add peer");
+      }
+      else
+      {
+        ESPNOW_status=false;
+        Serial.println("Fail to add peer");
+      }
+    }*/
+
     
     if(ESPNow.add_peer(esp_master)== ESP_OK)
     {
