@@ -35,11 +35,11 @@
 /**********************************************************************************************/
 
 
-void serialCommunicationTask( void * pvParameters );
+//void serialCommunicationTask( void * pvParameters );
 
-void OTATask( void * pvParameters );
+//void OTATask( void * pvParameters );
 
-void ESPNOW_SyncTask( void * pvParameters);
+//void ESPNOW_SyncTask( void * pvParameters);
 // https://www.tutorialspoint.com/cyclic-redundancy-check-crc-in-arduino
 uint16_t checksumCalculator(uint8_t * data, uint16_t length)
 {
@@ -108,24 +108,25 @@ DAP_bridge_state_st dap_bridge_state_st;
 #define STACK_SIZE_FOR_TASK_1 0.2 * (configTOTAL_HEAP_SIZE / 4)
 #define STACK_SIZE_FOR_TASK_2 0.2 * (configTOTAL_HEAP_SIZE / 4)
 
-
+/*
 TaskHandle_t Task1;
 TaskHandle_t Task2;
+*/
 
-
-static SemaphoreHandle_t semaphore_updateConfig=NULL;
+//static SemaphoreHandle_t semaphore_updateConfig=NULL;
   bool configUpdateAvailable = false;                              // semaphore protected data
   DAP_config_st dap_config_st_local;
 
-static SemaphoreHandle_t semaphore_updateJoystick=NULL;
+//static SemaphoreHandle_t semaphore_updateJoystick=NULL;
   int32_t joystickNormalizedToInt32 = 0;                           // semaphore protected data
 
-static SemaphoreHandle_t semaphore_resetServoPos=NULL;
+//static SemaphoreHandle_t semaphore_resetServoPos=NULL;
 bool resetPedalPosition = false;
 
-static SemaphoreHandle_t semaphore_readServoValues=NULL;
+//static SemaphoreHandle_t semaphore_readServoValues=NULL;
 
-static SemaphoreHandle_t semaphore_updatePedalStates=NULL;
+//static SemaphoreHandle_t semaphore_updatePedalStates=NULL;
+
 
 /**********************************************************************************************/
 /*                                                                                            */
@@ -270,13 +271,15 @@ void setup()
 
 
   // setup multi tasking
+  /*
   semaphore_updateJoystick = xSemaphoreCreateMutex();
   semaphore_updateConfig = xSemaphoreCreateMutex();
   semaphore_resetServoPos = xSemaphoreCreateMutex();
   semaphore_updatePedalStates = xSemaphoreCreateMutex();
+  */
   delay(10);
 
-
+/*
   if(semaphore_updateJoystick==NULL)
   {
     Serial.println("Could not create semaphore");
@@ -287,6 +290,7 @@ void setup()
     Serial.println("Could not create semaphore");
     ESP.restart();
   }
+  */
 
 
 
@@ -294,7 +298,7 @@ void setup()
   
 
 
-  disableCore0WDT();
+  //disableCore0WDT();
 
 
   
@@ -594,7 +598,9 @@ void loop() {
     Serial.write((char*)dap_config_st_local_ptr, sizeof(DAP_config_st));
     Serial.print("\r\n");
     ESPNow_request_config_b=false;
-    Serial.print("config returned");
+    Serial.print("Pedal:");
+    Serial.print(dap_config_st.payLoadHeader_.PedalTag);
+    Serial.println("config returned");
   }
   if(ESPNow_error_b)
   {
@@ -618,6 +624,7 @@ void loop() {
     Serial.write((char*)dap_bridge_st_local_ptr, sizeof(DAP_bridge_state_st));
     Serial.print("\r\n");
     basic_rssi_update=false;
+    /*
     if(rssi_filter_value<-88)
     {
       Serial.println("Warning: BAD WIRELESS CONNECTION");
@@ -626,6 +633,7 @@ void loop() {
       Serial.print(" RSSI:");
       Serial.println(rssi_filter_value);  
     }
+    */
       #ifdef ESPNow_debug
         Serial.print("Pedal:");
         Serial.print(dap_state_basic_st.payLoadHeader_.PedalTag);
@@ -758,280 +766,10 @@ unsigned long printCycleCounter = 0;
 
 
 
-//int32_t joystickNormalizedToInt32_local = 0;
-void serialCommunicationTask( void * pvParameters )
-{
-
-  for(;;){
-
-
-    // average cycle time averaged over multiple cycles 
-    if (dap_config_st.payLoadPedalConfig_.debug_flags_0 & DEBUG_INFO_0_CYCLE_TIMER) 
-    {
-      static CycleTimer timerSC("SC cycle time");
-      timerSC.Bump();
-    }
-
-    uint16_t crc;
 
 
 
 
-    delay( SERIAL_COOMUNICATION_TASK_DELAY_IN_MS );
-
-   
-    { 
-      // read serial input 
-      uint8_t n = Serial.available();
-
-      bool structChecker = true;
-      
-      if (n > 0)
-      {
-        switch (n) {
-
-          // likely config structure 
-          case sizeof(DAP_config_st):
-              
-              if(semaphore_updateConfig!=NULL)
-              {
-                if(xSemaphoreTake(semaphore_updateConfig, (TickType_t)1)==pdTRUE)
-                {
-                  DAP_config_st * dap_config_st_local_ptr;
-                  dap_config_st_local_ptr = &dap_config_st_local;
-                  Serial.readBytes((char*)dap_config_st_local_ptr, sizeof(DAP_config_st));
-
-                  
-
-                  // check if data is plausible
-                  
-                  if ( dap_config_st_local.payLoadHeader_.payloadType != DAP_PAYLOAD_TYPE_CONFIG ){ 
-                    structChecker = false;
-                    Serial.print("Payload type expected: ");
-                    Serial.print(DAP_PAYLOAD_TYPE_CONFIG);
-                    Serial.print(",   Payload type received: ");
-                    Serial.println(dap_config_st_local.payLoadHeader_.payloadType);
-                  }
-                  if ( dap_config_st_local.payLoadHeader_.version != DAP_VERSION_CONFIG ){ 
-                    structChecker = false;
-                    Serial.print("Config version expected: ");
-                    Serial.print(DAP_VERSION_CONFIG);
-                    Serial.print(",   Config version received: ");
-                    Serial.println(dap_config_st_local.payLoadHeader_.version);
-                  }
-                  // checksum validation
-                  crc = checksumCalculator((uint8_t*)(&(dap_config_st_local.payLoadHeader_)), sizeof(dap_config_st_local.payLoadHeader_) + sizeof(dap_config_st_local.payLoadPedalConfig_));
-                  if (crc != dap_config_st_local.payloadFooter_.checkSum){ 
-                    structChecker = false;
-                    Serial.print("CRC expected: ");
-                    Serial.print(crc);
-                    Serial.print(",   CRC received: ");
-                    Serial.println(dap_config_st_local.payloadFooter_.checkSum);
-                  }
-
-
-                  // if checks are successfull, overwrite global configuration struct
-                  if (structChecker == true)
-                  {
-                    Serial.println("Updating pedal config");
-                    configUpdateAvailable = true;          
-                  }
-                  xSemaphoreGive(semaphore_updateConfig);
-                }
-              }
-            break;
-
-          // likely action structure 
-          case sizeof(DAP_actions_st) :
-
-            
-            Serial.readBytes((char*)&dap_actions_st, sizeof(DAP_actions_st));
-
-            if ( dap_actions_st.payLoadHeader_.payloadType != DAP_PAYLOAD_TYPE_ACTION ){ 
-              structChecker = false;
-              Serial.print("Payload type expected: ");
-              Serial.print(DAP_PAYLOAD_TYPE_ACTION);
-              Serial.print(",   Payload type received: ");
-              Serial.println(dap_config_st_local.payLoadHeader_.payloadType);
-            }
-            if ( dap_actions_st.payLoadHeader_.version != DAP_VERSION_CONFIG ){ 
-              structChecker = false;
-              Serial.print("Config version expected: ");
-              Serial.print(DAP_VERSION_CONFIG);
-              Serial.print(",   Config version received: ");
-              Serial.println(dap_config_st_local.payLoadHeader_.version);
-            }
-            crc = checksumCalculator((uint8_t*)(&(dap_actions_st.payLoadHeader_)), sizeof(dap_actions_st.payLoadHeader_) + sizeof(dap_actions_st.payloadPedalAction_));
-            if (crc != dap_actions_st.payloadFooter_.checkSum){ 
-              structChecker = false;
-              Serial.print("CRC expected: ");
-              Serial.print(crc);
-              Serial.print(",   CRC received: ");
-              Serial.println(dap_actions_st.payloadFooter_.checkSum);
-            }
-
-
-
-            if (structChecker == true)
-            {
-
-
-              dap_action_update=true;
-              
-              // trigger return pedal position
-              if (dap_actions_st.payloadPedalAction_.returnPedalConfig_u8)
-              {
-                DAP_config_st * dap_config_st_local_ptr;
-                dap_config_st_local_ptr = &dap_config_st;
-                //uint16_t crc = checksumCalculator((uint8_t*)(&(dap_config_st.payLoadHeader_)), sizeof(dap_config_st.payLoadHeader_) + sizeof(dap_config_st.payLoadPedalConfig_));
-                crc = checksumCalculator((uint8_t*)(&(dap_config_st.payLoadHeader_)), sizeof(dap_config_st.payLoadHeader_) + sizeof(dap_config_st.payLoadPedalConfig_));
-                dap_config_st_local_ptr->payloadFooter_.checkSum = crc;
-                Serial.write((char*)dap_config_st_local_ptr, sizeof(DAP_config_st));
-                Serial.print("\r\n");
-              }
-        
-              
-             
-
-
-            }
-
-            break;
-
-          default:
-
-            // flush the input buffer
-            while (Serial.available()) Serial.read();
-            //Serial.flush();
-
-            Serial.println("\nIn byte size: ");
-            Serial.println(n);
-            Serial.println("    Exp config size: ");
-            Serial.println(sizeof(DAP_config_st) );
-            Serial.println("    Exp action size: ");
-            Serial.println(sizeof(DAP_actions_st) );
-
-            break;  
-
-
-            
-
-        }
-      }
-
-
-      // send pedal state structs
-      // update pedal states
-      printCycleCounter++;
-      DAP_state_basic_st dap_state_basic_st_lcl;
-      DAP_state_extended_st dap_state_extended_st_lcl;
-
-      if(semaphore_updatePedalStates!=NULL)
-      {
-        
-        if(xSemaphoreTake(semaphore_updatePedalStates, (TickType_t)1)==pdTRUE) 
-        {
-        
-          // UPDATE basic pedal state struct
-          dap_state_basic_st_lcl = dap_state_basic_st;
-
-          // UPDATE extended pedal state struct
-          dap_state_extended_st_lcl = dap_state_extended_st;
-            
-          // release semaphore
-          xSemaphoreGive(semaphore_updatePedalStates);
-
-        }
-      }
-      else
-      {
-        semaphore_updatePedalStates = xSemaphoreCreateMutex();
-      }
-
-
-
-      // send the pedal state structs
-      // send basic pedal state struct
-      /*
-      if ( !(dap_config_st.payLoadPedalConfig_.debug_flags_0 & DEBUG_INFO_0_STATE_BASIC_INFO_STRUCT) )
-      {
-        if (printCycleCounter >= 2)
-        {
-          printCycleCounter = 0;
-          Serial.write((char*)&dap_state_basic_st_lcl, sizeof(DAP_state_basic_st));
-          Serial.print("\r\n");
-        }
-      }
-
-      if ( (dap_config_st.payLoadPedalConfig_.debug_flags_0 & DEBUG_INFO_0_STATE_EXTENDED_INFO_STRUCT) )
-      {
-        Serial.write((char*)&dap_state_extended_st_lcl, sizeof(DAP_state_extended_st));
-        Serial.print("\r\n");
-      }
-      */
-
-
-      // wait until transmission is finished
-      // flush argument = true, do not clear Rx buffer
-      //Serial.flush();
-      //Serial.flush(true);
-
-    }
-
-    // transmit controller output
-    //Serial.print("Joy 1");
-    delay( SERIAL_COOMUNICATION_TASK_DELAY_IN_MS );
-          //Serial.print(" 2");
-    /*
-    if(semaphore_updateJoystick!=NULL)
-    {
-      if(xSemaphoreTake(semaphore_updateJoystick, (TickType_t)1)==pdTRUE)
-      {
-         //Serial.print(" 3");
-        joystickNormalizedToInt32_local = joystickNormalizedToInt32;
-        xSemaphoreGive(semaphore_updateJoystick);
-      }
-    }
-    */
-    /*
-    if (IsControllerReady()) 
-    {
-
-      //Serial.print(" 4");
-      //Serial.print("\r\n");
-      if(dap_calculationVariables_st.Rudder_status==false)
-      {
-        //general output
-        SetControllerOutputValue(joystickNormalizedToInt32_local);
-      }
-    
-      
-    }
-    */
-
-  /*#ifdef SERIAL_TIMEOUT
-    delay(10);
-  #endif
-*/
-
-  }
-}
-
-
-#ifdef ESPNOW_Enable
-int ESPNOW_count=0;
-int error_count=0;
-int print_count=0;
-int ESPNow_no_device_count=0;
-uint8_t error_out;
-void ESPNOW_SyncTask( void * pvParameters )
-{
-  for(;;)
-  {    
-      delay(1);
-  }
-}
-#endif
 
 
 

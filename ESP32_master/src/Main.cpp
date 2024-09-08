@@ -280,13 +280,15 @@ unsigned long joystick_last_update_time = millis();
 bool Joystick_debug_report_b = false;
 void loop() {
 	delay(2);
-	cycleCntr_u64++;
+	//cycleCntr_u64++;
 	//Serial.println(cycleCntr_u64);
+	#ifdef JOYSTICK_DEBUG_OUT
 	unsigned long joystick_now = millis();
 	if(joystick_now-joystick_last_update_time>2000)
 	{
 		Joystick_debug_report_b= true;
 	}
+	#endif
 #ifdef USB_JOYSTICK
 	if(IsControllerReady())
 	{
