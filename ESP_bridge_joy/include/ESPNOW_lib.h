@@ -168,15 +168,15 @@ void ESPNow_initialize()
 {
 
     WiFi.mode(WIFI_MODE_STA);
-    Serial0.println("Initializing ESPNow, please wait"); 
-    Serial0.print("Current MAC Address:  ");  
-    Serial0.println(WiFi.macAddress());
+    Serial.println("Initializing ESPNow, please wait"); 
+    Serial.print("Current MAC Address:  ");  
+    Serial.println(WiFi.macAddress());
     esp_wifi_set_mac(WIFI_IF_STA, &esp_Host[0]);
     delay(300);
-    Serial0.print("Modified MAC Address:  ");  
-    Serial0.println(WiFi.macAddress());
+    Serial.print("Modified MAC Address:  ");  
+    Serial.println(WiFi.macAddress());
     ESPNow.init();
-    Serial0.println("wait  for ESPNOW initialized");
+    Serial.println("wait  for ESPNOW initialized");
     delay(3000);
     #ifdef Using_Board_ESP32
     esp_wifi_config_espnow_rate(WIFI_IF_STA, WIFI_PHY_RATE_MCS0_LGI);
@@ -192,45 +192,45 @@ void ESPNow_initialize()
     if(ESPNow.add_peer(Brk_mac)== ESP_OK)
     {
       ESPNOW_status=true;
-      Serial0.println("Sucess to add peer");
+      Serial.println("Sucess to add peer");
     }
     else
     {
       ESPNOW_status=false;
-      Serial0.println("Fail to add peer");
+      Serial.println("Fail to add peer");
     }
 
     if(ESPNow.add_peer(Gas_mac)== ESP_OK)
     {
       ESPNOW_status=true;
-      Serial0.println("Sucess to add peer");
+      Serial.println("Sucess to add peer");
     }
     else
     {
       ESPNOW_status=false;
-      Serial0.println("Fail to add peer");
+      Serial.println("Fail to add peer");
     }
 
     if(ESPNow.add_peer(Clu_mac)== ESP_OK)
     {
       ESPNOW_status=true;
-      Serial0.println("Sucess to add peer");
+      Serial.println("Sucess to add peer");
     }
     else
     {
       ESPNOW_status=false;
-      Serial0.println("Fail to add peer");
+      Serial.println("Fail to add peer");
     }
     
     if(ESPNow.add_peer(esp_master)== ESP_OK)
     {
       ESPNOW_status=true;
-      Serial0.println("Sucess to add host peer");
+      Serial.println("Sucess to add host peer");
     }
     if(ESPNow.add_peer(broadcast_mac)== ESP_OK)
     {
       ESPNOW_status=true;
-      Serial0.println("Sucess to add broadcast peer");
+      Serial.println("Sucess to add broadcast peer");
     }
     ESPNow.reg_recv_cb(onRecv);
     ESPNow.reg_send_cb(OnSent);
@@ -238,6 +238,6 @@ void ESPNow_initialize()
     esp_wifi_set_promiscuous(true);
     esp_wifi_set_promiscuous_rx_cb(&promiscuous_rx_cb);
     ESPNow_initial_status=true;
-    Serial0.println("ESPNow Initialized");
+    Serial.println("ESPNow Initialized");
   
 }
