@@ -100,7 +100,7 @@ DAP_bridge_state_st dap_bridge_state_st;
 /*                                                                                            */
 /**********************************************************************************************/
 #ifndef CONFIG_IDF_TARGET_ESP32S3
-  #include "soc/rtc_wdt.h"
+  //#include "soc/rtc_wdt.h"
 #endif
 
 //#define PRINT_USED_STACK_SIZE
@@ -236,6 +236,7 @@ void setup()
     //Serial.setTxTimeoutMs(0);
     Serial.setTimeout(5);
     Serial.begin(921600);
+    Serial0.begin(921600);
   #else
     Serial.begin(921600);
     Serial.setTimeout(5);
@@ -243,12 +244,12 @@ void setup()
   #ifdef USB_JOYSTICK
 	SetupController();
   #endif
-  Serial.println(" ");
-  Serial.println(" ");
-  Serial.println(" ");
+  Serial0.println(" ");
+  Serial0.println(" ");
+  Serial0.println(" ");
   
-  Serial.println("This work is licensed under a Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.");
-  Serial.println("Please check github repo for more detail: https://github.com/ChrGri/DIY-Sim-Racing-FFB-Pedal");
+  Serial0.println("This work is licensed under a Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.");
+  Serial0.println("Please check github repo for more detail: https://github.com/ChrGri/DIY-Sim-Racing-FFB-Pedal");
   //printout the github releasing version
 
 
@@ -374,7 +375,7 @@ void setup()
     pedal_last_update[pedalIDX]=millis();
   }
 
-  Serial.println("Setup end");
+  Serial0.println("Setup end");
   
 }
 
@@ -398,7 +399,16 @@ void loop() {
 
 
   uint16_t crc;
-  uint8_t n = Serial.available();
+  uint8_t n;
+  //uint8_t n = Serial.available();
+  if(PCB_VERSION==6)
+  {
+    n = Serial0.available();
+  }
+  else
+  {
+    n = Serial.available();
+  }
   unsigned long current_time=millis();
   if(current_time-bridge_state_last_update>200)
   {
@@ -418,27 +428,27 @@ void loop() {
         if ( dap_actions_st.payLoadHeader_.payloadType != DAP_PAYLOAD_TYPE_ACTION )
         { 
           structChecker = false;
-          Serial.print("Payload type expected: ");
-          Serial.print(DAP_PAYLOAD_TYPE_ACTION);
-          Serial.print(",   Payload type received: ");
-          Serial.println(dap_config_st_local.payLoadHeader_.payloadType);
+          Serial0.print("Payload type expected: ");
+          Serial0.print(DAP_PAYLOAD_TYPE_ACTION);
+          Serial0.print(",   Payload type received: ");
+          Serial0.println(dap_config_st_local.payLoadHeader_.payloadType);
         }
         if ( dap_actions_st.payLoadHeader_.version != DAP_VERSION_CONFIG )
         { 
           structChecker = false;
-          Serial.print("Config version expected: ");
-          Serial.print(DAP_VERSION_CONFIG);
-          Serial.print(",   Config version received: ");
-          Serial.println(dap_config_st_local.payLoadHeader_.version);
+          Serial0.print("Config version expected: ");
+          Serial0.print(DAP_VERSION_CONFIG);
+          Serial0.print(",   Config version received: ");
+          Serial0.println(dap_config_st_local.payLoadHeader_.version);
         }
         crc = checksumCalculator((uint8_t*)(&(dap_actions_st.payLoadHeader_)), sizeof(dap_actions_st.payLoadHeader_) + sizeof(dap_actions_st.payloadPedalAction_));
         if (crc != dap_actions_st.payloadFooter_.checkSum)
         { 
           structChecker = false;
-          Serial.print("CRC expected: ");
-          Serial.print(crc);
-          Serial.print(",   CRC received: ");
-          Serial.println(dap_actions_st.payloadFooter_.checkSum);
+          Serial0.print("CRC expected: ");
+          Serial0.print(crc);
+          Serial0.print(",   CRC received: ");
+          Serial0.println(dap_actions_st.payloadFooter_.checkSum);
         }
         if (structChecker == true)
         {
@@ -455,28 +465,28 @@ void loop() {
         if ( dap_config_st.payLoadHeader_.payloadType != DAP_PAYLOAD_TYPE_CONFIG )
         { 
           structChecker = false;
-          Serial.print("Payload type expected: ");
-          Serial.print(DAP_PAYLOAD_TYPE_CONFIG);
-          Serial.print(",   Payload type received: ");
-          Serial.println(dap_config_st_local.payLoadHeader_.payloadType);
+          Serial0.print("Payload type expected: ");
+          Serial0.print(DAP_PAYLOAD_TYPE_CONFIG);
+          Serial0.print(",   Payload type received: ");
+          Serial0.println(dap_config_st_local.payLoadHeader_.payloadType);
         }
         if ( dap_config_st.payLoadHeader_.version != DAP_VERSION_CONFIG )
         { 
           structChecker = false;
-          Serial.print("Config version expected: ");
-          Serial.print(DAP_VERSION_CONFIG);
-          Serial.print(",   Config version received: ");
-          Serial.println(dap_config_st_local.payLoadHeader_.version);
+          Serial0.print("Config version expected: ");
+          Serial0.print(DAP_VERSION_CONFIG);
+          Serial0.print(",   Config version received: ");
+          Serial0.println(dap_config_st_local.payLoadHeader_.version);
         }
             // checksum validation
         crc = checksumCalculator((uint8_t*)(&(dap_config_st.payLoadHeader_)), sizeof(dap_config_st.payLoadHeader_) + sizeof(dap_config_st.payLoadPedalConfig_));
         if (crc != dap_config_st.payloadFooter_.checkSum)
         { 
           structChecker = false;
-          Serial.print("CRC expected: ");
-          Serial.print(crc);
-          Serial.print(",   CRC received: ");
-          Serial.println(dap_config_st.payloadFooter_.checkSum);
+          Serial0.print("CRC expected: ");
+          Serial0.print(crc);
+          Serial0.print(",   CRC received: ");
+          Serial0.println(dap_config_st.payloadFooter_.checkSum);
         }
 
 
@@ -495,12 +505,12 @@ void loop() {
       // flush the input buffer
         while (Serial.available()) Serial.read();
           //Serial.flush();
-          Serial.println("\nIn byte size: ");
-          Serial.println(n);
-          Serial.println("    Exp config size: ");
-          Serial.println(sizeof(DAP_config_st) );
-          Serial.println("    Exp action size: ");
-          Serial.println(sizeof(DAP_actions_st) );
+          Serial0.println("\nIn byte size: ");
+          Serial0.println(n);
+          Serial0.println("    Exp config size: ");
+          Serial0.println(sizeof(DAP_config_st) );
+          Serial0.println("    Exp action size: ");
+          Serial0.println(sizeof(DAP_actions_st) );
 
         break;          
     }
@@ -514,7 +524,7 @@ void loop() {
       if(dap_bridge_state_st.payloadBridgeState_.Pedal_availability[0]==1)
       {
         ESPNow.send_message(Clu_mac,(uint8_t *) &dap_config_st,sizeof(dap_config_st));
-        Serial.println("Clutch config sent");
+        Serial0.println("Clutch config sent");
         configUpdateAvailable=false;
       }
     }
@@ -523,7 +533,7 @@ void loop() {
       if(dap_bridge_state_st.payloadBridgeState_.Pedal_availability[1]==1)
       {
         ESPNow.send_message(Brk_mac,(uint8_t *) &dap_config_st,sizeof(dap_config_st));
-        Serial.println("BRK config sent");
+        Serial0.println("BRK config sent");
         configUpdateAvailable=false;
       }
 
@@ -533,7 +543,7 @@ void loop() {
       if(dap_bridge_state_st.payloadBridgeState_.Pedal_availability[2]==1)
       {
         ESPNow.send_message(Gas_mac,(uint8_t *) &dap_config_st,sizeof(dap_config_st));
-        Serial.println("Throttle config sent");
+        Serial0.println("Throttle config sent");
         configUpdateAvailable=false;
       }
 
@@ -569,12 +579,12 @@ void loop() {
   if(update_basic_state)
   {
     update_basic_state=false;
-    Serial.write((char*)&dap_state_basic_st, sizeof(DAP_state_basic_st));
-    Serial.print("\r\n");
+    Serial0.write((char*)&dap_state_basic_st, sizeof(DAP_state_basic_st));
+    Serial0.print("\r\n");
     if(dap_bridge_state_st.payloadBridgeState_.Pedal_availability[dap_state_basic_st.payLoadHeader_.PedalTag]==0)
     {
-      Serial.print("Found Pedal:");
-      Serial.println(dap_state_basic_st.payLoadHeader_.PedalTag);
+      Serial0.print("Found Pedal:");
+      Serial0.println(dap_state_basic_st.payLoadHeader_.PedalTag);
     }
     dap_bridge_state_st.payloadBridgeState_.Pedal_availability[dap_state_basic_st.payLoadHeader_.PedalTag]=1;
     pedal_last_update[dap_state_basic_st.payLoadHeader_.PedalTag]=millis();
@@ -583,8 +593,8 @@ void loop() {
   if(update_extend_state)
   {
     update_extend_state=false;
-    Serial.write((char*)&dap_state_extended_st, sizeof(dap_state_extended_st));
-    Serial.print("\r\n");
+    Serial0.write((char*)&dap_state_extended_st, sizeof(dap_state_extended_st));
+    Serial0.print("\r\n");
 
   }
   if(ESPNow_request_config_b)
@@ -595,19 +605,19 @@ void loop() {
     crc = checksumCalculator((uint8_t*)(&(dap_config_st.payLoadHeader_)), sizeof(dap_config_st.payLoadHeader_) + sizeof(dap_config_st.payLoadPedalConfig_));
     dap_config_st_local_ptr->payloadFooter_.checkSum = crc;
     dap_config_st_local_ptr->payLoadHeader_.PedalTag=dap_config_st_local_ptr->payLoadPedalConfig_.pedal_type;
-    Serial.write((char*)dap_config_st_local_ptr, sizeof(DAP_config_st));
-    Serial.print("\r\n");
+    Serial0.write((char*)dap_config_st_local_ptr, sizeof(DAP_config_st));
+    Serial0.print("\r\n");
     ESPNow_request_config_b=false;
-    Serial.print("Pedal:");
-    Serial.print(dap_config_st.payLoadHeader_.PedalTag);
-    Serial.println("config returned");
+    Serial0.print("Pedal:");
+    Serial0.print(dap_config_st.payLoadHeader_.PedalTag);
+    Serial0.println("config returned");
   }
   if(ESPNow_error_b)
   {
-    Serial.print("Pedal:");
-    Serial.print(dap_state_basic_st.payLoadHeader_.PedalTag);
-    Serial.print(" E:");
-    Serial.println(dap_state_basic_st.payloadPedalState_Basic_.error_code_u8);
+    Serial0.print("Pedal:");
+    Serial0.print(dap_state_basic_st.payLoadHeader_.PedalTag);
+    Serial0.print(" E:");
+    Serial0.println(dap_state_basic_st.payloadPedalState_Basic_.error_code_u8);
     ESPNow_error_b=false;    
   }
   if(basic_rssi_update)
@@ -621,8 +631,8 @@ void loop() {
     dap_bridge_state_st.payloadFooter_.checkSum=crc;
     DAP_bridge_state_st * dap_bridge_st_local_ptr;
     dap_bridge_st_local_ptr = &dap_bridge_state_st;
-    Serial.write((char*)dap_bridge_st_local_ptr, sizeof(DAP_bridge_state_st));
-    Serial.print("\r\n");
+    Serial0.write((char*)dap_bridge_st_local_ptr, sizeof(DAP_bridge_state_st));
+    Serial0.print("\r\n");
     basic_rssi_update=false;
     /*
     if(rssi_filter_value<-88)
@@ -669,9 +679,9 @@ void loop() {
     {
       if(current_time-pedal_last_update[pedalIDX]>3000)
       {
-        Serial.print("Pedal:");
-        Serial.print(pedalIDX);
-        Serial.println(" Disconnected");
+        Serial0.print("Pedal:");
+        Serial0.print(pedalIDX);
+        Serial0.println(" Disconnected");
         dap_bridge_state_st.payloadBridgeState_.Pedal_availability[pedalIDX]=0;
       }
     }
