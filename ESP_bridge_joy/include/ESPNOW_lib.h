@@ -79,8 +79,8 @@ bool sendMessageToMaster(int32_t controllerValue)
   return true;
   
 }
-//void onRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len) 
-void onRecv(const esp_now_recv_info_t *esp_now_info, const uint8_t *data, int data_len)
+void onRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len) 
+//void onRecv(const esp_now_recv_info_t *esp_now_info, const uint8_t *data, int data_len)
 {
   
   if(data_len==sizeof(myData))
@@ -90,19 +90,20 @@ void onRecv(const esp_now_recv_info_t *esp_now_info, const uint8_t *data, int da
 		//#ifdef ACTIVATE_JOYSTICK_OUTPUT
 		// normalize controller output
 		int32_t joystickNormalizedToInt32 = NormalizeControllerOutputValue(myData.controllerValue_i32, 0, 10000, 100); 
-		if(esp_now_info->src_addr[5]==Clu_mac[5])
+		//if(esp_now_info->src_addr[5]==Clu_mac[5])
+    if(mac_addr[5]==Clu_mac[5])
 		{
 			pedal_cluth_value=joystickNormalizedToInt32;
 			Joystick_value[0]=myData.controllerValue_i32;
 			//joystick_update=true;
 		}
-		if(esp_now_info->src_addr[5]==Brk_mac[5])
+		if(mac_addr[5]==Brk_mac[5])
 		{
 			pedal_brake_value=joystickNormalizedToInt32;
 			Joystick_value[1]=myData.controllerValue_i32;
 			//joystick_update=true;
 		}
-		if(esp_now_info->src_addr[5]==Gas_mac[5])
+		if(mac_addr[5]==Gas_mac[5])
 		{
 			pedal_throttle_value=joystickNormalizedToInt32;
 			Joystick_value[2]=myData.controllerValue_i32;
@@ -184,7 +185,7 @@ void ESPNow_initialize()
     
     #ifdef Using_Board_ESP32S3
     //esp_wifi_config_espnow_rate(WIFI_IF_STA, WIFI_PHY_RATE_54M);
-    //esp_wifi_config_espnow_rate(WIFI_IF_STA, 	WIFI_PHY_RATE_11M_L);
+    esp_wifi_config_espnow_rate(WIFI_IF_STA, 	WIFI_PHY_RATE_11M_L);
     	
     #endif
 
