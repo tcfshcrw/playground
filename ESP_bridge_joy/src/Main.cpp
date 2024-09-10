@@ -102,6 +102,23 @@ DAP_bridge_state_st dap_bridge_state_st;
 #ifndef CONFIG_IDF_TARGET_ESP32S3
   #include "soc/rtc_wdt.h"
 #endif
+#ifdef LED_ENABLE
+  #include <LiteLED.h>
+  #define LED_TYPE LED_STRIP_WS2812
+  #define LED_TYPE_IS_RGBW 0
+  #define LED_GPIO 48
+  #define LED_BRIGHT 50
+  static const crgb_t L_RED = 0xff0000;
+  static const crgb_t L_GREEN = 0x00ff00;
+  static const crgb_t L_BLUE = 0x0000ff;
+  static const crgb_t L_WHITE = 0xe0e0e0;
+  static const crgb_t L_YELLOW = 0xffde21;
+  static const crgb_t L_ORANGE = 0xffa500;
+  static const crgb_t L_CYAN = 0x00ffff;
+  static const crgb_t L_PURPLE = 0x800080;
+  LiteLED myLED( LED_TYPE, LED_TYPE_IS_RGBW );
+
+#endif
 
 //#define PRINT_USED_STACK_SIZE
 // https://stackoverflow.com/questions/55998078/freertos-task-priority-and-stack-size
@@ -352,6 +369,11 @@ void setup()
   {
     pedal_last_update[pedalIDX]=millis();
   }
+  #ifdef LED_ENABLE
+    myLED.begin( LED_GPIO, 1 );         // initialze the myLED object. Here we have 1 LED attached to the LED_GPIO pin
+    myLED.brightness( LED_BRIGHT );     // set the LED photon intensity level
+    myLED.setPixel( 0, L_WHITE, 1 );    // set the LED colour and show it
+  #endif
 
   Serial.println("Setup end");
   
@@ -372,35 +394,10 @@ void setup()
 uint32_t loop_count=0;
 bool basic_rssi_update=false;
 unsigned long bridge_state_last_update=millis();
-void loop() {
+void loop() 
+{
   taskYIELD();
-
-
-
-
-
-
-  // set joysitck value
-  #ifdef Using_analog_output
-
-    dacWrite(Analog_brk,(uint16_t)((float)((Joystick_value[1])/(float)(JOYSTICK_RANGE))*255));
-    dacWrite(Analog_gas,(uint16_t)((float)((Joystick_value[2])/(float)(JOYSTICK_RANGE))*255));
-  #endif
-  //set MCP4728 analog value
-  #ifdef Using_MCP4728
-    if(MCP_status)
-    {
-      mcp.setChannelValue(MCP4728_CHANNEL_A, (uint16_t)((float)Joystick_value[0]/(float)JOYSTICK_RANGE*4096));
-      mcp.setChannelValue(MCP4728_CHANNEL_B, (uint16_t)((float)Joystick_value[1]/(float)JOYSTICK_RANGE*4096));
-      mcp.setChannelValue(MCP4728_CHANNEL_C, (uint16_t)((float)Joystick_value[2]/(float)JOYSTICK_RANGE*4096));
-    }
-
-  #endif
-
-
-  
-  //delay(2);
-  
+  //delay(2); 
 }
 
 void ESPNOW_SyncTask( void * pvParameters )
@@ -668,6 +665,40 @@ void ESPNOW_SyncTask( void * pvParameters )
       }
 
     }
+    //show led status
+    #ifdef LED_ENABLE
+      uint8_t led_status=dap_bridge_state_st.payloadBridgeState_.Pedal_availability[0]+dap_bridge_state_st.payloadBridgeState_.Pedal_availability[1]*2+dap_bridge_state_st.payloadBridgeState_.Pedal_availability[2]*4;
+      switch (led_status)
+      {
+        case 0:
+          /* code */
+          break;
+        case 1:
+          myLED.setPixel( 0, L_RED, 1 );
+          break;
+        case 2:
+          myLED.setPixel( 0, L_ORANGE, 1 );
+          break;
+        case 3:
+          myLED.setPixel( 0, L_CYAN, 1 );
+          break; 
+        case 4:
+          myLED.setPixel( 0, L_YELLOW, 1 );
+          break;
+        case 5:
+          myLED.setPixel( 0, L_BLUE, 1 );
+          break;      
+        case 6:
+          myLED.setPixel( 0, L_GREEN, 1 );
+          break;  
+        case 7:
+          myLED.setPixel( 0, L_PURPLE, 1 );
+          break;                                         
+        default:
+          break;
+      }
+    #endif
+
     delay(2);
   }
 }
@@ -720,6 +751,22 @@ void Joystick_Task( void * pvParameters )
 
       joystickSendState();
     }
+    #endif
+    // set analog value
+    #ifdef Using_analog_output
+
+      dacWrite(Analog_brk,(uint16_t)((float)((Joystick_value[1])/(float)(JOYSTICK_RANGE))*255));
+      dacWrite(Analog_gas,(uint16_t)((float)((Joystick_value[2])/(float)(JOYSTICK_RANGE))*255));
+    #endif
+    //set MCP4728 analog value
+    #ifdef Using_MCP4728
+      if(MCP_status)
+      {
+        mcp.setChannelValue(MCP4728_CHANNEL_A, (uint16_t)((float)Joystick_value[0]/(float)JOYSTICK_RANGE*4096));
+        mcp.setChannelValue(MCP4728_CHANNEL_B, (uint16_t)((float)Joystick_value[1]/(float)JOYSTICK_RANGE*4096));
+        mcp.setChannelValue(MCP4728_CHANNEL_C, (uint16_t)((float)Joystick_value[2]/(float)JOYSTICK_RANGE*4096));
+      }
+
     #endif
       delay(2);
   }

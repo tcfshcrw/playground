@@ -96,9 +96,9 @@
   #define Using_analog_output
   //#define Using_I2C_Sync
   #define ESPNOW_Enable
-  //#define Using_MCP4728
+  #define Using_MCP4728
   #define Using_Board_ESP32
-  #define BLUETOOTH_GAMEPAD
+  //#define BLUETOOTH_GAMEPAD
   //#define USB_JOYSTICK
   #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 1
 #endif
@@ -145,7 +145,7 @@
 
   //#define BLUETOOTH_GAMEPAD
   #define USB_JOYSTICK
-
+  #define LED_ENABLE
   #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 5
 #endif
 
