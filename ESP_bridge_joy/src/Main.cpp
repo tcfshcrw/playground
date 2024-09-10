@@ -107,7 +107,7 @@ DAP_bridge_state_st dap_bridge_state_st;
   #define LED_TYPE LED_STRIP_WS2812
   #define LED_TYPE_IS_RGBW 0
   #define LED_GPIO 48
-  #define LED_BRIGHT 50
+  #define LED_BRIGHT 10
   static const crgb_t L_RED = 0xff0000;
   static const crgb_t L_GREEN = 0x00ff00;
   static const crgb_t L_BLUE = 0x0000ff;
