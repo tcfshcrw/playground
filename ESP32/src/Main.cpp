@@ -963,12 +963,12 @@ void pedalUpdateTask( void * pvParameters )
     // select control loop algo
     if (dap_config_st.payLoadPedalConfig_.control_strategy_b <= 1)
     {
-      Position_Next = MoveByPidStrategy(filteredReading, stepperPosFraction, stepper, &forceCurve, &dap_calculationVariables_st, &dap_config_st, effect_force, changeVelocity);
+      Position_Next = MoveByPidStrategy(filteredReading, stepperPosFraction, stepper, &forceCurve, &dap_calculationVariables_st, &dap_config_st, 0/*effect_force*/, changeVelocity);
     }
        
     if (dap_config_st.payLoadPedalConfig_.control_strategy_b == 2) 
     {
-      Position_Next = MoveByForceTargetingStrategy(filteredReading, stepper, &forceCurve, &dap_calculationVariables_st, &dap_config_st, effect_force, changeVelocity, d_phi_d_x, d_x_hor_d_phi);
+      Position_Next = MoveByForceTargetingStrategy(filteredReading, stepper, &forceCurve, &dap_calculationVariables_st, &dap_config_st, 0/*effect_force*/, changeVelocity, d_phi_d_x, d_x_hor_d_phi);
     }
 
 
@@ -995,8 +995,10 @@ void pedalUpdateTask( void * pvParameters )
     
   
     //Adding effects
+    int32_t Position_effect= effect_force/dap_calculationVariables_st.Force_Range*dap_calculationVariables_st.stepperPosRange;
     Position_Next +=_RPMOscillation.RPM_position_offset;
     Position_Next += absPosOffset;
+    Position_Next += Position_effect;
     Position_Next = (int32_t)constrain(Position_Next, dap_calculationVariables_st.stepperPosMinEndstop, dap_calculationVariables_st.stepperPosMaxEndstop);
     
     //bitepoint trigger
