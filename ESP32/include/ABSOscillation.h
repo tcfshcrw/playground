@@ -68,6 +68,7 @@ public:
           if (calcVars_st->absFrequency > 0)
           {
             absForceOffset_local = absAmp_fl32 * fmod(absTimeSeconds, 1.0 / (float)calcVars_st->absFrequency) * (float)calcVars_st->absFrequency;
+            absForceOffset_local -= absAmp_fl32 * 0.5f; // make it symmetrical around 0
           }
           break;
         default:

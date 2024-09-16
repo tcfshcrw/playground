@@ -52,7 +52,7 @@ void isv57communication::sendTunedServoParameters() {
   retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+2, 0); // deactivate auto gain
   retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+3, 10); // machine stiffness
   retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+4, 80); // ratio of inertia
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+8, 1600); // microsteps
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+8, STEPS_PER_MOTOR_REVOLUTION); // microsteps
   retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+9, 1); // 1st numerator 
   retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+10, 1); // & denominator
   retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+13, 500); // 1st torque limit

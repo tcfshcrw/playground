@@ -699,7 +699,7 @@ void ESPNOW_SyncTask( void * pvParameters )
       }
     #endif
 
-    delay(2);
+    delay(5);
   }
 }
 

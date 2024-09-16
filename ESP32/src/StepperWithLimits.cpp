@@ -8,7 +8,7 @@
 #define MIN_POS_MAX_ENDSTOP STEPS_PER_MOTOR_REVOLUTION * 3 // servo has to drive minimum N steps before it allows the detection of the max endstop
 
 static const uint8_t LIMIT_TRIGGER_VALUE = LOW;                                   // does endstop trigger high or low
-static const int32_t ENDSTOP_MOVEMENT = STEPS_PER_MOTOR_REVOLUTION / 100;         // how much to move between trigger checks
+static const int32_t ENDSTOP_MOVEMENT = (float)STEPS_PER_MOTOR_REVOLUTION / 100.0f;         // how much to move between trigger checks
 static const int32_t ENDSTOP_MOVEMENT_SENSORLESS = ENDSTOP_MOVEMENT * 5;
 
 
@@ -98,7 +98,7 @@ void StepperWithLimits::findMinMaxSensorless(isv57communication * isv57, DAP_con
   // calculate max steps for endstop limit
   float spindlePitch = max( dap_config_st.payLoadPedalConfig_.spindlePitch_mmPerRev_u8, (uint8_t)1 );
   float maxRevToReachEndPos = (float)dap_config_st.payLoadPedalConfig_.lengthPedal_travel / spindlePitch;
-  float maxStepsToReachEndPos = maxRevToReachEndPos * STEPS_PER_MOTOR_REVOLUTION;
+  float maxStepsToReachEndPos = maxRevToReachEndPos * (float)STEPS_PER_MOTOR_REVOLUTION;
 
   Serial.print("Max travel steps: ");
   Serial.println(maxStepsToReachEndPos);

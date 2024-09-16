@@ -254,7 +254,7 @@ int32_t MoveByForceTargetingStrategy(float loadCellReadingKg, StepperWithLimits*
     // how many mm movement to order if 1kg of error force is detected
     // this can be tuned for responsiveness vs oscillation
     float mm_per_motor_rev = config_st->payLoadPedalConfig_.spindlePitch_mmPerRev_u8;//TRAVEL_PER_ROTATION_IN_MM;
-    float steps_per_motor_rev = STEPS_PER_MOTOR_REVOLUTION;
+    float steps_per_motor_rev = (float)STEPS_PER_MOTOR_REVOLUTION;
 
     // foot spring stiffness
     float d_f_d_phi = -config_st->payLoadPedalConfig_.MPC_0th_order_gain;

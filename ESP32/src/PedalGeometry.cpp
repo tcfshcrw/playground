@@ -23,7 +23,7 @@ static const float KF_MODEL_NOISE_FORCE_ACCELERATION = ( 10000000000. );
 float sledPositionInMM(StepperWithLimits* stepper, DAP_config_st& config_st) {
   float currentPos = stepper->getCurrentPositionFromMin();
   //return (currentPos / STEPS_PER_MOTOR_REVOLUTION) * TRAVEL_PER_ROTATION_IN_MM;
-  return (currentPos / STEPS_PER_MOTOR_REVOLUTION) * config_st.payLoadPedalConfig_.spindlePitch_mmPerRev_u8;
+  return (currentPos / (float)STEPS_PER_MOTOR_REVOLUTION) * config_st.payLoadPedalConfig_.spindlePitch_mmPerRev_u8;
   
 }
 

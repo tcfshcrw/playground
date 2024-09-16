@@ -996,9 +996,9 @@ void pedalUpdateTask( void * pvParameters )
   
     //Adding effects
     int32_t Position_effect= effect_force/dap_calculationVariables_st.Force_Range*dap_calculationVariables_st.stepperPosRange;
-    Position_Next +=_RPMOscillation.RPM_position_offset;
-    Position_Next += absPosOffset;
-    Position_Next += Position_effect;
+    Position_Next -=_RPMOscillation.RPM_position_offset;
+    Position_Next -= absPosOffset;
+    Position_Next -= Position_effect;
     Position_Next = (int32_t)constrain(Position_Next, dap_calculationVariables_st.stepperPosMinEndstop, dap_calculationVariables_st.stepperPosMaxEndstop);
     
     //bitepoint trigger

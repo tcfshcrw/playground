@@ -1,11 +1,13 @@
 #include <FastAccelStepper.h>
 #include "isv57communication.h"
 #include "DiyActivePedal_types.h"
+#include "Main.h"
 
 // these are physical properties of the stepper
 static const uint32_t MAXIMUM_STEPPER_RPM = 4000;     
-static const uint32_t STEPS_PER_MOTOR_REVOLUTION = 1600;
-static const uint32_t MAXIMUM_STEPPER_SPEED = (MAXIMUM_STEPPER_RPM * STEPS_PER_MOTOR_REVOLUTION) / 60;   // steps/s
+static const uint32_t SECONDS_PER_MINUTE = 60;
+//static const uint32_t MAXIMUM_STEPPER_SPEED = (  (float)MAXIMUM_STEPPER_RPM * (float)STEPS_PER_MOTOR_REVOLUTION) / (float)SECONDS_PER_MINUTE;   // steps/s
+static const uint32_t MAXIMUM_STEPPER_SPEED = 200000;//  max steps per second, see https://github.com/gin66/FastAccelStepper
 static const int32_t MAXIMUM_STEPPER_ACCELERATION = 1e10;                                                 // steps/s²
 
 
