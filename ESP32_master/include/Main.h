@@ -146,6 +146,7 @@
   //#define BLUETOOTH_GAMEPAD
   #define USB_JOYSTICK
   #define LED_ENABLE
+  #define LED_GPIO 48
   #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 5
 #endif
 

@@ -106,7 +106,6 @@ DAP_bridge_state_st dap_bridge_state_st;
   #include <LiteLED.h>
   #define LED_TYPE LED_STRIP_WS2812
   #define LED_TYPE_IS_RGBW 0
-  #define LED_GPIO 48
   #define LED_BRIGHT 10
   static const crgb_t L_RED = 0xff0000;
   static const crgb_t L_GREEN = 0x00ff00;
@@ -144,16 +143,6 @@ bool resetPedalPosition = false;
 
 //static SemaphoreHandle_t semaphore_updatePedalStates=NULL;
 
-
-/**********************************************************************************************/
-/*                                                                                            */
-/*                         target-specific  definitions                                       */
-/*                                                                                            */
-/**********************************************************************************************/
-
-
-
-
 /**********************************************************************************************/
 /*                                                                                            */
 /*                         controller  definitions                                            */
@@ -171,39 +160,6 @@ bool resetPedalPosition = false;
 
 #include "PedalGeometry.h"
 
-
-/**********************************************************************************************/
-/*                                                                                            */
-/*                         Kalman filter definitions                                          */
-/*                                                                                            */
-/**********************************************************************************************/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/**********************************************************************************************/
-/*                                                                                            */
-/*                         stepper motor definitions                                          */
-/*                                                                                            */
-/**********************************************************************************************/
-
-
-//StepperWithLimits* stepper = NULL;
-//static const int32_t MIN_STEPS = 5;
-
-
-
-//bool moveSlowlyToPosition_b = false;
 /**********************************************************************************************/
 /*                                                                                            */
 /*                         OTA                                                                */
@@ -504,7 +460,8 @@ void ESPNOW_SyncTask( void * pvParameters )
 
         default:
         // flush the input buffer
-          while (Serial.available()) Serial.read();
+          while (Serial.available()) 
+            Serial.read();
             //Serial.flush();
             Serial.println("\nIn byte size: ");
             Serial.println(n);
