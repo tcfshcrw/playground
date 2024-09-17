@@ -106,7 +106,7 @@ DAP_bridge_state_st dap_bridge_state_st;
   #include <LiteLED.h>
   #define LED_TYPE LED_STRIP_WS2812
   #define LED_TYPE_IS_RGBW 0
-  #define LED_BRIGHT 10
+  #define LED_BRIGHT 30
   static const crgb_t L_RED = 0xff0000;
   static const crgb_t L_GREEN = 0x00ff00;
   static const crgb_t L_BLUE = 0x0000ff;
@@ -116,6 +116,26 @@ DAP_bridge_state_st dap_bridge_state_st;
   static const crgb_t L_CYAN = 0x00ffff;
   static const crgb_t L_PURPLE = 0x800080;
   LiteLED myLED( LED_TYPE, LED_TYPE_IS_RGBW );
+
+#endif
+#ifdef LED_ENABLE_WAVESHARE
+  #include "soc/soc_caps.h"
+  #include <Freenove_WS2812_Lib_for_ESP32.h>
+  #define LEDS_COUNT 1
+  #define CHANNEL 0
+  #define LED_BRIGHT 30
+  /*
+  static const crgb_t L_RED = 0xff0000;
+  static const crgb_t L_GREEN = 0x00ff00;
+  static const crgb_t L_BLUE = 0x0000ff;
+  static const crgb_t L_WHITE = 0xe0e0e0;
+  static const crgb_t L_YELLOW = 0xffde21;
+  static const crgb_t L_ORANGE = 0xffa500;
+  static const crgb_t L_CYAN = 0x00ffff;
+  static const crgb_t L_PURPLE = 0x800080;
+  */
+  //LiteLED myLED( LED_TYPE, LED_TYPE_IS_RGBW );
+  Freenove_ESP32_WS2812 strip = Freenove_ESP32_WS2812(LEDS_COUNT, LED_GPIO, CHANNEL, TYPE_GRB);
 
 #endif
 
@@ -333,6 +353,12 @@ void setup()
     myLED.begin( LED_GPIO, 1 );         // initialze the myLED object. Here we have 1 LED attached to the LED_GPIO pin
     myLED.brightness( LED_BRIGHT );     // set the LED photon intensity level
     myLED.setPixel( 0, L_WHITE, 1 );    // set the LED colour and show it
+  #endif
+  #ifdef LED_ENABLE_WAVESHARE
+    strip.begin();
+    strip.setBrightness(20);
+    strip.setLedColorData(0, 255, 255, 255);
+    strip.show();
   #endif
 
   Serial.println("Setup end");
@@ -632,7 +658,7 @@ void ESPNOW_SyncTask( void * pvParameters )
       switch (led_status)
       {
         case 0:
-          /* code */
+          myLED.setPixel( 0, L_WHITE, 1 );
           break;
         case 1:
           myLED.setPixel( 0, L_RED, 1 );
@@ -658,6 +684,47 @@ void ESPNOW_SyncTask( void * pvParameters )
         default:
           break;
       }
+    #endif
+
+    #ifdef LED_ENABLE_WAVESHARE
+      uint8_t led_status=dap_bridge_state_st.payloadBridgeState_.Pedal_availability[0]+dap_bridge_state_st.payloadBridgeState_.Pedal_availability[1]*2+dap_bridge_state_st.payloadBridgeState_.Pedal_availability[2]*4;
+      switch (led_status)
+      {
+        case 0:
+          strip.setLedColorData(0, 255, 255, 255);
+          strip.show();
+          break;
+        case 1:
+          strip.setLedColorData(0, 255, 0, 0);
+          strip.show();
+          break;
+        case 2:
+          strip.setLedColorData(0, 255, 165, 0);
+          strip.show();
+          break;
+        case 3:
+          strip.setLedColorData(0, 0, 255, 255);
+          strip.show();
+          break; 
+        case 4:
+          strip.setLedColorData(0, 0xff, 0xde, 0x21);
+          strip.show();
+          break;
+        case 5:
+          strip.setLedColorData(0, 0, 0, 0xff);
+          strip.show();
+          break;      
+        case 6:
+          strip.setLedColorData(0, 0, 0xff, 0x00);
+          strip.show();
+          break;  
+        case 7:
+          strip.setLedColorData(0, 0x80, 0x00, 0x80);
+          strip.show();
+          break;                                         
+        default:
+          break;
+      }    
     #endif
 
     delay(2);
