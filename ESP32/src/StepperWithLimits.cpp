@@ -7,6 +7,12 @@
 #define STEPPER_WITH_LIMITS_SENSORLESS_CURRENT_THRESHOLD_IN_PERCENT 20
 #define MIN_POS_MAX_ENDSTOP STEPS_PER_MOTOR_REVOLUTION * 3 // servo has to drive minimum N steps before it allows the detection of the max endstop
 
+
+//uint32_t speed_in_hz = TICKS_PER_S / ticks;
+// TICKS_PER_S = 16000000L
+// ticks = TICKS_PER_S / speed_in_hz
+#define maxSpeedInTicks  (TICKS_PER_S / MAXIMUM_STEPPER_SPEED)
+
 static const uint8_t LIMIT_TRIGGER_VALUE = LOW;                                   // does endstop trigger high or low
 static const int32_t ENDSTOP_MOVEMENT = (float)STEPS_PER_MOTOR_REVOLUTION / 100.0f;         // how much to move between trigger checks
 static const int32_t ENDSTOP_MOVEMENT_SENSORLESS = ENDSTOP_MOVEMENT * 5;
@@ -45,8 +51,14 @@ StepperWithLimits::StepperWithLimits(uint8_t pinStep, uint8_t pinDirection, uint
   if (_stepper) {
     _stepper->setDirectionPin(pinDirection, invertMotorDir_b);
     _stepper->setAutoEnable(true);
-    _stepper->setSpeedInHz(MAXIMUM_STEPPER_SPEED);            // steps/s
+    _stepper->setAbsoluteSpeedLimit( maxSpeedInTicks ); // ticks
+    _stepper->setSpeedInTicks( maxSpeedInTicks ); // ticks
     _stepper->setAcceleration(MAXIMUM_STEPPER_ACCELERATION);  // steps/s²
+    _stepper->setForwardPlanningTimeInMs(8);
+
+    //uint16_t tmp = _stepper->getMaxSpeedInTicks();
+    //Serial.print("Max speed in Hz: ");
+    //Serial.println(tmp);
 
 //#if defined(SUPPORT_ESP32_PULSE_COUNTER)
 //    _stepper->attachToPulseCounter(1, 0, 0);
