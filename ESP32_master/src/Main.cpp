@@ -256,12 +256,14 @@ void setup()
     //Serial.setTxTimeoutMs(0);
     Serial.setTimeout(5);
     Serial.begin(921600);
+    Serial.setRxBufferSize(1024);
     //Serial0.begin(921600);
     //Serial0.setDebugOutput(false);
     //esp_log_level_set("*",ESP_LOG_INFO);
   #else
     Serial.begin(921600);
     Serial.setTimeout(5);
+    Serial.setRxBufferSize(1024);
   #endif
   #ifdef USB_JOYSTICK
 	SetupController();
@@ -699,7 +701,7 @@ void ESPNOW_SyncTask( void * pvParameters )
       }
     #endif
 
-    delay(5);
+    delay(2);
   }
 }
 
