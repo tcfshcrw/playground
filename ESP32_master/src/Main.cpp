@@ -216,7 +216,7 @@ void setup()
     //Serial.setTxTimeoutMs(0);
     Serial.setRxBufferSize(1024);
     Serial.setTimeout(5);
-    Serial.begin(921600);
+    Serial.begin(3000000);
     
     //Serial0.begin(921600);
     //Serial0.setDebugOutput(false);
