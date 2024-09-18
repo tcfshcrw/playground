@@ -26,7 +26,7 @@ bool ESPNow_no_device=false;
 bool update_basic_state=false;
 bool update_extend_state=false;
 uint16_t Joystick_value[]={0,0,0};
-bool ESPNow_request_config_b=false;
+bool ESPNow_request_config_b[3]={false,false,false};
 bool ESPNow_error_b=false;
 uint16_t pedal_throttle_value=0;
 uint16_t pedal_brake_value=0;
@@ -139,10 +139,23 @@ void onRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len)
     update_extend_state=true;
   }
 
-  if(data_len==sizeof(dap_config_st))
+  if(data_len==sizeof(DAP_config_st))
   {
-    memcpy(&dap_config_st, data, sizeof(dap_config_st));
-    ESPNow_request_config_b=true;
+    memcpy(&dap_config_st_Temp, data, sizeof(DAP_config_st));
+    ESPNow_request_config_b[dap_config_st_Temp.payLoadHeader_.payloadType]=true;
+    if(dap_config_st_Temp.payLoadHeader_.payloadType==0)
+    {
+      memcpy(&dap_config_st_Clu, &dap_config_st_Temp, sizeof(DAP_config_st));
+    }
+    if(dap_config_st_Temp.payLoadHeader_.payloadType==1)
+    {
+      memcpy(&dap_config_st_Brk, &dap_config_st_Temp, sizeof(DAP_config_st));
+    }
+    if(dap_config_st_Temp.payLoadHeader_.payloadType==2)
+    {
+      memcpy(&dap_config_st_Clu, &dap_config_st_Temp, sizeof(DAP_config_st));
+    }
+    
   }
 
 }

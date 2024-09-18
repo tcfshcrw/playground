@@ -77,7 +77,11 @@ DAP_state_basic_st dap_state_basic_st;
 DAP_state_extended_st dap_state_extended_st;
 DAP_actions_st dap_actions_st;
 DAP_bridge_state_st dap_bridge_state_st;
-
+DAP_config_st dap_config_st_Clu;
+DAP_config_st dap_config_st_Brk;
+DAP_config_st dap_config_st_Gas;
+DAP_config_st dap_config_st_Temp;
+//DAP_config_st dap_config_st_store[3];
 #include "CycleTimer.h"
 
 
@@ -591,21 +595,44 @@ void Serial_Task( void * pvParameters)
       Serial.print("\r\n");
 
     }
-    if(ESPNow_request_config_b)
+    int pedal_config_IDX=0;
+    for(pedal_config_IDX=0;pedal_config_IDX<3;pedal_config_IDX++)
     {
-      DAP_config_st * dap_config_st_local_ptr;
-      dap_config_st_local_ptr = &dap_config_st;
-      //uint16_t crc = checksumCalculator((uint8_t*)(&(dap_config_st.payLoadHeader_)), sizeof(dap_config_st.payLoadHeader_) + sizeof(dap_config_st.payLoadPedalConfig_));
-      crc = checksumCalculator((uint8_t*)(&(dap_config_st.payLoadHeader_)), sizeof(dap_config_st.payLoadHeader_) + sizeof(dap_config_st.payLoadPedalConfig_));
-      dap_config_st_local_ptr->payloadFooter_.checkSum = crc;
-      dap_config_st_local_ptr->payLoadHeader_.PedalTag=dap_config_st_local_ptr->payLoadPedalConfig_.pedal_type;
-      Serial.write((char*)dap_config_st_local_ptr, sizeof(DAP_config_st));
-      Serial.print("\r\n");
-      ESPNow_request_config_b=false;
-      Serial.print("Pedal:");
-      Serial.print(dap_config_st.payLoadHeader_.PedalTag);
-      Serial.println("config returned");
+      if(ESPNow_request_config_b[pedal_config_IDX])
+      {
+        DAP_config_st * dap_config_st_local_ptr;
+        DAP_config_st dap_config_st_local;
+        if(pedal_config_IDX==0)
+        {
+          memcpy(&dap_config_st_local, &dap_config_st_Clu, sizeof(DAP_config_st));
+          //dap_config_st_local_ptr = &dap_config_st_Clu;
+        }
+        if(pedal_config_IDX==1)
+        {
+          memcpy(&dap_config_st_local, &dap_config_st_Brk, sizeof(DAP_config_st));
+          //dap_config_st_local_ptr = &dap_config_st_Brk;
+        }
+        if(pedal_config_IDX==2)
+        {
+          memcpy(&dap_config_st_local, &dap_config_st_Gas, sizeof(DAP_config_st));
+          //dap_config_st_local_ptr = &dap_config_st_Gas;
+        }
+        dap_config_st_local_ptr= &dap_config_st_local;
+        
+        //uint16_t crc = checksumCalculator((uint8_t*)(&(dap_config_st.payLoadHeader_)), sizeof(dap_config_st.payLoadHeader_) + sizeof(dap_config_st.payLoadPedalConfig_));
+        crc = checksumCalculator((uint8_t*)(&(dap_config_st_local.payLoadHeader_)), sizeof(dap_config_st_local.payLoadHeader_) + sizeof(dap_config_st_local.payLoadPedalConfig_));
+        //dap_config_st_local_ptr->payloadFooter_.checkSum = crc;
+        dap_config_st_local_ptr->payLoadHeader_.PedalTag=dap_config_st_local_ptr->payLoadPedalConfig_.pedal_type;
+        Serial.write((char*)dap_config_st_local_ptr, sizeof(DAP_config_st));
+        Serial.print("\r\n");
+        ESPNow_request_config_b[pedal_config_IDX]=false;
+        Serial.print("Pedal:");
+        Serial.print(pedal_config_IDX);
+        Serial.println("config returned");
+        delay(3);
+      }
     }
+
     if(ESPNow_error_b)
     {
       Serial.print("Pedal:");
