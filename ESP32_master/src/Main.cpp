@@ -131,7 +131,7 @@ DAP_bridge_state_st dap_bridge_state_st;
 TaskHandle_t Task1;
 TaskHandle_t Task2;
 TaskHandle_t Task3;
-
+TaskHandle_t Task4;
 //static SemaphoreHandle_t semaphore_updateConfig=NULL;
   bool configUpdateAvailable = false;                              // semaphore protected data
   DAP_config_st dap_config_st_local;
@@ -197,6 +197,7 @@ uint8_t pedal_avaliable[3]={0,0,0};
 void ESPNOW_SyncTask( void * pvParameters);
 void Joystick_Task( void * pvParameters);
 void LED_Task( void * pvParameters);
+void Serial_Task( void * pvParameters);
 /**********************************************************************************************/
 /*                                                                                            */
 /*                         setup function                                                     */
@@ -272,6 +273,17 @@ void setup()
                         1,         
                         &Task1,    
                         0);     
+  delay(500);
+  //Serial multitasking
+  xTaskCreatePinnedToCore(
+                        Serial_Task,   
+                        "Serial_update_Task", 
+                        5000,  
+                        //STACK_SIZE_FOR_TASK_2,    
+                        NULL,      
+                        1,         
+                        &Task4,    
+                        1);     
   delay(500);
 
   xTaskCreatePinnedToCore(
@@ -375,6 +387,74 @@ void loop()
 }
 
 void ESPNOW_SyncTask( void * pvParameters )
+{
+  for(;;)
+  {
+    if(configUpdateAvailable)
+    {
+      if(dap_config_st.payLoadHeader_.PedalTag==0)
+      {
+        if(dap_bridge_state_st.payloadBridgeState_.Pedal_availability[0]==1)
+        {
+          ESPNow.send_message(Clu_mac,(uint8_t *) &dap_config_st,sizeof(dap_config_st));
+          Serial.println("Clutch config sent");
+          configUpdateAvailable=false;
+        }
+      }
+      if(dap_config_st.payLoadHeader_.PedalTag==1)
+      {
+        if(dap_bridge_state_st.payloadBridgeState_.Pedal_availability[1]==1)
+        {
+          ESPNow.send_message(Brk_mac,(uint8_t *) &dap_config_st,sizeof(dap_config_st));
+          Serial.println("BRK config sent");
+          configUpdateAvailable=false;
+        }
+
+      }
+      if(dap_config_st.payLoadHeader_.PedalTag==2)
+      {
+        if(dap_bridge_state_st.payloadBridgeState_.Pedal_availability[2]==1)
+        {
+          ESPNow.send_message(Gas_mac,(uint8_t *) &dap_config_st,sizeof(dap_config_st));
+          Serial.println("Throttle config sent");
+          configUpdateAvailable=false;
+        }
+
+      }
+
+    }
+
+
+    if(dap_action_update)
+    {
+      
+      if(dap_actions_st.payLoadHeader_.PedalTag==0 && dap_bridge_state_st.payloadBridgeState_.Pedal_availability[0]==1)
+      {
+        ESPNow.send_message(Clu_mac,(uint8_t *) &dap_actions_st,sizeof(dap_actions_st));
+        //Serial.println("BRK sent");
+      }
+      if(dap_actions_st.payLoadHeader_.PedalTag==1 && dap_bridge_state_st.payloadBridgeState_.Pedal_availability[1]==1)
+      {
+        ESPNow.send_message(Brk_mac,(uint8_t *) &dap_actions_st,sizeof(dap_actions_st));
+        //Serial.println("BRK sent");
+      }
+                  
+      if(dap_actions_st.payLoadHeader_.PedalTag==2 && dap_bridge_state_st.payloadBridgeState_.Pedal_availability[2]==1)
+      {
+        ESPNow.send_message(Gas_mac,(uint8_t *) &dap_actions_st,sizeof(dap_actions_st));
+        //Serial.println("GAS sent");
+      }
+      
+      //ESPNow.send_message(broadcast_mac,(uint8_t *) &dap_actions_st,sizeof(dap_actions_st));
+      //Serial.println("Broadcast sent");
+      dap_action_update=false;
+    }
+
+    delay(2);
+  }
+}
+
+void Serial_Task( void * pvParameters)
 {
   for(;;)
   {  
@@ -489,65 +569,7 @@ void ESPNOW_SyncTask( void * pvParameters )
     }
 
 
-    if(configUpdateAvailable)
-    {
-      if(dap_config_st.payLoadHeader_.PedalTag==0)
-      {
-        if(dap_bridge_state_st.payloadBridgeState_.Pedal_availability[0]==1)
-        {
-          ESPNow.send_message(Clu_mac,(uint8_t *) &dap_config_st,sizeof(dap_config_st));
-          Serial.println("Clutch config sent");
-          configUpdateAvailable=false;
-        }
-      }
-      if(dap_config_st.payLoadHeader_.PedalTag==1)
-      {
-        if(dap_bridge_state_st.payloadBridgeState_.Pedal_availability[1]==1)
-        {
-          ESPNow.send_message(Brk_mac,(uint8_t *) &dap_config_st,sizeof(dap_config_st));
-          Serial.println("BRK config sent");
-          configUpdateAvailable=false;
-        }
 
-      }
-      if(dap_config_st.payLoadHeader_.PedalTag==2)
-      {
-        if(dap_bridge_state_st.payloadBridgeState_.Pedal_availability[2]==1)
-        {
-          ESPNow.send_message(Gas_mac,(uint8_t *) &dap_config_st,sizeof(dap_config_st));
-          Serial.println("Throttle config sent");
-          configUpdateAvailable=false;
-        }
-
-      }
-
-    }
-
-
-    if(dap_action_update)
-    {
-      
-      if(dap_actions_st.payLoadHeader_.PedalTag==0 && dap_bridge_state_st.payloadBridgeState_.Pedal_availability[0]==1)
-      {
-        ESPNow.send_message(Clu_mac,(uint8_t *) &dap_actions_st,sizeof(dap_actions_st));
-        //Serial.println("BRK sent");
-      }
-      if(dap_actions_st.payLoadHeader_.PedalTag==1 && dap_bridge_state_st.payloadBridgeState_.Pedal_availability[1]==1)
-      {
-        ESPNow.send_message(Brk_mac,(uint8_t *) &dap_actions_st,sizeof(dap_actions_st));
-        //Serial.println("BRK sent");
-      }
-                  
-      if(dap_actions_st.payLoadHeader_.PedalTag==2 && dap_bridge_state_st.payloadBridgeState_.Pedal_availability[2]==1)
-      {
-        ESPNow.send_message(Gas_mac,(uint8_t *) &dap_actions_st,sizeof(dap_actions_st));
-        //Serial.println("GAS sent");
-      }
-      
-      //ESPNow.send_message(broadcast_mac,(uint8_t *) &dap_actions_st,sizeof(dap_actions_st));
-      //Serial.println("Broadcast sent");
-      dap_action_update=false;
-    }
     if(update_basic_state)
     {
       update_basic_state=false;
