@@ -713,6 +713,7 @@ void Joystick_Task( void * pvParameters )
   }
 }
 
+//LED task
 uint8_t LED_bright_index=0;
 uint8_t LED_bright_direction=1;
 void LED_Task( void * pvParameters)
