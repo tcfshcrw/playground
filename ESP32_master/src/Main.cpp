@@ -102,25 +102,9 @@ DAP_bridge_state_st dap_bridge_state_st;
 #ifndef CONFIG_IDF_TARGET_ESP32S3
   #include "soc/rtc_wdt.h"
 #endif
-#ifdef LED_ENABLE
-  #include <LiteLED.h>
-  #define LED_TYPE LED_STRIP_WS2812
-  #define LED_TYPE_IS_RGBW 0
-  #define LED_BRIGHT 30
-  static const crgb_t L_RED = 0xff0000;
-  static const crgb_t L_GREEN = 0x00ff00;
-  static const crgb_t L_BLUE = 0x0000ff;
-  static const crgb_t L_WHITE = 0xe0e0e0;
-  static const crgb_t L_YELLOW = 0xffde21;
-  static const crgb_t L_ORANGE = 0xffa500;
-  static const crgb_t L_CYAN = 0x00ffff;
-  static const crgb_t L_PURPLE = 0x800080;
-  LiteLED myLED( LED_TYPE, LED_TYPE_IS_RGBW );
-
-#endif
 #ifdef LED_ENABLE_WAVESHARE
   #include "soc/soc_caps.h"
-  #include <Freenove_WS2812_Lib_for_ESP32.h>
+  #include <Adafruit_NeoPixel.h>
   #define LEDS_COUNT 1
   #define CHANNEL 0
   #define LED_BRIGHT 30
@@ -135,7 +119,7 @@ DAP_bridge_state_st dap_bridge_state_st;
   static const crgb_t L_PURPLE = 0x800080;
   */
   //LiteLED myLED( LED_TYPE, LED_TYPE_IS_RGBW );
-  Freenove_ESP32_WS2812 strip = Freenove_ESP32_WS2812(LEDS_COUNT, LED_GPIO, CHANNEL, TYPE_GRB);
+  Adafruit_NeoPixel pixels(LEDS_COUNT, LED_GPIO, NEO_RGB + NEO_KHZ800);
 
 #endif
 
@@ -355,10 +339,10 @@ void setup()
     myLED.setPixel( 0, L_WHITE, 1 );    // set the LED colour and show it
   #endif
   #ifdef LED_ENABLE_WAVESHARE
-    strip.begin();
-    strip.setBrightness(20);
-    strip.setLedColorData(0, 255, 255, 255);
-    strip.show();
+    pixels.begin();
+    pixels.setBrightness(20);
+    pixels.setPixelColor(0,0xff,0xff,0xff);
+    pixels.show();
   #endif
 
   Serial.println("Setup end");
@@ -653,74 +637,44 @@ void ESPNOW_SyncTask( void * pvParameters )
 
     }
     //show led status
-    #ifdef LED_ENABLE
-      uint8_t led_status=dap_bridge_state_st.payloadBridgeState_.Pedal_availability[0]+dap_bridge_state_st.payloadBridgeState_.Pedal_availability[1]*2+dap_bridge_state_st.payloadBridgeState_.Pedal_availability[2]*4;
-      switch (led_status)
-      {
-        case 0:
-          myLED.setPixel( 0, L_WHITE, 1 );
-          break;
-        case 1:
-          myLED.setPixel( 0, L_RED, 1 );
-          break;
-        case 2:
-          myLED.setPixel( 0, L_ORANGE, 1 );
-          break;
-        case 3:
-          myLED.setPixel( 0, L_CYAN, 1 );
-          break; 
-        case 4:
-          myLED.setPixel( 0, L_YELLOW, 1 );
-          break;
-        case 5:
-          myLED.setPixel( 0, L_BLUE, 1 );
-          break;      
-        case 6:
-          myLED.setPixel( 0, L_GREEN, 1 );
-          break;  
-        case 7:
-          myLED.setPixel( 0, L_PURPLE, 1 );
-          break;                                         
-        default:
-          break;
-      }
-    #endif
+
 
     #ifdef LED_ENABLE_WAVESHARE
       uint8_t led_status=dap_bridge_state_st.payloadBridgeState_.Pedal_availability[0]+dap_bridge_state_st.payloadBridgeState_.Pedal_availability[1]*2+dap_bridge_state_st.payloadBridgeState_.Pedal_availability[2]*4;
       switch (led_status)
       {
         case 0:
-          strip.setLedColorData(0, 255, 255, 255);
-          strip.show();
+          pixels.setPixelColor(0,0xff,0xff,0xff);
+          //pixels.setPixelColor(0,0x52,0x00,0xff);//Orange
+          pixels.show();
           break;
         case 1:
-          strip.setLedColorData(0, 255, 0, 0);
-          strip.show();
+          pixels.setPixelColor(0,0xff,0x00,0x00);//Red
+          pixels.show();
           break;
         case 2:
-          strip.setLedColorData(0, 255, 165, 0);
-          strip.show();
+          pixels.setPixelColor(0,0xff,0x0f,0x00);//Orange
+          pixels.show();
           break;
         case 3:
-          strip.setLedColorData(0, 0, 255, 255);
-          strip.show();
+          pixels.setPixelColor(0,0x52,0x00,0xff);//Cyan
+          pixels.show();
           break; 
         case 4:
-          strip.setLedColorData(0, 0xff, 0xde, 0x21);
-          strip.show();
+          pixels.setPixelColor(0,0x5f,0x5f,0x00);//Yellow
+          pixels.show();
           break;
         case 5:
-          strip.setLedColorData(0, 0, 0, 0xff);
-          strip.show();
+          pixels.setPixelColor(0,0x00,0x00,0xff);//Blue
+          pixels.show();
           break;      
         case 6:
-          strip.setLedColorData(0, 0, 0xff, 0x00);
-          strip.show();
+          pixels.setPixelColor(0,0x00,0xff,0x00);//Green
+          pixels.show();
           break;  
         case 7:
-          strip.setLedColorData(0, 0x80, 0x00, 0x80);
-          strip.show();
+          pixels.setPixelColor(0, 0x80, 0x00, 0x80);//Purple
+          pixels.show();
           break;                                         
         default:
           break;
