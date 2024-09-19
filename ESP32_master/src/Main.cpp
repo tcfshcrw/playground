@@ -364,7 +364,8 @@ void setup()
                           0);     
     delay(500);
   #endif
-
+  //button read setup
+  pinMode(Pairing_GPIO, INPUT_PULLUP);
   Serial.println("Setup end");
   
 }
@@ -688,6 +689,10 @@ void Serial_Task( void * pvParameters)
         }
       }
 
+    }
+    if(digitalRead(Pairing_GPIO)==LOW)
+    {
+      Serial.println("Boot press");
     }
     delay(2);
   }
