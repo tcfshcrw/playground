@@ -142,18 +142,18 @@ void onRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len)
   if(data_len==sizeof(DAP_config_st))
   {
     memcpy(&dap_config_st_Temp, data, sizeof(DAP_config_st));
-    ESPNow_request_config_b[dap_config_st_Temp.payLoadHeader_.payloadType]=true;
-    if(dap_config_st_Temp.payLoadHeader_.payloadType==0)
+    ESPNow_request_config_b[dap_config_st_Temp.payLoadPedalConfig_.pedal_type]=true;
+    if(dap_config_st_Temp.payLoadPedalConfig_.pedal_type==0)
     {
       memcpy(&dap_config_st_Clu, &dap_config_st_Temp, sizeof(DAP_config_st));
     }
-    if(dap_config_st_Temp.payLoadHeader_.payloadType==1)
+    if(dap_config_st_Temp.payLoadPedalConfig_.pedal_type==1)
     {
       memcpy(&dap_config_st_Brk, &dap_config_st_Temp, sizeof(DAP_config_st));
     }
-    if(dap_config_st_Temp.payLoadHeader_.payloadType==2)
+    if(dap_config_st_Temp.payLoadPedalConfig_.pedal_type==2)
     {
-      memcpy(&dap_config_st_Clu, &dap_config_st_Temp, sizeof(DAP_config_st));
+      memcpy(&dap_config_st_Gas, &dap_config_st_Temp, sizeof(DAP_config_st));
     }
     
   }
