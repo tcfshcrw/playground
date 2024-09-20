@@ -88,6 +88,8 @@ DAP_config_st dap_config_st_Temp;
 #include "RTDebugOutput.h"
 #include "Wire.h"
 #include "SPI.h"
+#include <EEPROM.h>
+#define EEPROM_offset 15
 /**********************************************************************************************/
 /*                                                                                            */
 /*                         iterpolation  definitions                                          */
@@ -366,6 +368,7 @@ void setup()
   #endif
   //button read setup
   pinMode(Pairing_GPIO, INPUT_PULLUP);
+  EEPROM.begin(256);
   Serial.println("Setup end");
   
 }
@@ -385,6 +388,7 @@ void setup()
 uint32_t loop_count=0;
 bool basic_rssi_update=false;
 unsigned long bridge_state_last_update=millis();
+uint8_t press_count=0;
 void loop() 
 {
   taskYIELD();
@@ -693,6 +697,22 @@ void Serial_Task( void * pvParameters)
     if(digitalRead(Pairing_GPIO)==LOW)
     {
       Serial.println("Boot press");
+      delay(1000);
+      _ESP_pairing_reg.Pair_status[1]=press_count;
+      EEPROM.put(EEPROM_offset,_ESP_pairing_reg);
+      EEPROM.commit();
+      press_count++;
+      if(press_count>254)
+      {
+        press_count=0;
+      }
+      Serial.print("Count: ");
+      Serial.println(press_count);
+      ESP_pairing_reg ESP_pairing_reg_local;
+      EEPROM.get(EEPROM_offset, ESP_pairing_reg_local);
+      _ESP_pairing_reg=ESP_pairing_reg_local;
+      Serial.print("EEPROM Count: ");
+      Serial.println(_ESP_pairing_reg.Pair_status[1]);      
     }
     delay(2);
   }
