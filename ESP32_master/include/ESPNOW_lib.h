@@ -40,19 +40,19 @@ bool MacCheck(uint8_t* Mac_A, uint8_t*  Mac_B)
   uint8_t mac_i=0;
   for(mac_i=0;mac_i++;mac_i<6)
   {
-    if(Mac_A[mac_i]==Mac_B[mac_i])
-    {
+    if(Mac_A[mac_i]!=Mac_B[mac_i])
+    {     
       break;
     }
+    else
+    {
+      if(mac_i==5)
+      {
+        return true;
+      }
+    }
   }
-  if(mac_i==6)
-  {
-    return true;
-  }
-  else
-  {
-    return false;
-  }
+  return false;
 }
 struct ESPNow_Send_Struct
 { 
