@@ -44,14 +44,14 @@ struct_message myData;
 
 ESPNow_Send_Struct _ESPNow_Recv;
 ESPNow_Send_Struct _ESPNow_Send;
+
 bool MacCheck(uint8_t* Mac_A, uint8_t*  Mac_B)
 {
   uint8_t mac_i=0;
-  for(mac_i=0;mac_i++;mac_i<6)
+  for(mac_i=0;mac_i<6;mac_i++)
   {
     if(Mac_A[mac_i]!=Mac_B[mac_i])
-    {
-      
+    {      
       break;
     }
     else
@@ -62,9 +62,9 @@ bool MacCheck(uint8_t* Mac_A, uint8_t*  Mac_B)
       }
     }
   }
-  return false;
-
+  return false;   
 }
+
 
 void sendMessageToMaster(int32_t controllerValue)
 {

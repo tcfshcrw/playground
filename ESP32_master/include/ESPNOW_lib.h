@@ -7,8 +7,6 @@
 
 //#define ESPNow_debug
 uint8_t esp_master[] = {0x36, 0x33, 0x33, 0x33, 0x33, 0x31};
-//uint8_t esp_master[] = {0xdc, 0xda, 0x0c, 0x22, 0x8f, 0xd8}; // S3
-//uint8_t esp_master[] = {0x48, 0x27, 0xe2, 0x59, 0x48, 0xc0}; // S2 mini
 uint8_t Clu_mac[] = {0x36, 0x33, 0x33, 0x33, 0x33, 0x32};
 uint8_t Gas_mac[] = {0x36, 0x33, 0x33, 0x33, 0x33, 0x33};
 uint8_t Brk_mac[] = {0x36, 0x33, 0x33, 0x33, 0x33, 0x34};
@@ -38,10 +36,10 @@ uint8_t pedal_status=0;
 bool MacCheck(uint8_t* Mac_A, uint8_t*  Mac_B)
 {
   uint8_t mac_i=0;
-  for(mac_i=0;mac_i++;mac_i<6)
+  for(mac_i=0;mac_i<6;mac_i++)
   {
     if(Mac_A[mac_i]!=Mac_B[mac_i])
-    {     
+    {      
       break;
     }
     else
@@ -52,7 +50,7 @@ bool MacCheck(uint8_t* Mac_A, uint8_t*  Mac_B)
       }
     }
   }
-  return false;
+  return false;   
 }
 struct ESPNow_Send_Struct
 { 

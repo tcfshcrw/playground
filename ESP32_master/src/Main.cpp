@@ -696,6 +696,7 @@ void Serial_Task( void * pvParameters)
     }
     if(digitalRead(Pairing_GPIO)==LOW)
     {
+      /*
       Serial.println("Boot press");
       delay(1000);
       _ESP_pairing_reg.Pair_status[1]=press_count;
@@ -712,7 +713,8 @@ void Serial_Task( void * pvParameters)
       EEPROM.get(EEPROM_offset, ESP_pairing_reg_local);
       _ESP_pairing_reg=ESP_pairing_reg_local;
       Serial.print("EEPROM Count: ");
-      Serial.println(_ESP_pairing_reg.Pair_status[1]);      
+      Serial.println(_ESP_pairing_reg.Pair_status[1]); 
+      */     
     }
     delay(2);
   }
@@ -810,8 +812,8 @@ void LED_Task( void * pvParameters)
       switch (led_status)
       {
         case 0:
-          //pixels.setPixelColor(0,0xff,0xff,0xff);
-          pixels.setPixelColor(0,0x52,0x00,0xff);//Orange
+          pixels.setPixelColor(0,0xff,0xff,0xff);
+          //pixels.setPixelColor(0,0x52,0x00,0xff);//Orange
           pixels.show();
           break;
         case 1:
