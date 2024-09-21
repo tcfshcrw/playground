@@ -36,6 +36,7 @@ uint8_t pedal_status=0;
 bool ESPNow_Pairing_status = false;
 bool UpdatePairingToEeprom = false;
 bool ESPNow_pairing_action_b = false;
+bool software_pairing_action_b = false;
 
 bool MacCheck(uint8_t* Mac_A, uint8_t*  Mac_B)
 {

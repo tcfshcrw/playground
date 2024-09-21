@@ -27,6 +27,7 @@ uint8_t ESPNow_error_code=0;
 bool ESPNow_Pairing_status = false;
 bool UpdatePairingToEeprom = false;
 bool ESPNow_pairing_action_b = false;
+bool software_pairing_action_b = false;
 
 
 

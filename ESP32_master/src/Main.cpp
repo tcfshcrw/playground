@@ -84,6 +84,7 @@ DAP_config_st dap_config_st_Temp;
 DAP_ESPPairing_st dap_esppairing_st;//saving
 DAP_ESPPairing_st dap_esppairing_lcl;//sending
 //DAP_config_st dap_config_st_store[3];
+DAP_bridge_state_st dap_bridge_state_lcl;//
 #include "CycleTimer.h"
 
 
@@ -127,6 +128,7 @@ DAP_ESPPairing_st dap_esppairing_lcl;//sending
   static const crgb_t L_PURPLE = 0x800080;
   */
   Adafruit_NeoPixel pixels(LEDS_COUNT, LED_GPIO, NEO_RGB + NEO_KHZ800);
+  uint8_t LED_Status=0; //0=normal 1= pairing
 
 #endif
 
@@ -407,7 +409,7 @@ void ESPNOW_SyncTask( void * pvParameters )
   for(;;)
   {
     #ifdef ESPNow_Pairing_function
-      if(digitalRead(Pairing_GPIO)==LOW)
+      if(digitalRead(Pairing_GPIO)==LOW||software_pairing_action_b)
       {
         Serial.println("Bridge Pairing.....");
         delay(1000);
@@ -415,7 +417,8 @@ void ESPNOW_SyncTask( void * pvParameters )
         Pairing_state_last_sending=millis();
         ESPNow_pairing_action_b=true;
         building_dap_esppairing_lcl=true;
-        
+        LED_Status=1;
+        software_pairing_action_b=false;
       }
       if(ESPNow_pairing_action_b)
       {
@@ -444,6 +447,7 @@ void ESPNOW_SyncTask( void * pvParameters )
         {
           Serial.println("Reach timeout");
           ESPNow_pairing_action_b=false;
+          LED_Status=0;
           if(UpdatePairingToEeprom)
           {
             EEPROM.put(EEPROM_offset,_ESP_pairing_reg);
@@ -656,17 +660,55 @@ void Serial_Task( void * pvParameters)
             Serial.print(",   CRC received: ");
             Serial.println(dap_config_st.payloadFooter_.checkSum);
           }
-
-
-              // if checks are successfull, overwrite global configuration struct
-              if (structChecker == true)
-              {
+          // if checks are successfull, overwrite global configuration struct
+          if (structChecker == true)
+          {
                 //Serial.println("Updating pedal config");
-                configUpdateAvailable = true;     
+            configUpdateAvailable = true;     
                 //memcpy(&dap_config_st, &dap_config_st_local, sizeof(dap_config_st));     
-              }
-              
+          }
+          break;
 
+        case sizeof(DAP_bridge_state_st) : 
+          DAP_bridge_state_st * dap_bridge_state_local_ptr;
+          dap_bridge_state_local_ptr = &dap_bridge_state_lcl;
+          Serial.readBytes((char*)dap_bridge_state_local_ptr, sizeof(DAP_bridge_state_st));        
+          // check if data is plausible          
+          if ( dap_bridge_state_lcl.payLoadHeader_.payloadType != DAP_PAYLOAD_TYPE_BRIDGE_STATE )
+          { 
+            structChecker = false;
+            Serial.print("Payload type expected: ");
+            Serial.print(DAP_PAYLOAD_TYPE_BRIDGE_STATE);
+            Serial.print(",   Payload type received: ");
+            Serial.println(dap_bridge_state_lcl.payLoadHeader_.payloadType);
+          }
+          if ( dap_bridge_state_lcl.payLoadHeader_.version != DAP_VERSION_CONFIG )
+          { 
+            structChecker = false;
+            Serial.print("Config version expected: ");
+            Serial.print(DAP_VERSION_CONFIG);
+            Serial.print(",   Config version received: ");
+            Serial.println(dap_bridge_state_lcl.payLoadHeader_.version);
+          }
+              // checksum validation
+          crc = checksumCalculator((uint8_t*)(&(dap_bridge_state_lcl.payLoadHeader_)), sizeof(dap_bridge_state_lcl.payLoadHeader_) + sizeof(dap_bridge_state_lcl.payloadBridgeState_));
+          if (crc != dap_bridge_state_lcl.payloadFooter_.checkSum)
+          { 
+            structChecker = false;
+            Serial.print("CRC expected: ");
+            Serial.print(crc);
+            Serial.print(",   CRC received: ");
+            Serial.println(dap_bridge_state_lcl.payloadFooter_.checkSum);
+          }
+          // if checks are successfull, overwrite global configuration struct
+          if (structChecker == true)
+          {
+            if(dap_bridge_state_lcl.payloadBridgeState_.Bridge_action==1)
+            {
+              Serial.println("Get action from Simhub:1");
+              software_pairing_action_b=true;
+            }
+          }
           break;
 
         default:
@@ -754,7 +796,7 @@ void Serial_Task( void * pvParameters)
       Serial.println(dap_state_basic_st.payloadPedalState_Basic_.error_code_u8);
       ESPNow_error_b=false;    
     }
-    if(basic_rssi_update)
+    if(basic_rssi_update)//Bridge action
     {
       int rssi_filter_value=constrain(rssi_filter.process(rssi_display),-100,0) ;
       dap_bridge_state_st.payloadBridgeState_.Pedal_RSSI=(uint8_t)(rssi_filter_value+101);
@@ -763,6 +805,7 @@ void Serial_Task( void * pvParameters)
       dap_bridge_state_st.payLoadHeader_.version=DAP_VERSION_CONFIG;
       crc = checksumCalculator((uint8_t*)(&(dap_bridge_state_st.payLoadHeader_)), sizeof(dap_bridge_state_st.payLoadHeader_) + sizeof(dap_bridge_state_st.payloadBridgeState_));
       dap_bridge_state_st.payloadFooter_.checkSum=crc;
+      dap_bridge_state_st.payloadBridgeState_.Bridge_action=0;
       DAP_bridge_state_st * dap_bridge_st_local_ptr;
       dap_bridge_st_local_ptr = &dap_bridge_state_st;
       Serial.write((char*)dap_bridge_st_local_ptr, sizeof(DAP_bridge_state_st));
@@ -900,57 +943,75 @@ void LED_Task( void * pvParameters)
   {
     #ifdef LED_ENABLE_WAVESHARE
     //LED status update
-      if(LED_bright_index>30)
+      if(LED_Status==0)
       {
-        LED_bright_direction=-1;
+        if(LED_bright_index>30)
+        {
+          LED_bright_direction=-1;
+        }
+        if(LED_bright_index<2)
+        {
+          LED_bright_direction=1;
+        }
+        LED_bright_index=LED_bright_index+LED_bright_direction;
+        pixels.setBrightness(LED_bright_index);
+        uint8_t led_status=dap_bridge_state_st.payloadBridgeState_.Pedal_availability[0]+dap_bridge_state_st.payloadBridgeState_.Pedal_availability[1]*2+dap_bridge_state_st.payloadBridgeState_.Pedal_availability[2]*4;
+        switch (led_status)
+        {
+          case 0:
+            pixels.setPixelColor(0,0xff,0xff,0xff);
+            //pixels.setPixelColor(0,0x52,0x00,0xff);//Orange
+            pixels.show();
+            break;
+          case 1:
+            pixels.setPixelColor(0,0xff,0x00,0x00);//Red
+            pixels.show();
+            break;
+          case 2:
+            pixels.setPixelColor(0,0xff,0x0f,0x00);//Orange
+            pixels.show();
+            break;
+          case 3:
+            pixels.setPixelColor(0,0x52,0x00,0xff);//Cyan
+            pixels.show();
+            break; 
+          case 4:
+            pixels.setPixelColor(0,0x5f,0x5f,0x00);//Yellow
+            pixels.show();
+            break;
+          case 5:
+            pixels.setPixelColor(0,0x00,0x00,0xff);//Blue
+            pixels.show();
+            break;      
+          case 6:
+            pixels.setPixelColor(0,0x00,0xff,0x00);//Green
+            pixels.show();
+            break;  
+          case 7:
+            pixels.setPixelColor(0, 0x80, 0x00, 0x80);//Purple
+            pixels.show();
+            break;                                         
+          default:
+            break;
+        }
+        delay(150);           
       }
-      if(LED_bright_index<2)
+      if(LED_Status==1)//pairing
       {
-        LED_bright_direction=1;
+        
+        //delay(1000);
+        pixels.setPixelColor(0,0xff,0x00,0x00);//Red       
+        pixels.setBrightness(25);
+        pixels.show();
+        delay(500);
+        pixels.setPixelColor(0,0x00,0x00,0x00);//fill no color      
+        //pixels.setBrightness(0);
+        pixels.show();
+        delay(500);
       }
-      LED_bright_index=LED_bright_index+LED_bright_direction;
-      pixels.setBrightness(LED_bright_index);
-      uint8_t led_status=dap_bridge_state_st.payloadBridgeState_.Pedal_availability[0]+dap_bridge_state_st.payloadBridgeState_.Pedal_availability[1]*2+dap_bridge_state_st.payloadBridgeState_.Pedal_availability[2]*4;
-      switch (led_status)
-      {
-        case 0:
-          pixels.setPixelColor(0,0xff,0xff,0xff);
-          //pixels.setPixelColor(0,0x52,0x00,0xff);//Orange
-          pixels.show();
-          break;
-        case 1:
-          pixels.setPixelColor(0,0xff,0x00,0x00);//Red
-          pixels.show();
-          break;
-        case 2:
-          pixels.setPixelColor(0,0xff,0x0f,0x00);//Orange
-          pixels.show();
-          break;
-        case 3:
-          pixels.setPixelColor(0,0x52,0x00,0xff);//Cyan
-          pixels.show();
-          break; 
-        case 4:
-          pixels.setPixelColor(0,0x5f,0x5f,0x00);//Yellow
-          pixels.show();
-          break;
-        case 5:
-          pixels.setPixelColor(0,0x00,0x00,0xff);//Blue
-          pixels.show();
-          break;      
-        case 6:
-          pixels.setPixelColor(0,0x00,0xff,0x00);//Green
-          pixels.show();
-          break;  
-        case 7:
-          pixels.setPixelColor(0, 0x80, 0x00, 0x80);//Purple
-          pixels.show();
-          break;                                         
-        default:
-          break;
-      }
-      delay(150);   
+      
     #endif  
+    delay(10);
   }
 }
 

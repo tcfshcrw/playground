@@ -1374,6 +1374,12 @@ void serialCommunicationTask( void * pvParameters )
                 //OTA_enable_start=true;
                 ESPNow_OTA_enable=false;
               }
+              //4 Enable pairing
+              if (dap_actions_st.payloadPedalAction_.system_action_u8==4)
+              {
+                Serial.println("Get Pairing command");
+                software_pairing_action_b=true;
+              }
 
               // trigger ABS effect
               if (dap_actions_st.payloadPedalAction_.triggerAbs_u8)
@@ -1675,7 +1681,7 @@ void ESPNOW_SyncTask( void * pvParameters )
     else
     {
       #ifdef ESPNow_Pairing_function
-        if(digitalRead(Pairing_GPIO)==LOW)
+        if(digitalRead(Pairing_GPIO)==LOW||software_pairing_action_b)
         {
           Serial.println("Pedal Pairing.....");
           delay(1000);
@@ -1683,6 +1689,7 @@ void ESPNOW_SyncTask( void * pvParameters )
           Pairing_state_last_sending=millis();
           ESPNow_pairing_action_b=true;
           building_dap_esppairing_lcl=true;
+          software_pairing_action_b=false;
           
         }
         if(ESPNow_pairing_action_b)
