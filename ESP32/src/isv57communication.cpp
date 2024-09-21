@@ -234,3 +234,54 @@ bool isv57communication::clearServoAlarms() {
     
   return 1;
 }
+
+
+bool isv57communication::readCurrentAlarm() {
+  int bytesReceived_i = modbus.requestFrom(slaveId, 0x03, 0x01F2, 1);
+  if(bytesReceived_i == (2))
+  {
+    modbus.RxRaw(raw,  len);
+    for (uint8_t regIdx = 0; regIdx < 1; regIdx++)
+    { 
+      uint16_t tmp = modbus.uint16(regIdx) && 0x0FFF; // mask the first half byte as it does not contain info
+      Serial.print("Current iSV57 alarm: ");
+      Serial.println( tmp, HEX);
+    }
+  }
+}
+
+
+bool isv57communication::readAlarmHistory() {
+
+// 
+Serial.println("\niSV57 alarm history: ");
+for (uint8_t idx=0; idx < 12; idx++)
+{
+  // example signal, read the 9th alarm
+  // 0x3f, 0x03, 0x12, 0x09, 0x00, 0x01, 0x55, 0xAE
+
+  // read the four registers simultaneously
+  int bytesReceived_i = modbus.requestFrom(slaveId, 0x03, 0x1200 + idx, 1);
+  if(bytesReceived_i == (2))
+  {
+    modbus.RxRaw(raw,  len);
+    for (uint8_t regIdx = 0; regIdx < 1; regIdx++)
+    { 
+      uint16_t tmp = modbus.uint16(regIdx) & 0x0FFF; // mask the first half byte as it does not contain info
+
+      if (tmp > 0)
+      {
+        Serial.print("Alarm Idx: ");
+        Serial.print(idx);
+        Serial.print(",    Alarm Code: ");
+        Serial.println( tmp, HEX);
+      }
+      
+    }
+  }
+}
+  Serial.print("\n");
+    
+  return 1;
+}
+

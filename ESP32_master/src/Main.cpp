@@ -81,6 +81,8 @@ DAP_config_st dap_config_st_Clu;
 DAP_config_st dap_config_st_Brk;
 DAP_config_st dap_config_st_Gas;
 DAP_config_st dap_config_st_Temp;
+DAP_ESPPairing_st dap_esppairing_st;//saving
+DAP_ESPPairing_st dap_esppairing_lcl;//sending
 //DAP_config_st dap_config_st_store[3];
 #include "CycleTimer.h"
 
@@ -252,7 +254,9 @@ void setup()
   semaphore_updatePedalStates = xSemaphoreCreateMutex();
   */
   delay(10);
-
+  //button read setup
+  pinMode(Pairing_GPIO, INPUT_PULLUP);
+  EEPROM.begin(256);
 /*
   if(semaphore_updateJoystick==NULL)
   {
@@ -366,9 +370,7 @@ void setup()
                           0);     
     delay(500);
   #endif
-  //button read setup
-  pinMode(Pairing_GPIO, INPUT_PULLUP);
-  EEPROM.begin(256);
+
   Serial.println("Setup end");
   
 }
@@ -388,7 +390,12 @@ void setup()
 uint32_t loop_count=0;
 bool basic_rssi_update=false;
 unsigned long bridge_state_last_update=millis();
+unsigned long Pairing_state_start;
+unsigned long Pairing_state_last_sending;
 uint8_t press_count=0;
+uint Pairing_timeout=20000;
+bool Pairing_timeout_status=false;
+bool building_dap_esppairing_lcl =false;
 void loop() 
 {
   taskYIELD();
@@ -399,6 +406,107 @@ void ESPNOW_SyncTask( void * pvParameters )
 {
   for(;;)
   {
+    #ifdef ESPNow_Pairing_function
+      if(digitalRead(Pairing_GPIO)==LOW)
+      {
+        Serial.println("Bridge Pairing.....");
+        delay(1000);
+        Pairing_state_start=millis();
+        Pairing_state_last_sending=millis();
+        ESPNow_pairing_action_b=true;
+        building_dap_esppairing_lcl=true;
+        
+      }
+      if(ESPNow_pairing_action_b)
+      {
+        unsigned long now=millis();
+        //sending package
+        if(building_dap_esppairing_lcl)
+        {
+          uint16_t crc=0;          
+          building_dap_esppairing_lcl=false;
+          dap_esppairing_lcl.payloadESPNowInfo_._deviceID=deviceID;
+          dap_esppairing_lcl.payLoadHeader_.payloadType=DAP_PAYLOAD_TYPE_ESPNOW_PAIRING;
+          dap_esppairing_lcl.payLoadHeader_.PedalTag=deviceID;
+          dap_esppairing_lcl.payLoadHeader_.version=DAP_VERSION_CONFIG;
+          crc = checksumCalculator((uint8_t*)(&(dap_esppairing_lcl.payLoadHeader_)), sizeof(dap_esppairing_lcl.payLoadHeader_) + sizeof(dap_esppairing_lcl.payloadESPNowInfo_));
+          dap_esppairing_lcl.payloadFooter_.checkSum=crc;
+        }
+        if(now-Pairing_state_last_sending>400)
+        {
+          Pairing_state_last_sending=now;
+          ESPNow.send_message(broadcast_mac,(uint8_t *) &dap_esppairing_lcl, sizeof(dap_esppairing_lcl));
+        }
+        
+
+        //timeout check
+        if(now-Pairing_state_start>Pairing_timeout)
+        {
+          Serial.println("Reach timeout");
+          ESPNow_pairing_action_b=false;
+          if(UpdatePairingToEeprom)
+          {
+            EEPROM.put(EEPROM_offset,_ESP_pairing_reg);
+            EEPROM.commit();
+            UpdatePairingToEeprom=false;
+            
+            //list eeprom
+            ESP_pairing_reg ESP_pairing_reg_local;
+            EEPROM.get(EEPROM_offset, ESP_pairing_reg_local);
+            for(int i=0;i<4;i++)
+            {
+              if(ESP_pairing_reg_local.Pair_status[i]==1)
+              {                
+                Serial.print("#");
+                Serial.print(i);
+                Serial.print("Pair: ");
+                Serial.print(ESP_pairing_reg_local.Pair_status[i]);
+                Serial.printf(" Mac: %02X:%02X:%02X:%02X:%02X:%02X\n", ESP_pairing_reg_local.Pair_mac[i][0], ESP_pairing_reg_local.Pair_mac[i][1], ESP_pairing_reg_local.Pair_mac[i][2], ESP_pairing_reg_local.Pair_mac[i][3], ESP_pairing_reg_local.Pair_mac[i][4], ESP_pairing_reg_local.Pair_mac[i][5]);
+              }
+            }
+            //adding peer
+            
+            for(int i=0; i<4;i++)
+            {
+              if(_ESP_pairing_reg.Pair_status[i]==1)
+              {
+                if(i==0)
+                {
+                  ESPNow.remove_peer(Clu_mac);
+                  memcpy(&Clu_mac,&_ESP_pairing_reg.Pair_mac[i],6);
+                  delay(300);
+                  ESPNow.add_peer(Clu_mac);
+                  
+                }
+                if(i==1)
+                {
+                  ESPNow.remove_peer(Brk_mac);
+                  memcpy(&Brk_mac,&_ESP_pairing_reg.Pair_mac[i],6);
+                  delay(300);
+                  ESPNow.add_peer(Brk_mac);
+                  Serial.printf(" Mac: %02X:%02X:%02X:%02X:%02X:%02X\n", Brk_mac[0], Brk_mac[1], Brk_mac[2], Brk_mac[3], Brk_mac[4], Brk_mac[5]);
+
+                }
+                if(i==2)
+                {
+                  ESPNow.remove_peer(Gas_mac);
+                  memcpy(&Gas_mac,&_ESP_pairing_reg.Pair_mac[i],6);
+                  delay(300);
+                  ESPNow.add_peer(Gas_mac);
+                }        
+                if(i==3)
+                {
+                  ESPNow.remove_peer(esp_Host);
+                  memcpy(&esp_Host,&_ESP_pairing_reg.Pair_mac[i],6);
+                  delay(300);
+                  ESPNow.add_peer(esp_Host);                
+                }        
+              }
+            }
+          }
+        }
+      }
+    #endif
     if(configUpdateAvailable)
     {
       if(dap_config_st.payLoadHeader_.PedalTag==0)
@@ -468,7 +576,7 @@ void Serial_Task( void * pvParameters)
   for(;;)
   {  
     uint16_t crc;
-    uint8_t n = Serial.available();
+    uint16_t n = Serial.available();
     unsigned long current_time=millis();
     if(current_time-bridge_state_last_update>200)
     {
@@ -694,28 +802,7 @@ void Serial_Task( void * pvParameters)
       }
 
     }
-    if(digitalRead(Pairing_GPIO)==LOW)
-    {
-      /*
-      Serial.println("Boot press");
-      delay(1000);
-      _ESP_pairing_reg.Pair_status[1]=press_count;
-      EEPROM.put(EEPROM_offset,_ESP_pairing_reg);
-      EEPROM.commit();
-      press_count++;
-      if(press_count>254)
-      {
-        press_count=0;
-      }
-      Serial.print("Count: ");
-      Serial.println(press_count);
-      ESP_pairing_reg ESP_pairing_reg_local;
-      EEPROM.get(EEPROM_offset, ESP_pairing_reg_local);
-      _ESP_pairing_reg=ESP_pairing_reg_local;
-      Serial.print("EEPROM Count: ");
-      Serial.println(_ESP_pairing_reg.Pair_status[1]); 
-      */     
-    }
+    
     delay(2);
   }
 }

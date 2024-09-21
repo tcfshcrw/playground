@@ -83,7 +83,7 @@ bool splineDebug_b = false;
 
 
 #include <EEPROM.h>
-
+#define EEPROM_offset 15
 
 
 #include "ABSOscillation.h"
@@ -105,7 +105,8 @@ DAP_config_st dap_config_st;
 DAP_calculationVariables_st dap_calculationVariables_st;
 DAP_state_basic_st dap_state_basic_st;
 DAP_state_extended_st dap_state_extended_st;
-
+DAP_ESPPairing_st dap_esppairing_st;//saving
+DAP_ESPPairing_st dap_esppairing_lcl;//sending
 
 #include "CycleTimer.h"
 
@@ -309,6 +310,9 @@ void setup()
     ESP.restart();
   }
 
+  // read servos alarm history
+  isv57.readAlarmHistory();
+  
   // reset iSV57 alarms
   bool servoAlarmsCleared = isv57.clearServoAlarms();
   delay(500);
@@ -323,7 +327,7 @@ void setup()
   }
   delay(200);
 #endif
-
+pinMode(Pairing_GPIO, INPUT_PULLUP);
 
 // initialize configuration and update local variables
   dap_config_st.initialiseDefaults();
@@ -1617,6 +1621,12 @@ uint8_t error_out;
 int64_t timeNow_espNowTask_l = 0;
 int64_t timePrevious_espNowTask_l = 0;
 #define REPETITION_INTERVAL_ESPNOW_TASK (int64_t)2
+
+uint Pairing_timeout=20000;
+bool Pairing_timeout_status=false;
+bool building_dap_esppairing_lcl =false;
+unsigned long Pairing_state_start;
+unsigned long Pairing_state_last_sending;
 void ESPNOW_SyncTask( void * pvParameters )
 {
   for(;;)
@@ -1664,6 +1674,113 @@ void ESPNOW_SyncTask( void * pvParameters )
     }
     else
     {
+      #ifdef ESPNow_Pairing_function
+        if(digitalRead(Pairing_GPIO)==LOW)
+        {
+          Serial.println("Pedal Pairing.....");
+          delay(1000);
+          Pairing_state_start=millis();
+          Pairing_state_last_sending=millis();
+          ESPNow_pairing_action_b=true;
+          building_dap_esppairing_lcl=true;
+          
+        }
+        if(ESPNow_pairing_action_b)
+        {
+          unsigned long now=millis();
+          //sending package
+          if(building_dap_esppairing_lcl)
+          {
+            uint16_t crc=0;          
+            building_dap_esppairing_lcl=false;
+            dap_esppairing_lcl.payloadESPNowInfo_._deviceID=dap_config_st.payLoadPedalConfig_.pedal_type;
+            dap_esppairing_lcl.payLoadHeader_.payloadType=DAP_PAYLOAD_TYPE_ESPNOW_PAIRING;
+            dap_esppairing_lcl.payLoadHeader_.PedalTag=dap_config_st.payLoadPedalConfig_.pedal_type;
+            dap_esppairing_lcl.payLoadHeader_.version=DAP_VERSION_CONFIG;
+            crc = checksumCalculator((uint8_t*)(&(dap_esppairing_lcl.payLoadHeader_)), sizeof(dap_esppairing_lcl.payLoadHeader_) + sizeof(dap_esppairing_lcl.payloadESPNowInfo_));
+            dap_esppairing_lcl.payloadFooter_.checkSum=crc;
+          }
+          if(now-Pairing_state_last_sending>400)
+          {
+            Pairing_state_last_sending=now;
+            ESPNow.send_message(broadcast_mac,(uint8_t *) &dap_esppairing_lcl, sizeof(dap_esppairing_lcl));
+          }
+
+          
+
+          //timeout check
+          if(now-Pairing_state_start>Pairing_timeout)
+          {
+            ESPNow_pairing_action_b=false;
+            Serial.println("Reach timeout");
+            if(UpdatePairingToEeprom)
+            {
+              EEPROM.put(EEPROM_offset,_ESP_pairing_reg);
+              EEPROM.commit();
+              UpdatePairingToEeprom=false;
+              //list eeprom
+              ESP_pairing_reg ESP_pairing_reg_local;
+              EEPROM.get(EEPROM_offset, ESP_pairing_reg_local);
+              for(int i=0;i<4;i++)
+              {
+                if(ESP_pairing_reg_local.Pair_status[i]==1)
+                {
+                  Serial.print("#");
+                  Serial.print(i);
+                  Serial.print("Pair: ");
+                  Serial.print(ESP_pairing_reg_local.Pair_status[i]);
+                  Serial.printf(" Mac: %02X:%02X:%02X:%02X:%02X:%02X\n", ESP_pairing_reg_local.Pair_mac[i][0], ESP_pairing_reg_local.Pair_mac[i][1], ESP_pairing_reg_local.Pair_mac[i][2], ESP_pairing_reg_local.Pair_mac[i][3], ESP_pairing_reg_local.Pair_mac[i][4], ESP_pairing_reg_local.Pair_mac[i][5]);
+                }
+              }
+              //adding peer
+              
+              for(int i=0; i<4;i++)
+              {
+                if(_ESP_pairing_reg.Pair_status[i]==1)
+                {
+                  if(i==0)
+                  {
+                    ESPNow.remove_peer(Clu_mac);
+                    memcpy(&Clu_mac,&_ESP_pairing_reg.Pair_mac[i],6);
+                    delay(100);
+                    ESPNow.add_peer(Clu_mac);
+                    
+                  }
+                  if(i==1)
+                  {
+                    ESPNow.remove_peer(Brk_mac);
+                    memcpy(&Brk_mac,&_ESP_pairing_reg.Pair_mac[i],6);
+                    delay(100);
+                    ESPNow.add_peer(Brk_mac);
+                  }
+                  if(i==2)
+                  {
+                    ESPNow.remove_peer(Gas_mac);
+                    memcpy(&Gas_mac,&_ESP_pairing_reg.Pair_mac[i],6);
+                    delay(100);
+                    ESPNow.add_peer(Gas_mac);
+                  }        
+                  if(i==3)
+                  {
+                    ESPNow.remove_peer(esp_Host);
+                    memcpy(&esp_Host,&_ESP_pairing_reg.Pair_mac[i],6);
+                    delay(100);
+                    ESPNow.add_peer(esp_Host);                
+                  }        
+                  if(dap_config_st.payLoadPedalConfig_.pedal_type==1)
+                  {
+                    Recv_mac=Gas_mac;
+                  }
+                  if(dap_config_st.payLoadPedalConfig_.pedal_type==2)
+                  {
+                    Recv_mac=Brk_mac;
+                  }
+                }
+              }
+            }
+          }
+        }
+      #endif
       //joystick sync
       sendMessageToMaster(joystickNormalizedToInt32);
 

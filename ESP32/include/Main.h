@@ -22,7 +22,7 @@
 // target cycle time for pedal update task, to get constant cycle times, required for FIR filtering
 #define DAP_MICROSECONDS_PER_SECOND 1000000
 
-static const uint32_t STEPS_PER_MOTOR_REVOLUTION = 3200;
+static const uint32_t STEPS_PER_MOTOR_REVOLUTION = 6400;
 
 // 15kHz
 //#define ADC_SAMPLE_RATE ADS1256_DRATE_15000SPS
@@ -159,6 +159,8 @@ static const uint32_t STEPS_PER_MOTOR_REVOLUTION = 3200;
   #define BLUETOOTH_GAMEPAD
   //#define USB_JOYSTICK
   #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 1
+  #define ESPNow_Pairing_function
+  #define Pairing_GPIO 0
 #endif
 
 
@@ -265,6 +267,8 @@ static const uint32_t STEPS_PER_MOTOR_REVOLUTION = 3200;
   #define ESPNOW_Enable
   #define ESPNow_S3
   #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 5
+  #define ESPNow_Pairing_function
+  #define Pairing_GPIO 0
 #endif
 
 // For Gilphilbert PCBA design
@@ -311,6 +315,8 @@ static const uint32_t STEPS_PER_MOTOR_REVOLUTION = 3200;
   #define USB_JOYSTICK
 
   #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 5
+  #define ESPNow_Pairing_function
+  #define Pairing_GPIO 0
 #endif
 
 #if PCB_VERSION == 8

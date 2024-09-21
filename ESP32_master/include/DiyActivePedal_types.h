@@ -10,6 +10,7 @@
 #define DAP_PAYLOAD_TYPE_ACTION 110
 #define DAP_PAYLOAD_TYPE_STATE_BASIC 120
 #define DAP_PAYLOAD_TYPE_STATE_EXTENDED 130
+#define DAP_PAYLOAD_TYPE_ESPNOW_PAIRING 140
 #define DAP_PAYLOAD_TYPE_BRIDGE_STATE 210
 struct payloadHeader {
   
@@ -187,7 +188,13 @@ struct payloadPedalConfig {
   uint8_t enableReboot_u8;
   //joystick out flag
   //uint8_t Joystick_ESPsync_to_ESP;
-  
+};
+
+struct payloadESPNowInfo{
+  //uint8_t macAddr[6];
+  uint8_t _deviceID;
+  uint8_t occupy;
+  uint8_t occupy2;
 
 };
 
@@ -232,6 +239,12 @@ struct DAP_config_st {
   void initialiseDefaults_Accelerator();
   void loadConfigFromEprom(DAP_config_st& config_st);
   void storeConfigToEprom(DAP_config_st& config_st);
+};
+
+struct DAP_ESPPairing_st {
+  payloadHeader payLoadHeader_;
+  payloadESPNowInfo payloadESPNowInfo_;
+  payloadFooter payloadFooter_; 
 };
 
 

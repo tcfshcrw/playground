@@ -10,6 +10,8 @@
 #define DAP_PAYLOAD_TYPE_ACTION 110
 #define DAP_PAYLOAD_TYPE_STATE_BASIC 120
 #define DAP_PAYLOAD_TYPE_STATE_EXTENDED 130
+#define DAP_PAYLOAD_TYPE_ESPNOW_PAIRING 140
+#define DAP_PAYLOAD_TYPE_BRIDGE_STATE 210
 
 struct payloadHeader {
   
@@ -65,6 +67,11 @@ struct payloadPedalState_Extended {
   int16_t servo_current_percent_i16;
 };
 
+struct payloadBridgeState {
+  uint8_t Pedal_RSSI;
+  uint8_t Pedal_availability[3];
+
+};
 struct payloadPedalConfig {
   // configure pedal start and endpoint
   // In percent
@@ -187,6 +194,13 @@ struct payloadPedalConfig {
 
 };
 
+struct payloadESPNowInfo{
+  //uint8_t macAddr[6];
+  uint8_t _deviceID;
+  uint8_t occupy;
+  uint8_t occupy2;
+
+};
 struct payloadFooter {
   // To check if structure is valid
   uint16_t checkSum;
@@ -210,7 +224,11 @@ struct DAP_state_extended_st {
   payloadPedalState_Extended payloadPedalState_Extended_;
   payloadFooter payloadFooter_; 
 };
-
+struct DAP_bridge_state_st {
+  payloadHeader payLoadHeader_;
+  payloadBridgeState payloadBridgeState_;
+  payloadFooter payloadFooter_; 
+};
 
 struct DAP_config_st {
 
@@ -225,6 +243,11 @@ struct DAP_config_st {
   void storeConfigToEprom(DAP_config_st& config_st);
 };
 
+struct DAP_ESPPairing_st {
+  payloadHeader payLoadHeader_;
+  payloadESPNowInfo payloadESPNowInfo_;
+  payloadFooter payloadFooter_; 
+};
 
 struct DAP_calculationVariables_st
 {

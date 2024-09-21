@@ -11,6 +11,7 @@ uint8_t Gas_mac[] = {0x36, 0x33, 0x33, 0x33, 0x33, 0x33};
 uint8_t Brk_mac[] = {0x36, 0x33, 0x33, 0x33, 0x33, 0x34};
 uint8_t broadcast_mac[]={0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 uint8_t esp_Host[] = {0x36, 0x33, 0x33, 0x33, 0x33, 0x35};
+uint8_t esp_Mac[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 uint8_t* Recv_mac;
 uint16_t ESPNow_send=0;
 uint16_t ESPNow_recieve=0;
@@ -23,6 +24,9 @@ bool ESPNow_config_request=false;
 bool ESPNow_restart=false;
 bool ESPNow_OTA_enable=false;
 uint8_t ESPNow_error_code=0;
+bool ESPNow_Pairing_status = false;
+bool UpdatePairingToEeprom = false;
+bool ESPNow_pairing_action_b = false;
 
 
 
@@ -39,11 +43,17 @@ typedef struct struct_message {
   int8_t pedal_status; //0=default, 1=rudder, 2=rudder brake
 } struct_message;
 
+typedef struct ESP_pairing_reg
+{
+  uint8_t Pair_status[4];
+  uint8_t Pair_mac[4][6];
+} ESP_pairing_reg;
 // Create a struct_message called myData
 struct_message myData;
 
 ESPNow_Send_Struct _ESPNow_Recv;
 ESPNow_Send_Struct _ESPNow_Send;
+ESP_pairing_reg _ESP_pairing_reg;
 
 bool MacCheck(uint8_t* Mac_A, uint8_t*  Mac_B)
 {
@@ -111,6 +121,30 @@ void sendMessageToMaster(int32_t controllerValue)
     Serial.println("Error sending the data");
   }*/
 }
+void ESPNow_Pairing_callback(const uint8_t *mac_addr, const uint8_t *data, int data_len)
+{
+
+  if(data_len==sizeof(DAP_ESPPairing_st))
+  {
+    memcpy(&dap_esppairing_st, data , sizeof(DAP_ESPPairing_st));
+    //pedal reg
+    if(dap_esppairing_st.payloadESPNowInfo_._deviceID==0||dap_esppairing_st.payloadESPNowInfo_._deviceID==1||dap_esppairing_st.payloadESPNowInfo_._deviceID==2)
+    {
+      memcpy(&_ESP_pairing_reg.Pair_mac[dap_esppairing_st.payloadESPNowInfo_._deviceID], mac_addr , 6);
+      _ESP_pairing_reg.Pair_status[dap_esppairing_st.payloadESPNowInfo_._deviceID]=1;
+      UpdatePairingToEeprom = true;
+    }
+    //bridge and analog device
+    if(dap_esppairing_st.payloadESPNowInfo_._deviceID==99||dap_esppairing_st.payloadESPNowInfo_._deviceID==98)
+    {
+      memcpy(&_ESP_pairing_reg.Pair_mac[3], mac_addr , 6);
+      _ESP_pairing_reg.Pair_status[3]=1;
+      UpdatePairingToEeprom = true;
+    }
+  }
+
+
+}
 void onRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len) 
 {
   /*
@@ -120,6 +154,11 @@ void onRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len)
     ESPNow_update=true;
   }
   */
+  //only get mac in pairing
+  if(ESPNow_pairing_action_b)
+  {
+    ESPNow_Pairing_callback(mac_addr, data, data_len);
+  }
   if(ESPNOW_status)
   {
     if(MacCheck(Recv_mac,(uint8_t *)mac_addr))
@@ -340,25 +379,31 @@ void ESPNow_initialize()
 
     WiFi.mode(WIFI_MODE_STA);
     Serial.println("Initializing ESPNow, please wait"); 
-    Serial.print("Current MAC Address:  ");  
-    Serial.println(WiFi.macAddress());
-    if(dap_config_st.payLoadPedalConfig_.pedal_type==0)
-    {
-      esp_wifi_set_mac(WIFI_IF_STA, &Clu_mac[0]);
-    }
-    if(dap_config_st.payLoadPedalConfig_.pedal_type==1)
-    {
-      esp_wifi_set_mac(WIFI_IF_STA, &Brk_mac[0]);
-    }
-    if(dap_config_st.payLoadPedalConfig_.pedal_type==2)
-    {
-      esp_wifi_set_mac(WIFI_IF_STA, &Gas_mac[0]);
-    }
-    delay(300);
-    Serial.print("Modified MAC Address:  ");  
-    Serial.println(WiFi.macAddress());
+    //Serial.print("Current MAC Address:  ");  
+    //Serial.println(WiFi.macAddress());
+    WiFi.macAddress(esp_Mac); 
+    Serial.printf("Device Mac: %02X:%02X:%02X:%02X:%02X:%02X\n", esp_Mac[0], esp_Mac[1], esp_Mac[2], esp_Mac[3], esp_Mac[4], esp_Mac[5]);
+    #ifndef ESPNow_Pairing_function
+      if(dap_config_st.payLoadPedalConfig_.pedal_type==0)
+      {
+        esp_wifi_set_mac(WIFI_IF_STA, &Clu_mac[0]);
+      }
+      if(dap_config_st.payLoadPedalConfig_.pedal_type==1)
+      {
+        esp_wifi_set_mac(WIFI_IF_STA, &Brk_mac[0]);
+      }
+      if(dap_config_st.payLoadPedalConfig_.pedal_type==2)
+      {
+        esp_wifi_set_mac(WIFI_IF_STA, &Gas_mac[0]);
+      }
+      delay(300);
+      Serial.print("Modified MAC Address:  ");  
+      Serial.println(WiFi.macAddress());
+    #endif
+
+
     ESPNow.init();
-    Serial.println("wait  for ESPNOW initialized");
+    Serial.println("Wait for ESPNOW");
     delay(3000);
     #ifdef ESPNow_S3
       //esp_wifi_config_espnow_rate(WIFI_IF_STA, 	WIFI_PHY_RATE_54M);
@@ -369,7 +414,46 @@ void ESPNow_initialize()
       esp_wifi_config_espnow_rate(WIFI_IF_STA, WIFI_PHY_RATE_MCS0_LGI);
       //esp_wifi_config_espnow_rate(WIFI_IF_STA, 	WIFI_PHY_RATE_54M);
     #endif
-    
+    #ifdef ESPNow_Pairing_function
+      ESP_pairing_reg ESP_pairing_reg_local;
+      EEPROM.get(EEPROM_offset, ESP_pairing_reg_local);
+      memcpy(&_ESP_pairing_reg, &ESP_pairing_reg_local,sizeof(ESP_pairing_reg));
+      //_ESP_pairing_reg=ESP_pairing_reg_local;
+      //EEPROM.get(EEPROM_offset, _ESP_pairing_reg);
+      for(int i=0;i<4;i++)
+      { 
+        if(_ESP_pairing_reg.Pair_status[i]==1)
+        {
+          Serial.print("Paired Device #");
+          Serial.print(i);
+          //Serial.print(" Pair: ");
+          //Serial.print(_ESP_pairing_reg.Pair_status[i]);
+          Serial.printf(" Mac: %02X:%02X:%02X:%02X:%02X:%02X\n", _ESP_pairing_reg.Pair_mac[i][0], _ESP_pairing_reg.Pair_mac[i][1], _ESP_pairing_reg.Pair_mac[i][2], _ESP_pairing_reg.Pair_mac[i][3], _ESP_pairing_reg.Pair_mac[i][4], _ESP_pairing_reg.Pair_mac[i][5]);
+        }           
+      }
+      for(int i=0; i<4;i++)
+      {
+        if(_ESP_pairing_reg.Pair_status[i]==1)
+        {
+          if(i==0)
+          {
+            memcpy(&Clu_mac,&_ESP_pairing_reg.Pair_mac[i],6);
+          }
+          if(i==1)
+          {
+            memcpy(&Brk_mac,&_ESP_pairing_reg.Pair_mac[i],6);
+          }
+          if(i==2)
+          {
+            memcpy(&Gas_mac,&_ESP_pairing_reg.Pair_mac[i],6);
+          }        
+          if(i==3)
+          {
+            memcpy(&esp_Host,&_ESP_pairing_reg.Pair_mac[i],6);
+          }        
+        }
+      }
+    #endif    
     if(dap_config_st.payLoadPedalConfig_.pedal_type==1)
     {
       Recv_mac=Gas_mac;
@@ -381,26 +465,13 @@ void ESPNow_initialize()
       Recv_mac=Brk_mac;
       ESPNow.add_peer(Recv_mac);
     }
-    /*
-    if(dap_config_st.payLoadPedalConfig_.pedal_type==2||dap_config_st.payLoadPedalConfig_.pedal_type==1)
-    {
-      if(ESPNow.add_peer(Recv_mac)== ESP_OK)
-      {
-        ESPNOW_status=true;
-        Serial.println("Sucess to add peer");
-      }
-      else
-      {
-        ESPNOW_status=false;
-        Serial.println("Fail to add peer");
-      }
-    }*/
+
 
     
     if(ESPNow.add_peer(esp_master)== ESP_OK)
     {
       ESPNOW_status=true;
-      Serial.println("Sucess to add host peer");
+      Serial.println("Sucess to add joystick peer");
     }
     if(ESPNow.add_peer(esp_Host)== ESP_OK)
     {
