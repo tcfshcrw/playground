@@ -806,7 +806,8 @@ void Serial_Task( void * pvParameters)
     delay(2);
   }
 }
-
+unsigned long last_serial_joy_out =millis();
+unsigned long now;
 void Joystick_Task( void * pvParameters )
 {
   for(;;)
@@ -864,8 +865,22 @@ void Joystick_Task( void * pvParameters )
     #endif
     //set MCP4728 analog value
     #ifdef Using_MCP4728
+      //Serial.print("MCP/");
+      now=millis();
       if(MCP_status)
       {
+        /*
+        if(now-last_serial_joy_out>1000)
+        {
+          Serial.print("MCP/");
+          Serial.print(Joystick_value[0]);
+          Serial.print("/");
+          Serial.print(Joystick_value[1]);
+          Serial.print("/");
+          Serial.print(Joystick_value[2]); 
+        }
+        */
+      
         mcp.setChannelValue(MCP4728_CHANNEL_A, (uint16_t)((float)Joystick_value[0]/(float)JOYSTICK_RANGE*0.8f*4096));
         mcp.setChannelValue(MCP4728_CHANNEL_B, (uint16_t)((float)Joystick_value[1]/(float)JOYSTICK_RANGE*0.8f*4096));
         mcp.setChannelValue(MCP4728_CHANNEL_C, (uint16_t)((float)Joystick_value[2]/(float)JOYSTICK_RANGE*0.8f*4096));

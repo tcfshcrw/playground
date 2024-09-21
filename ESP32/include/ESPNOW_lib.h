@@ -134,8 +134,8 @@ void ESPNow_Pairing_callback(const uint8_t *mac_addr, const uint8_t *data, int d
       _ESP_pairing_reg.Pair_status[dap_esppairing_st.payloadESPNowInfo_._deviceID]=1;
       UpdatePairingToEeprom = true;
     }
-    //bridge and analog device
-    if(dap_esppairing_st.payloadESPNowInfo_._deviceID==99||dap_esppairing_st.payloadESPNowInfo_._deviceID==98)
+    //bridge and analog device, for pedal, only save for bridge
+    if(dap_esppairing_st.payloadESPNowInfo_._deviceID==99/*||dap_esppairing_st.payloadESPNowInfo_._deviceID==98*/)
     {
       memcpy(&_ESP_pairing_reg.Pair_mac[3], mac_addr , 6);
       _ESP_pairing_reg.Pair_status[3]=1;

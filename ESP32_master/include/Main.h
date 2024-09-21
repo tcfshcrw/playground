@@ -103,6 +103,7 @@
   #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 1
   #define ESPNow_Pairing_function
   #define deviceID 98
+  #define Pairing_GPIO 0
 #endif
 
 
