@@ -128,7 +128,7 @@ DAP_bridge_state_st dap_bridge_state_lcl;//
   static const crgb_t L_PURPLE = 0x800080;
   */
   Adafruit_NeoPixel pixels(LEDS_COUNT, LED_GPIO, NEO_RGB + NEO_KHZ800);
-  uint8_t LED_Status=0; //0=normal 1= pairing
+  
 
 #endif
 
@@ -204,6 +204,7 @@ MovingAverageFilter rssi_filter(30);
 int32_t joystickNormalizedToInt32_local = 0;
 unsigned long pedal_last_update[3]={1,1,1};
 uint8_t pedal_avaliable[3]={0,0,0};
+uint8_t LED_Status=0; //0=normal 1= pairing
 void ESPNOW_SyncTask( void * pvParameters);
 void Joystick_Task( void * pvParameters);
 void LED_Task( void * pvParameters);
