@@ -663,7 +663,7 @@ pinMode(Pairing_GPIO, INPUT_PULLUP);
     xTaskCreatePinnedToCore(
                         ESPNOW_SyncTask,   
                         "ESPNOW_update_Task", 
-                        3000,  
+                        5000,  
                         //STACK_SIZE_FOR_TASK_2,    
                         NULL,      
                         1,         

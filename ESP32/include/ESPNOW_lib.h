@@ -454,7 +454,8 @@ void ESPNow_initialize()
           }        
         }
       }
-    #endif    
+    #endif
+       
     if(dap_config_st.payLoadPedalConfig_.pedal_type==1)
     {
       Recv_mac=Gas_mac;
@@ -466,6 +467,12 @@ void ESPNow_initialize()
       Recv_mac=Brk_mac;
       ESPNow.add_peer(Recv_mac);
     }
+    if(dap_config_st.payLoadPedalConfig_.pedal_type==0)
+    {
+      Recv_mac=Brk_mac;
+      ESPNow.add_peer(Recv_mac);
+    }
+    
 
 
     
