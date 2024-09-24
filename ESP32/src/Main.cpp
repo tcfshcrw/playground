@@ -622,18 +622,7 @@ pinMode(Pairing_GPIO, INPUT_PULLUP);
       Pedal_assignment=CFG1_reading*2+CFG2_reading*1;
       if(Pedal_assignment==3)
       {
-        Serial.println("Reading from EEPROM....");
-        if(_ESP_pairing_reg.Device_ID==4||_ESP_pairing_reg.Device_ID==5||_ESP_pairing_reg.Device_ID==6)
-        {
-          dap_config_st.payLoadPedalConfig_.pedal_type=_ESP_pairing_reg.Device_ID-4;
-          Pedal_assignment_status=true;
-          Serial.print("Pedal Assignment is: ");
-          Serial.println(dap_config_st.payLoadPedalConfig_.pedal_type);
-        }
-        else
-        {
-          Serial.println("Pedal Type:3, assignment error, please adjust dip switch on control board or connect USB and send a config to finish assignment.");
-        }
+        Serial.println("Pedal Type:3, assignment error, please adjust dip switch on control board or connect USB and send a config to finish assignment.");
       }
       else
       {
@@ -654,11 +643,10 @@ pinMode(Pairing_GPIO, INPUT_PULLUP);
             Serial.println("Pedal is assigned as Throttle, please also send the config in.");
           }
           dap_config_st.payLoadPedalConfig_.pedal_type=Pedal_assignment;
-          Pedal_assignment_status=true;
         }
         else
         {
-          Serial.println("Asssignment error, defective pin connection, pelase connect USB and enable Pairing function to finish assignment");
+          Serial.println("Asssignment error, defective pin connection, pelase connect USB and send a config to finish assignment");
         }
       }
 
@@ -667,18 +655,28 @@ pinMode(Pairing_GPIO, INPUT_PULLUP);
 
   //enable ESP-NOW
   #ifdef ESPNOW_Enable
-    dap_calculationVariables_st.rudder_brake_status=false;
+  dap_calculationVariables_st.rudder_brake_status=false;
+  
+  if(dap_config_st.payLoadPedalConfig_.pedal_type==0||dap_config_st.payLoadPedalConfig_.pedal_type==1||dap_config_st.payLoadPedalConfig_.pedal_type==2)
+  {
     ESPNow_initialize();
     xTaskCreatePinnedToCore(
-                          ESPNOW_SyncTask,   
-                          "ESPNOW_update_Task", 
-                          5000,  
-                          //STACK_SIZE_FOR_TASK_2,    
-                          NULL,      
-                          1,         
-                          &Task6,    
-                          0);     
+                        ESPNOW_SyncTask,   
+                        "ESPNOW_update_Task", 
+                        5000,  
+                        //STACK_SIZE_FOR_TASK_2,    
+                        NULL,      
+                        1,         
+                        &Task6,    
+                        0);     
     delay(500);
+  }
+    
+      
+    
+
+    
+
   #endif
 
   Serial.println("Setup end");
@@ -1381,12 +1379,6 @@ void serialCommunicationTask( void * pvParameters )
               {
                 Serial.println("Get Pairing command");
                 software_pairing_action_b=true;
-
-                if(dap_actions_st.payloadPedalAction_.system_action_2_u8!=0)
-                {
-                  _ESP_pairing_reg.Device_ID=dap_actions_st.payloadPedalAction_.system_action_2_u8;
-                  dap_config_st.payLoadPedalConfig_.pedal_type=dap_actions_st.payloadPedalAction_.system_action_2_u8-4;
-                }
               }
 
               // trigger ABS effect
@@ -1406,7 +1398,7 @@ void serialCommunicationTask( void * pvParameters )
               //Road impact
               _Road_impact_effect.Road_Impact_value=dap_actions_st.payloadPedalAction_.impact_value_u8;
               // trigger system identification
-              if (dap_actions_st.payloadPedalAction_.system_action_2_u8==1 && dap_actions_st.payloadPedalAction_.system_action_u8==0)
+              if (dap_actions_st.payloadPedalAction_.startSystemIdentification_u8)
               {
                 systemIdentificationMode_b = true;
               }
@@ -1691,18 +1683,14 @@ void ESPNOW_SyncTask( void * pvParameters )
       #ifdef ESPNow_Pairing_function
         if(digitalRead(Pairing_GPIO)==LOW||software_pairing_action_b)
         {
-          //hardware pairing
-          if(digitalRead(Pairing_GPIO)==LOW && software_pairing_action_b==false)
-          {
-            _ESP_pairing_reg.Device_ID=dap_config_st.payLoadPedalConfig_.pedal_type+4;
-          }
           Serial.println("Pedal Pairing.....");
           delay(1000);
           Pairing_state_start=millis();
           Pairing_state_last_sending=millis();
           ESPNow_pairing_action_b=true;
           building_dap_esppairing_lcl=true;
-          software_pairing_action_b=false;          
+          software_pairing_action_b=false;
+          
         }
         if(ESPNow_pairing_action_b)
         {
