@@ -245,9 +245,9 @@ void ESPNow_initialize()
 {
 
     WiFi.mode(WIFI_MODE_STA);
-    Serial.println("Initializing ESPNow, please wait"); 
+    Serial.println("[L]Initializing ESPNow, please wait"); 
     WiFi.macAddress(esp_Mac); 
-    Serial.printf("Device Mac: %02X:%02X:%02X:%02X:%02X:%02X\n", esp_Mac[0], esp_Mac[1], esp_Mac[2], esp_Mac[3], esp_Mac[4], esp_Mac[5]);
+    Serial.printf("[L]Device Mac: %02X:%02X:%02X:%02X:%02X:%02X\n", esp_Mac[0], esp_Mac[1], esp_Mac[2], esp_Mac[3], esp_Mac[4], esp_Mac[5]);
     //Serial.print("Current MAC Address:  ");  
     //Serial.println(WiFi.macAddress());
     #ifndef ESPNow_Pairing_function
@@ -257,7 +257,7 @@ void ESPNow_initialize()
       Serial.println(WiFi.macAddress());
     #endif
     ESPNow.init();
-    Serial.println("Wait for ESPNOW");
+    Serial.println("[L]Wait for ESPNOW");
     delay(3000);
     #ifdef Using_Board_ESP32
     esp_wifi_config_espnow_rate(WIFI_IF_STA, WIFI_PHY_RATE_MCS0_LGI);
@@ -266,7 +266,7 @@ void ESPNow_initialize()
     #ifdef Using_Board_ESP32S3
     //esp_wifi_config_espnow_rate(WIFI_IF_STA, WIFI_PHY_RATE_54M);
     esp_wifi_config_espnow_rate(WIFI_IF_STA, 	WIFI_PHY_RATE_11M_L);
-    	
+    esp_wifi_set_max_tx_power(WIFI_POWER_8_5dBm);
     #endif
     //reading from eeprom
     #ifdef ESPNow_Pairing_function
@@ -279,7 +279,7 @@ void ESPNow_initialize()
     { 
       if(_ESP_pairing_reg.Pair_status[i]==1)
       {
-        Serial.print("Paired Device #");
+        Serial.print("[L]Paired Device #");
         Serial.print(i);
         //Serial.print(" Pair: ");
         //Serial.print(_ESP_pairing_reg.Pair_status[i]);
@@ -311,35 +311,35 @@ void ESPNow_initialize()
     }
     #endif
     
-    Serial.printf("BRK Mac: %02X:%02X:%02X:%02X:%02X:%02X\n", Brk_mac[0], Brk_mac[1], Brk_mac[2], Brk_mac[3], Brk_mac[4], Brk_mac[5]);
+    Serial.printf("[L]BRK Mac: %02X:%02X:%02X:%02X:%02X:%02X\n", Brk_mac[0], Brk_mac[1], Brk_mac[2], Brk_mac[3], Brk_mac[4], Brk_mac[5]);
     if(ESPNow.add_peer(Brk_mac)== ESP_OK)
     {
       ESPNOW_status=true;
-      Serial.println("Sucess to add BRK Mac");
+      Serial.println("[L]Sucess to add BRK Mac");
     }
-    Serial.printf("GAS Mac: %02X:%02X:%02X:%02X:%02X:%02X\n", Gas_mac[0], Gas_mac[1], Gas_mac[2], Gas_mac[3], Gas_mac[4], Gas_mac[5]);
+    Serial.printf("[L]GAS Mac: %02X:%02X:%02X:%02X:%02X:%02X\n", Gas_mac[0], Gas_mac[1], Gas_mac[2], Gas_mac[3], Gas_mac[4], Gas_mac[5]);
     if(ESPNow.add_peer(Gas_mac)== ESP_OK)
     {
       ESPNOW_status=true;
-      Serial.println("Sucess to add Throttle Mac");
+      Serial.println("[L]Sucess to add Throttle Mac");
     }
-    Serial.printf("CLU Mac: %02X:%02X:%02X:%02X:%02X:%02X\n", Clu_mac[0], Clu_mac[1], Clu_mac[2], Clu_mac[3], Clu_mac[4], Clu_mac[5]);
+    Serial.printf("[L]CLU Mac: %02X:%02X:%02X:%02X:%02X:%02X\n", Clu_mac[0], Clu_mac[1], Clu_mac[2], Clu_mac[3], Clu_mac[4], Clu_mac[5]);
     if(ESPNow.add_peer(Clu_mac)== ESP_OK)
     {
       ESPNOW_status=true;
-      Serial.println("Sucess to add Clutch Mac");
+      Serial.println("[L]Sucess to add Clutch Mac");
     }     
-    Serial.printf("HOST Mac: %02X:%02X:%02X:%02X:%02X:%02X\n", esp_Host[0], esp_Host[1], esp_Host[2], esp_Host[3], esp_Host[4], esp_Host[5]); 
+    Serial.printf("[L]HOST Mac: %02X:%02X:%02X:%02X:%02X:%02X\n", esp_Host[0], esp_Host[1], esp_Host[2], esp_Host[3], esp_Host[4], esp_Host[5]); 
     if(ESPNow.add_peer(esp_Host)== ESP_OK)
     {
       ESPNOW_status=true;
-      Serial.println("Sucess to add host peer");
+      Serial.println("[L]Sucess to add host peer");
     }
 
     if(ESPNow.add_peer(broadcast_mac)== ESP_OK)
     {
       ESPNOW_status=true;
-      Serial.println("Sucess to add broadcast peer");
+      Serial.println("[L]Sucess to add broadcast peer");
     }
     ESPNow.reg_recv_cb(onRecv);
     ESPNow.reg_send_cb(OnSent);
@@ -347,6 +347,6 @@ void ESPNow_initialize()
     esp_wifi_set_promiscuous(true);
     esp_wifi_set_promiscuous_rx_cb(&promiscuous_rx_cb);
     ESPNow_initial_status=true;
-    Serial.println("ESPNow Initialized");
+    Serial.println("[L]ESPNow Initialized");
   
 }

@@ -245,8 +245,8 @@ void setup()
   Serial.println(" ");
   Serial.println(" ");
   
-  Serial.println("This work is licensed under a Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.");
-  Serial.println("Please check github repo for more detail: https://github.com/ChrGri/DIY-Sim-Racing-FFB-Pedal");
+  Serial.println("[L]This work is licensed under a Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.");
+  Serial.println("[L]Please check github repo for more detail: https://github.com/ChrGri/DIY-Sim-Racing-FFB-Pedal");
 
 
   // setup multi tasking
@@ -374,7 +374,7 @@ void setup()
     delay(500);
   #endif
 
-  Serial.println("Setup end");
+  Serial.println("[L]Setup end");
   
 }
 
@@ -412,7 +412,7 @@ void ESPNOW_SyncTask( void * pvParameters )
     #ifdef ESPNow_Pairing_function
       if(digitalRead(Pairing_GPIO)==LOW||software_pairing_action_b)
       {
-        Serial.println("Bridge Pairing.....");
+        Serial.println("[L]Bridge Pairing.....");
         delay(1000);
         Pairing_state_start=millis();
         Pairing_state_last_sending=millis();
@@ -446,7 +446,7 @@ void ESPNOW_SyncTask( void * pvParameters )
         //timeout check
         if(now-Pairing_state_start>Pairing_timeout)
         {
-          Serial.println("Reach timeout");
+          Serial.println("[L]Reach timeout");
           ESPNow_pairing_action_b=false;
           LED_Status=0;
           if(UpdatePairingToEeprom)
@@ -462,7 +462,7 @@ void ESPNOW_SyncTask( void * pvParameters )
             {
               if(ESP_pairing_reg_local.Pair_status[i]==1)
               {                
-                Serial.print("#");
+                Serial.print("[L]#");
                 Serial.print(i);
                 Serial.print("Pair: ");
                 Serial.print(ESP_pairing_reg_local.Pair_status[i]);
@@ -470,7 +470,7 @@ void ESPNOW_SyncTask( void * pvParameters )
               }
             }
             //adding peer
-            
+            /*
             for(int i=0; i<4;i++)
             {
               if(_ESP_pairing_reg.Pair_status[i]==1)
@@ -489,7 +489,7 @@ void ESPNOW_SyncTask( void * pvParameters )
                   memcpy(&Brk_mac,&_ESP_pairing_reg.Pair_mac[i],6);
                   delay(300);
                   ESPNow.add_peer(Brk_mac);
-                  Serial.printf(" Mac: %02X:%02X:%02X:%02X:%02X:%02X\n", Brk_mac[0], Brk_mac[1], Brk_mac[2], Brk_mac[3], Brk_mac[4], Brk_mac[5]);
+                  //Serial.printf("[L]Mac: %02X:%02X:%02X:%02X:%02X:%02X\n", Brk_mac[0], Brk_mac[1], Brk_mac[2], Brk_mac[3], Brk_mac[4], Brk_mac[5]);
 
                 }
                 if(i==2)
@@ -508,7 +508,9 @@ void ESPNOW_SyncTask( void * pvParameters )
                 }        
               }
             }
+            */
           }
+          
         }
       }
     #endif
@@ -519,7 +521,7 @@ void ESPNOW_SyncTask( void * pvParameters )
         if(dap_bridge_state_st.payloadBridgeState_.Pedal_availability[0]==1)
         {
           ESPNow.send_message(Clu_mac,(uint8_t *) &dap_config_st,sizeof(dap_config_st));
-          Serial.println("Clutch config sent");
+          Serial.println("[L]Clutch config sent");
           configUpdateAvailable=false;
         }
       }
@@ -528,7 +530,7 @@ void ESPNOW_SyncTask( void * pvParameters )
         if(dap_bridge_state_st.payloadBridgeState_.Pedal_availability[1]==1)
         {
           ESPNow.send_message(Brk_mac,(uint8_t *) &dap_config_st,sizeof(dap_config_st));
-          Serial.println("BRK config sent");
+          Serial.println("[L]BRK config sent");
           configUpdateAvailable=false;
         }
 
@@ -538,7 +540,7 @@ void ESPNOW_SyncTask( void * pvParameters )
         if(dap_bridge_state_st.payloadBridgeState_.Pedal_availability[2]==1)
         {
           ESPNow.send_message(Gas_mac,(uint8_t *) &dap_config_st,sizeof(dap_config_st));
-          Serial.println("Throttle config sent");
+          Serial.println("[L]Throttle config sent");
           configUpdateAvailable=false;
         }
 
@@ -601,7 +603,7 @@ void Serial_Task( void * pvParameters)
           if ( dap_actions_st.payLoadHeader_.payloadType != DAP_PAYLOAD_TYPE_ACTION )
           { 
             structChecker = false;
-            Serial.print("Payload type expected: ");
+            Serial.print("[L]Payload type expected: ");
             Serial.print(DAP_PAYLOAD_TYPE_ACTION);
             Serial.print(",   Payload type received: ");
             Serial.println(dap_config_st_local.payLoadHeader_.payloadType);
@@ -609,16 +611,17 @@ void Serial_Task( void * pvParameters)
           if ( dap_actions_st.payLoadHeader_.version != DAP_VERSION_CONFIG )
           { 
             structChecker = false;
-            Serial.print("Config version expected: ");
+            Serial.print("[L]Config version expected: ");
             Serial.print(DAP_VERSION_CONFIG);
             Serial.print(",   Config version received: ");
             Serial.println(dap_config_st_local.payLoadHeader_.version);
           }
+          
           crc = checksumCalculator((uint8_t*)(&(dap_actions_st.payLoadHeader_)), sizeof(dap_actions_st.payLoadHeader_) + sizeof(dap_actions_st.payloadPedalAction_));
           if (crc != dap_actions_st.payloadFooter_.checkSum)
           { 
             structChecker = false;
-            Serial.print("CRC expected: ");
+            Serial.print("[L]CRC expected: ");
             Serial.print(crc);
             Serial.print(",   CRC received: ");
             Serial.println(dap_actions_st.payloadFooter_.checkSum);
@@ -638,7 +641,7 @@ void Serial_Task( void * pvParameters)
           if ( dap_config_st.payLoadHeader_.payloadType != DAP_PAYLOAD_TYPE_CONFIG )
           { 
             structChecker = false;
-            Serial.print("Payload type expected: ");
+            Serial.print("[L]Payload type expected: ");
             Serial.print(DAP_PAYLOAD_TYPE_CONFIG);
             Serial.print(",   Payload type received: ");
             Serial.println(dap_config_st_local.payLoadHeader_.payloadType);
@@ -646,7 +649,7 @@ void Serial_Task( void * pvParameters)
           if ( dap_config_st.payLoadHeader_.version != DAP_VERSION_CONFIG )
           { 
             structChecker = false;
-            Serial.print("Config version expected: ");
+            Serial.print("[L]Config version expected: ");
             Serial.print(DAP_VERSION_CONFIG);
             Serial.print(",   Config version received: ");
             Serial.println(dap_config_st_local.payLoadHeader_.version);
@@ -656,7 +659,7 @@ void Serial_Task( void * pvParameters)
           if (crc != dap_config_st.payloadFooter_.checkSum)
           { 
             structChecker = false;
-            Serial.print("CRC expected: ");
+            Serial.print("[L]CRC expected: ");
             Serial.print(crc);
             Serial.print(",   CRC received: ");
             Serial.println(dap_config_st.payloadFooter_.checkSum);
@@ -678,7 +681,7 @@ void Serial_Task( void * pvParameters)
           if ( dap_bridge_state_lcl.payLoadHeader_.payloadType != DAP_PAYLOAD_TYPE_BRIDGE_STATE )
           { 
             structChecker = false;
-            Serial.print("Payload type expected: ");
+            Serial.print("[L]Payload type expected: ");
             Serial.print(DAP_PAYLOAD_TYPE_BRIDGE_STATE);
             Serial.print(",   Payload type received: ");
             Serial.println(dap_bridge_state_lcl.payLoadHeader_.payloadType);
@@ -686,7 +689,7 @@ void Serial_Task( void * pvParameters)
           if ( dap_bridge_state_lcl.payLoadHeader_.version != DAP_VERSION_CONFIG )
           { 
             structChecker = false;
-            Serial.print("Config version expected: ");
+            Serial.print("[L]Config version expected: ");
             Serial.print(DAP_VERSION_CONFIG);
             Serial.print(",   Config version received: ");
             Serial.println(dap_bridge_state_lcl.payLoadHeader_.version);
@@ -696,7 +699,7 @@ void Serial_Task( void * pvParameters)
           if (crc != dap_bridge_state_lcl.payloadFooter_.checkSum)
           { 
             structChecker = false;
-            Serial.print("CRC expected: ");
+            Serial.print("[L]CRC expected: ");
             Serial.print(crc);
             Serial.print(",   CRC received: ");
             Serial.println(dap_bridge_state_lcl.payloadFooter_.checkSum);
@@ -706,7 +709,7 @@ void Serial_Task( void * pvParameters)
           {
             if(dap_bridge_state_lcl.payloadBridgeState_.Bridge_action==1)
             {
-              Serial.println("Get action from Simhub:1");
+              Serial.println("[L]Get Pair action");
               software_pairing_action_b=true;
             }
           }
@@ -717,11 +720,11 @@ void Serial_Task( void * pvParameters)
           while (Serial.available()) 
             Serial.read();
             //Serial.flush();
-            Serial.println("\nIn byte size: ");
-            Serial.println(n);
-            Serial.println("    Exp config size: ");
-            Serial.println(sizeof(DAP_config_st) );
-            Serial.println("    Exp action size: ");
+            Serial.print("[L]In byte size: ");
+            Serial.print(n);
+            Serial.print("    Exp config size: ");
+            Serial.print(sizeof(DAP_config_st) );
+            Serial.print("    Exp action size: ");
             Serial.println(sizeof(DAP_actions_st) );
 
           break;          
@@ -737,7 +740,7 @@ void Serial_Task( void * pvParameters)
       Serial.print("\r\n");
       if(dap_bridge_state_st.payloadBridgeState_.Pedal_availability[dap_state_basic_st.payLoadHeader_.PedalTag]==0)
       {
-        Serial.print("Found Pedal:");
+        Serial.print("[L]Found Pedal:");
         Serial.println(dap_state_basic_st.payLoadHeader_.PedalTag);
       }
       dap_bridge_state_st.payloadBridgeState_.Pedal_availability[dap_state_basic_st.payLoadHeader_.PedalTag]=1;
@@ -782,7 +785,7 @@ void Serial_Task( void * pvParameters)
         Serial.write((char*)dap_config_st_local_ptr, sizeof(DAP_config_st));
         Serial.print("\r\n");
         ESPNow_request_config_b[pedal_config_IDX]=false;
-        Serial.print("Pedal:");
+        Serial.print("[L]Pedal:");
         Serial.print(pedal_config_IDX);
         Serial.println("config returned");
         delay(3);
@@ -791,7 +794,7 @@ void Serial_Task( void * pvParameters)
 
     if(ESPNow_error_b)
     {
-      Serial.print("Pedal:");
+      Serial.print("[L]Pedal:");
       Serial.print(dap_state_basic_st.payLoadHeader_.PedalTag);
       Serial.print(" E:");
       Serial.println(dap_state_basic_st.payloadPedalState_Basic_.error_code_u8);
@@ -838,7 +841,7 @@ void Serial_Task( void * pvParameters)
       {
         if(current_time-pedal_last_update[pedalIDX]>3000)
         {
-          Serial.print("Pedal:");
+          Serial.print("[L]Pedal:");
           Serial.print(pedalIDX);
           Serial.println(" Disconnected");
           dap_bridge_state_st.payloadBridgeState_.Pedal_availability[pedalIDX]=0;
