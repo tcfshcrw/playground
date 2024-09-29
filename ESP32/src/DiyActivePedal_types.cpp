@@ -211,7 +211,7 @@ void DAP_calculationVariables_st::updateEndstops(long newMinEndstop, long newMax
   stepperPosMax = stepperPosEndstopRange * endPosRel;
   stepperPosMin_default = stepperPosMin;
   stepperPosRange = stepperPosMax - stepperPosMin;
-  current_pedal_position_ratio=((float)(current_pedal_position-stepperPosMin_default))/((float)stepperPosRange_default);
+  //current_pedal_position_ratio=((float)(current_pedal_position-stepperPosMin_default))/((float)stepperPosRange_default);
 }
 
 void DAP_calculationVariables_st::updateStiffness() {

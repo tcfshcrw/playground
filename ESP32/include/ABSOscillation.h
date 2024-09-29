@@ -47,10 +47,10 @@ public:
       float absAmp_fl32 = 0;
       switch (absForceOrTarvelBit) {
         case 0:
-          absAmp_fl32 = calcVars_st->current_pedal_position_ratio*calcVars_st->absAmplitude; 
+          absAmp_fl32 = calcVars_st->absAmplitude; 
           break;
         case 1:
-          absAmp_fl32 = calcVars_st->current_pedal_position_ratio*calcVars_st->stepperPosRange * calcVars_st->absAmplitude / 100.;
+          absAmp_fl32 = calcVars_st->stepperPosRange * calcVars_st->absAmplitude / 100.;
           break;
         default:
           break;
