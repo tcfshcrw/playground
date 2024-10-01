@@ -257,7 +257,7 @@ void ESPNow_initialize()
       Serial.println(WiFi.macAddress());
     #endif
     ESPNow.init();
-    Serial.println("[L]Wait for ESPNOW");
+    Serial.println("Wait for ESPNOW");
     delay(3000);
     #ifdef Using_Board_ESP32
     esp_wifi_config_espnow_rate(WIFI_IF_STA, WIFI_PHY_RATE_MCS0_LGI);
@@ -275,11 +275,12 @@ void ESPNow_initialize()
     memcpy(&_ESP_pairing_reg, &ESP_pairing_reg_local,sizeof(ESP_pairing_reg));
     //_ESP_pairing_reg=ESP_pairing_reg_local;
     //EEPROM.get(EEPROM_offset, _ESP_pairing_reg);
+    Serial.print("[L]");
     for(int i=0;i<4;i++)
     { 
       if(_ESP_pairing_reg.Pair_status[i]==1)
       {
-        Serial.print("[L]Paired Device #");
+        Serial.print("Paired Device #");
         Serial.print(i);
         //Serial.print(" Pair: ");
         //Serial.print(_ESP_pairing_reg.Pair_status[i]);
@@ -311,29 +312,29 @@ void ESPNow_initialize()
     }
     #endif
     
-    Serial.printf("[L]BRK Mac: %02X:%02X:%02X:%02X:%02X:%02X\n", Brk_mac[0], Brk_mac[1], Brk_mac[2], Brk_mac[3], Brk_mac[4], Brk_mac[5]);
+    Serial.printf("BRK Mac: %02X:%02X:%02X:%02X:%02X:%02X\n", Brk_mac[0], Brk_mac[1], Brk_mac[2], Brk_mac[3], Brk_mac[4], Brk_mac[5]);
     if(ESPNow.add_peer(Brk_mac)== ESP_OK)
     {
       ESPNOW_status=true;
-      Serial.println("[L]Sucess to add BRK Mac");
+      Serial.println("Sucess to add BRK Mac");
     }
     Serial.printf("[L]GAS Mac: %02X:%02X:%02X:%02X:%02X:%02X\n", Gas_mac[0], Gas_mac[1], Gas_mac[2], Gas_mac[3], Gas_mac[4], Gas_mac[5]);
     if(ESPNow.add_peer(Gas_mac)== ESP_OK)
     {
       ESPNOW_status=true;
-      Serial.println("[L]Sucess to add Throttle Mac");
+      Serial.println("Sucess to add Throttle Mac");
     }
     Serial.printf("[L]CLU Mac: %02X:%02X:%02X:%02X:%02X:%02X\n", Clu_mac[0], Clu_mac[1], Clu_mac[2], Clu_mac[3], Clu_mac[4], Clu_mac[5]);
     if(ESPNow.add_peer(Clu_mac)== ESP_OK)
     {
       ESPNOW_status=true;
-      Serial.println("[L]Sucess to add Clutch Mac");
+      Serial.println("Sucess to add Clutch Mac");
     }     
     Serial.printf("[L]HOST Mac: %02X:%02X:%02X:%02X:%02X:%02X\n", esp_Host[0], esp_Host[1], esp_Host[2], esp_Host[3], esp_Host[4], esp_Host[5]); 
     if(ESPNow.add_peer(esp_Host)== ESP_OK)
     {
       ESPNOW_status=true;
-      Serial.println("[L]Sucess to add host peer");
+      Serial.println("Sucess to add host peer");
     }
 
     if(ESPNow.add_peer(broadcast_mac)== ESP_OK)
