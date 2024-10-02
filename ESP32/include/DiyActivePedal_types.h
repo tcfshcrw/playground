@@ -286,6 +286,7 @@ struct DAP_calculationVariables_st
   float Sync_pedal_position_ratio;
   bool rudder_brake_status;
   long stepperPosMin_default;
+  long stepperPosMax_default;
   float stepperPosRange_default;
 
   void updateFromConfig(DAP_config_st& config_st);
@@ -295,5 +296,6 @@ struct DAP_calculationVariables_st
   void reset_maxforce();
   void StepperPos_setback();
   void Default_pos();
-  void update_stepperpos(long newMinstop);
+  void update_stepperMinpos(long newMinstop);
+  void update_stepperMaxpos(long newMaxstop);
 };

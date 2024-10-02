@@ -230,18 +230,27 @@ void DAP_calculationVariables_st::updateStiffness() {
 void DAP_calculationVariables_st::StepperPos_setback()
 {
   stepperPosMin=stepperPosMin_default;
+  stepperPosMax=stepperPosMax_default;
   stepperPosRange = stepperPosRange_default;
 }
 
-void DAP_calculationVariables_st::update_stepperpos(long newMinstop)
+void DAP_calculationVariables_st::update_stepperMinpos(long newMinstop)
 {
   stepperPosMin=newMinstop;
+  
+  stepperPosRange = stepperPosMax - stepperPosMin;
+}
+void DAP_calculationVariables_st::update_stepperMaxpos( long newMaxstop)
+{
+  
+  stepperPosMax=newMaxstop;
   stepperPosRange = stepperPosMax - stepperPosMin;
 }
 
 void DAP_calculationVariables_st::Default_pos()
 {
   stepperPosMin_default = stepperPosMin;
+  stepperPosMax_default = stepperPosMax;
   stepperPosRange_default=stepperPosRange;
 }
 

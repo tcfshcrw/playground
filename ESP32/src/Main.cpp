@@ -96,6 +96,7 @@ Road_impact_effect _Road_impact_effect;
 Custom_vibration CV1;
 Custom_vibration CV2;
 Rudder _rudder;
+Rudder_G_Force _rudder_g_force;
 #define ABS_OSCILLATION
 
 
@@ -878,19 +879,25 @@ void pedalUpdateTask( void * pvParameters )
       _Road_impact_effect.forceOffset(&dap_calculationVariables_st, dap_config_st.payLoadPedalConfig_.Road_multi);
       CV1.forceOffset(dap_config_st.payLoadPedalConfig_.CV_freq_1,dap_config_st.payLoadPedalConfig_.CV_amp_1);
       CV2.forceOffset(dap_config_st.payLoadPedalConfig_.CV_freq_2,dap_config_st.payLoadPedalConfig_.CV_amp_2);
+      _rudder_g_force.offset_calculate(&dap_calculationVariables_st);
+      dap_calculationVariables_st.update_stepperMaxpos(_rudder_g_force.offset_filter);
       _rudder.offset_calculate(&dap_calculationVariables_st);
+      dap_calculationVariables_st.update_stepperMinpos(_rudder.offset_filter);
+
+
       //_rudder.force_offset_calculate(&dap_calculationVariables_st);
+
     #endif
 
     //update max force with G force effect
-    movingAverageFilter.dataPointsCount = dap_config_st.payLoadPedalConfig_.G_window;
-    movingAverageFilter_roadimpact.dataPointsCount = dap_config_st.payLoadPedalConfig_.Road_window;
-    dap_calculationVariables_st.reset_maxforce();
-    dap_calculationVariables_st.Force_Max += _G_force_effect.G_force;
-    dap_calculationVariables_st.Force_Max += _Road_impact_effect.Road_Impact_force;
-    dap_calculationVariables_st.dynamic_update();
-    dap_calculationVariables_st.updateStiffness();
-    dap_calculationVariables_st.update_stepperpos(_rudder.offset_filter);
+      movingAverageFilter.dataPointsCount = dap_config_st.payLoadPedalConfig_.G_window;
+      movingAverageFilter_roadimpact.dataPointsCount = dap_config_st.payLoadPedalConfig_.Road_window;
+      dap_calculationVariables_st.reset_maxforce();
+      dap_calculationVariables_st.Force_Max += _G_force_effect.G_force;
+      dap_calculationVariables_st.Force_Max += _Road_impact_effect.Road_Impact_force;
+      dap_calculationVariables_st.dynamic_update();
+      dap_calculationVariables_st.updateStiffness();
+    
 
 
     // Get the loadcell reading
@@ -1396,7 +1403,15 @@ void serialCommunicationTask( void * pvParameters )
                 _WSOscillation.trigger();
               }     
               //Road impact
-              _Road_impact_effect.Road_Impact_value=dap_actions_st.payloadPedalAction_.impact_value_u8;
+              if(dap_calculationVariables_st.Rudder_status==false)
+              {
+                _Road_impact_effect.Road_Impact_value=dap_actions_st.payloadPedalAction_.impact_value_u8;
+              }
+              else
+              {
+
+              }
+              
               // trigger system identification
               if (dap_actions_st.payloadPedalAction_.startSystemIdentification_u8)
               {

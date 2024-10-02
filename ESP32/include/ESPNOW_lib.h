@@ -289,8 +289,15 @@ void onRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len)
                   {
                     _WSOscillation.trigger();
                   }     
-                  //Road impact
-                  _Road_impact_effect.Road_Impact_value=dap_actions_st.payloadPedalAction_.impact_value_u8;
+                  //Road impact && Rudder G impact
+                  if(dap_calculationVariables_st.Rudder_status==false)
+                  {
+                    _Road_impact_effect.Road_Impact_value=dap_actions_st.payloadPedalAction_.impact_value_u8;
+                  }
+                  else
+                  {
+                    _rudder_g_force.G_value=dap_actions_st.payloadPedalAction_.impact_value_u8;
+                  }
                   // trigger system identification
                   if (dap_actions_st.payloadPedalAction_.startSystemIdentification_u8)
                   {
