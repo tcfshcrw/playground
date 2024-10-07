@@ -191,8 +191,8 @@
   //#define BLUETOOTH_GAMEPAD
   #define USB_JOYSTICK
   #define LED_ENABLE_WAVESHARE
-  #define LED_GPIO 12
-  #define Pairing_GPIO 34
+  #define LED_GPIO 39
+  #define Pairing_GPIO 38
   #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 5
   #define ESPNow_Pairing_function
   #define deviceID 99
