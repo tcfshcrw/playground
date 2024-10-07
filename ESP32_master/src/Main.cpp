@@ -223,7 +223,7 @@ void setup()
   //
   
 
-  #if PCB_VERSION == 6
+  #if PCB_VERSION == 6||PCB_VERSION == 7
     //Serial.setTxTimeoutMs(0);
     Serial.setRxBufferSize(1024);
     Serial.setTimeout(5);
