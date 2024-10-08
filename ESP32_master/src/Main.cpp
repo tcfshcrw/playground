@@ -733,6 +733,13 @@ void Serial_Task( void * pvParameters)
               Serial.println("[L]Get Pair action");
               software_pairing_action_b=true;
             }
+            //action=2, restart
+            if(dap_bridge_state_lcl.payloadBridgeState_.Bridge_action==2)
+            {
+              Serial.println("[L]Bridge Restart");
+              delay(1000);
+              ESP.restart();
+            }
           }
           break;
 
@@ -1058,45 +1065,20 @@ void LED_Task_Dongle( void * pvParameters)
         }
         LED_bright_index=LED_bright_index+LED_bright_direction;
         pixels.setBrightness(LED_bright_index);
-        uint8_t led_status=dap_bridge_state_st.payloadBridgeState_.Pedal_availability[0]+dap_bridge_state_st.payloadBridgeState_.Pedal_availability[1]*2+dap_bridge_state_st.payloadBridgeState_.Pedal_availability[2]*4;
-        switch (led_status)
+
+        for(uint i=0;i<3;i++)
         {
-          case 0:
-            pixels.setPixelColor(0,0xff,0xff,0xff);
-            //pixels.setPixelColor(0,0x52,0x00,0xff);//Orange
-            pixels.show();
-            break;
-          case 1:
-            pixels.setPixelColor(0,0xff,0x00,0x00);//Red
-            pixels.show();
-            break;
-          case 2:
+          if(dap_bridge_state_st.payloadBridgeState_.Pedal_availability[i]==1)
+          {
             pixels.setPixelColor(0,0xff,0x0f,0x00);//Orange
-            pixels.show();
-            break;
-          case 3:
-            pixels.setPixelColor(0,0x52,0x00,0xff);//Cyan
-            pixels.show();
-            break; 
-          case 4:
-            pixels.setPixelColor(0,0x5f,0x5f,0x00);//Yellow
-            pixels.show();
-            break;
-          case 5:
-            pixels.setPixelColor(0,0x00,0x00,0xff);//Blue
-            pixels.show();
-            break;      
-          case 6:
-            pixels.setPixelColor(0,0x00,0xff,0x00);//Green
-            pixels.show();
-            break;  
-          case 7:
-            pixels.setPixelColor(0, 0x80, 0x00, 0x80);//Purple
-            pixels.show();
-            break;                                         
-          default:
-            break;
+          }
+          else
+          {
+            pixels.setPixelColor(i,0xff,0xff,0xff);//White
+          }            
         }
+        pixels.show();
+        
         delay(150);           
       }
       if(LED_Status==1)//pairing
