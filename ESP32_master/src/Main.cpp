@@ -22,7 +22,8 @@
 
 #include "Arduino.h"
 #include "Main.h"
-
+#include "esp_system.h"
+#include "soc/rtc_cntl_reg.h"
 
 
 
@@ -732,7 +733,7 @@ void Serial_Task( void * pvParameters)
           {
             if(dap_bridge_state_lcl.payloadBridgeState_.Bridge_action==1)
             {
-              Serial.println("[L]Get Pair action");
+              Serial.println("[L]Bridge Pairing...");
               software_pairing_action_b=true;
             }
             //action=2, restart
@@ -742,6 +743,15 @@ void Serial_Task( void * pvParameters)
               delay(1000);
               ESP.restart();
             }
+            if(dap_bridge_state_lcl.payloadBridgeState_.Bridge_action==3)
+            {
+              //aciton=3 restart into boot mode
+              Serial.println("[L]Bridge Restart into Download mode");
+              delay(1000);
+              REG_WRITE(RTC_CNTL_OPTION1_REG, RTC_CNTL_FORCE_DOWNLOAD_BOOT);
+              ESP.restart();
+            }
+
           }
           break;
 
