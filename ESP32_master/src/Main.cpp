@@ -116,9 +116,11 @@ DAP_bridge_state_st dap_bridge_state_lcl;//
   #include <Adafruit_NeoPixel.h>
   #ifdef LED_ENABLE_WAVESHARE
     #define LEDS_COUNT 1
+    Adafruit_NeoPixel pixels(LEDS_COUNT, LED_GPIO, NEO_RGB + NEO_KHZ800);
   #endif
   #ifdef LED_ENABLE_DONGLE
     #define LEDS_COUNT 3
+    Adafruit_NeoPixel pixels(LEDS_COUNT, LED_GPIO, NEO_GRB + NEO_KHZ800);
   #endif
   #define CHANNEL 0
   #define LED_BRIGHT 30
@@ -132,7 +134,7 @@ DAP_bridge_state_st dap_bridge_state_lcl;//
   static const crgb_t L_CYAN = 0x00ffff;
   static const crgb_t L_PURPLE = 0x800080;
   */
-  Adafruit_NeoPixel pixels(LEDS_COUNT, LED_GPIO, NEO_RGB + NEO_KHZ800);
+  
   
 
 #endif
@@ -1070,7 +1072,7 @@ void LED_Task_Dongle( void * pvParameters)
         {
           if(dap_bridge_state_st.payloadBridgeState_.Pedal_availability[i]==1)
           {
-            pixels.setPixelColor(0,0xff,0x0f,0x00);//Orange
+            pixels.setPixelColor(i,0xff,0x0f,0x00);//Orange
           }
           else
           {
