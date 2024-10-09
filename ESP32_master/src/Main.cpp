@@ -470,7 +470,7 @@ void ESPNOW_SyncTask( void * pvParameters )
         //timeout check
         if(now-Pairing_state_start>Pairing_timeout)
         {
-          Serial.println("[L]Reach timeout");
+          Serial.println("[L]Bridge Timeout!");
           ESPNow_pairing_action_b=false;
           LED_Status=0;
           if(UpdatePairingToEeprom)
@@ -493,6 +493,7 @@ void ESPNOW_SyncTask( void * pvParameters )
                 Serial.printf(" Mac: %02X:%02X:%02X:%02X:%02X:%02X\n", ESP_pairing_reg_local.Pair_mac[i][0], ESP_pairing_reg_local.Pair_mac[i][1], ESP_pairing_reg_local.Pair_mac[i][2], ESP_pairing_reg_local.Pair_mac[i][3], ESP_pairing_reg_local.Pair_mac[i][4], ESP_pairing_reg_local.Pair_mac[i][5]);
               }
             }
+            Serial.println("");
             //adding peer
             /*
             for(int i=0; i<4;i++)
@@ -746,10 +747,17 @@ void Serial_Task( void * pvParameters)
             if(dap_bridge_state_lcl.payloadBridgeState_.Bridge_action==3)
             {
               //aciton=3 restart into boot mode
-              Serial.println("[L]Bridge Restart into Download mode");
-              delay(1000);
-              REG_WRITE(RTC_CNTL_OPTION1_REG, RTC_CNTL_FORCE_DOWNLOAD_BOOT);
-              ESP.restart();
+              #ifdef Using_Board_ESP32S3
+                Serial.println("[L]Bridge Restart into Download mode");
+                delay(1000);
+                REG_WRITE(RTC_CNTL_OPTION1_REG, RTC_CNTL_FORCE_DOWNLOAD_BOOT);
+                ESP.restart();
+              #endif
+              #ifdef Using_Board_ESP32
+                Serial.println("[L]Command not supported ");
+                delay(1000); 
+              #endif
+
             }
 
           }
