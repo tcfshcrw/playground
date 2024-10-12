@@ -28,7 +28,7 @@
     Joystick.setYAxisRange(JOYSTICK_MIN_VALUE, JOYSTICK_MAX_VALUE);//rudder brake brake
     Joystick.setZAxisRange(JOYSTICK_MIN_VALUE, JOYSTICK_MAX_VALUE);//rudder brake throttle
     delay(100);
-  
+    //Joystick.begin();
     Joystick.begin(false);
 
     // rename HID device name, see e.g. https://github.com/schnoog/Joystick_ESP32S2/issues/8
