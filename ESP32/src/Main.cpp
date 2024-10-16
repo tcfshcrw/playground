@@ -1855,7 +1855,7 @@ void ESPNOW_SyncTask( void * pvParameters )
     }
 
     
-    if(dap_config_st.payLoadPedalConfig_.debug_flags_0==DEBUG_INFO_0_RUDDER)
+    if((dap_config_st.payLoadPedalConfig_.debug_flags_0 == DEBUG_INFO_0_RUDDER))
     {
       unsigned long now_rudder = millis();
       if(now_rudder-Debug_rudder_last>300)
