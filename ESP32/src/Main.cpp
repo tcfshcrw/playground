@@ -8,6 +8,7 @@
 
 #define DEBUG_INFO_0_CYCLE_TIMER 1
 #define DEBUG_INFO_0_STEPPER_POS 2
+#define DEBUG_INFO_0_RUDDER 3
 #define DEBUG_INFO_0_LOADCELL_READING 4
 #define DEBUG_INFO_0_SERVO_READINGS 8
 #define DEBUG_INFO_0_PRINT_ALL_SERVO_REGISTERS 16
@@ -1648,6 +1649,7 @@ bool Pairing_timeout_status=false;
 bool building_dap_esppairing_lcl =false;
 unsigned long Pairing_state_start;
 unsigned long Pairing_state_last_sending;
+unsigned long Debug_rudder_last=0;
 void ESPNOW_SyncTask( void * pvParameters )
 {
   for(;;)
@@ -1852,23 +1854,40 @@ void ESPNOW_SyncTask( void * pvParameters )
           
     }
 
+    
+    if(dap_config_st.payLoadPedalConfig_.debug_flags_0==DEBUG_INFO_0_RUDDER)
+    {
+      unsigned long now_rudder = millis();
+      if(now_rudder-Debug_rudder_last>300)
+      {
+        Serial.print("Pedal:");
+        Serial.print(dap_config_st.payLoadPedalConfig_.pedal_type);
+        Serial.print(", Rudder Status:");
+        Serial.print(dap_calculationVariables_st.Rudder_status);
+        Serial.print(", Send Value: ");
+        Serial.print(_ESPNow_Send.pedal_position_ratio);
+        Serial.print(", Recieve Value");
+        Serial.println(_ESPNow_Recv.pedal_position_ratio);  
+        Debug_rudder_last=now_rudder;
+      }
       
+    }
     #ifdef ESPNow_debug_rudder
       if(print_count>500)
       {
 
-            Serial.print("Rudder Status:");
-            Serial.println(dap_calculationVariables_st.Rudder_status);
-            Serial.print("Pedal type:");
-            Serial.println(dap_config_st.payLoadPedalConfig_.pedal_type);
-            Serial.print("---Send Value--");
-            Serial.println(_ESPNow_Send.pedal_position_ratio);
-            Serial.print("---Recieve Value--");
-            Serial.println(_ESPNow_Recv.pedal_position_ratio);        
-            //Serial.print("---Send Value--");
-            //Serial.println(dap_calculationVariables_st.current_pedal_position);                  
+        Serial.print("Pedal:");
+        Serial.print(dap_config_st.payLoadPedalConfig_.pedal_type);
+        Serial.print(", Rudder Status:");
+        Serial.print(dap_calculationVariables_st.Rudder_status);
+        Serial.print(", Send Value: ");
+        Serial.print(_ESPNow_Send.pedal_position_ratio);
+        Serial.print(", Recieve Value");
+        Serial.println(_ESPNow_Recv.pedal_position_ratio);  
+        //Debug_rudder_last=now_rudder;
+        //Serial.println(dap_calculationVariables_st.current_pedal_position);                  
             
-            print_count=0;
+        print_count=0;
       }
       else
       {
