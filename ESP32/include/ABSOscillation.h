@@ -444,8 +444,8 @@ class Rudder{
   int32_t dead_zone_upper;
   int32_t dead_zone_lower;
   int32_t dead_zone;
-  int16_t sync_pedal_position;
-  int16_t current_pedal_position;
+  int32_t sync_pedal_position;
+  int32_t current_pedal_position;
   float endpos_travel;
   float force_range;  
   float force_offset_raw;
