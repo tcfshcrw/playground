@@ -1853,19 +1853,20 @@ void ESPNOW_SyncTask( void * pvParameters )
     }
 
       
-    #ifdef ESPNow_debug
-      if(print_count>1500)
+    #ifdef ESPNow_debug_rudder
+      if(print_count>500)
       {
+
             Serial.print("Rudder Status:");
             Serial.println(dap_calculationVariables_st.Rudder_status);
             Serial.print("Pedal type:");
             Serial.println(dap_config_st.payLoadPedalConfig_.pedal_type);
-            Serial.print("---Sync Value--");
-            Serial.println(dap_calculationVariables_st.sync_pedal_position);
+            Serial.print("---Send Value--");
+            Serial.println(_ESPNow_Send.pedal_position_ratio);
             Serial.print("---Recieve Value--");
             Serial.println(_ESPNow_Recv.pedal_position_ratio);        
-            Serial.print("---Send Value--");
-            Serial.println(dap_calculationVariables_st.current_pedal_position);                  
+            //Serial.print("---Send Value--");
+            //Serial.println(dap_calculationVariables_st.current_pedal_position);                  
             
             print_count=0;
       }
