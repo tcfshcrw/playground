@@ -254,6 +254,24 @@ char* APhost;
   TaskHandle_t Task6;
 #endif
 
+#ifdef USING_LED
+  #include "soc/soc_caps.h"
+  #include <Adafruit_NeoPixel.h>
+  #define LEDS_COUNT 1
+  Adafruit_NeoPixel pixels(LEDS_COUNT, LED_GPIO, NEO_GRB + NEO_KHZ800);
+  #define CHANNEL 0
+  #define LED_BRIGHT 30
+  /*
+  static const crgb_t L_RED = 0xff0000;
+  static const crgb_t L_GREEN = 0x00ff00;
+  static const crgb_t L_BLUE = 0x0000ff;
+  static const crgb_t L_WHITE = 0xe0e0e0;
+  static const crgb_t L_YELLOW = 0xffde21;
+  static const crgb_t L_ORANGE = 0xffa500;
+  static const crgb_t L_CYAN = 0x00ffff;
+  static const crgb_t L_PURPLE = 0x800080;
+  */
+#endif
 
 
 /**********************************************************************************************/
@@ -267,10 +285,17 @@ void setup()
   //Serial.begin(921600);
   //Serial.begin(512000);
   //
+  #ifdef USING_LED
+    pixels.begin();
+    pixels.setBrightness(20);
+    pixels.setPixelColor(0,0xff,0xff,0xff);
+    pixels.show(); 
+  #endif
   
 
-  #if PCB_VERSION == 6
+  #if PCB_VERSION == 6 || PCB_VERSION == 7
     Serial.setTxTimeoutMs(0);
+    Serial.begin(921600);
   #else
     Serial.begin(921600);
     Serial.setTimeout(5);
@@ -278,9 +303,11 @@ void setup()
   Serial.println(" ");
   Serial.println(" ");
   Serial.println(" ");
-  
-  // init controller
-  SetupController();
+  #ifndef CONTROLLER_SPECIFIC_VIDPID
+    // init controller
+    SetupController();
+    delay(3000);
+  #endif
   delay(3000);
   Serial.println("This work is licensed under a Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.");
   Serial.println("Please check github repo for more detail: https://github.com/ChrGri/DIY-Sim-Racing-FFB-Pedal");
@@ -299,6 +326,13 @@ void setup()
   if (!isv57slaveIdFound_b)
   {
     Serial.println( "Restarting ESP" );
+    #ifdef USING_LED
+      pixels.setBrightness(20);
+      pixels.setPixelColor(0,0xff,0x00,0x00);
+      pixels.show(); 
+      delay(3000);
+    #endif
+    
     ESP.restart();
   }
 
@@ -308,6 +342,12 @@ void setup()
   if (!isv57LifeSignal_b)
   {
     Serial.println( "Restarting ESP" );
+    #ifdef USING_LED
+      pixels.setBrightness(20);
+      pixels.setPixelColor(0,0xff,0x00,0x00);
+      pixels.show(); 
+      delay(3000);
+    #endif
     ESP.restart();
   }
 
@@ -402,7 +442,12 @@ pinMode(Pairing_GPIO, INPUT_PULLUP);
 
   // interprete config values
   dap_calculationVariables_st.updateFromConfig(dap_config_st);
-
+  #ifdef USING_LED
+      //pixels.setBrightness(20);
+      pixels.setPixelColor(0,0xff,0x0f,0x00);//Orange
+      pixels.show(); 
+      //delay(3000);
+  #endif
 
 
   bool invMotorDir = dap_config_st.payLoadPedalConfig_.invertMotorDirection_u8 > 0;
@@ -439,7 +484,12 @@ pinMode(Pairing_GPIO, INPUT_PULLUP);
   kalman = new KalmanFilter(loadcell->getVarianceEstimate());
 
   kalman_2nd_order = new KalmanFilter_2nd_order(1);
-  
+  #ifdef USING_LED
+      //pixels.setBrightness(20);
+      pixels.setPixelColor(0, 0x80, 0x00, 0x80);//purple
+      pixels.show(); 
+      //delay(3000);
+  #endif
 
 
 
@@ -533,28 +583,24 @@ pinMode(Pairing_GPIO, INPUT_PULLUP);
     delay(500);
 #endif
 
+  switch(dap_config_st.payLoadPedalConfig_.pedal_type)
+  {
+    case 0:
+      APhost="FFBPedalClutch";
+      break;
+    case 1:
+      APhost="FFBPedalBrake";
+      break;
+    case 2:
+      APhost="FFBPedalGas";
+      break;
+    default:
+      APhost="FFBPedal";
+      break;        
 
-
+  }   
   //Serial.begin(115200);
   #ifdef OTA_update
-  
-    switch(dap_config_st.payLoadPedalConfig_.pedal_type)
-    {
-      case 0:
-        APhost="FFBPedalClutch";
-        break;
-      case 1:
-        APhost="FFBPedalBrake";
-        break;
-      case 2:
-        APhost="FFBPedalGas";
-        break;
-      default:
-        APhost="FFBPedal";
-        break;        
-
-    }      
-    
     xTaskCreatePinnedToCore(
                     OTATask,   
                     "OTATask", 
@@ -565,7 +611,6 @@ pinMode(Pairing_GPIO, INPUT_PULLUP);
                     &Task4,    
                     0);     
     delay(500);
-
   #endif
 
   //MCP setup
@@ -608,6 +653,14 @@ pinMode(Pairing_GPIO, INPUT_PULLUP);
       //MCP.begin();
     }
   #endif
+
+  #ifdef USING_LED
+      //pixels.setBrightness(20);
+      pixels.setPixelColor(0,0x00,0x00,0xff);//Blue
+      pixels.show(); 
+      //delay(3000);
+  #endif
+
   #ifdef PEDAL_ASSIGNMENT
     pinMode(CFG1, INPUT_PULLUP);
     pinMode(CFG2, INPUT_PULLUP);
@@ -672,16 +725,19 @@ pinMode(Pairing_GPIO, INPUT_PULLUP);
                         0);     
     delay(500);
   }
-    
-      
-    
-
-    
-
+  #endif
+  #ifdef CONTROLLER_SPECIFIC_VIDPID
+    SetupController_USB(dap_config_st.payLoadPedalConfig_.pedal_type);
+    delay(3000);
   #endif
 
   Serial.println("Setup end");
-  
+  #ifdef USING_LED
+      //pixels.setBrightness(20);
+      pixels.setPixelColor(0,0x00,0xff,0x00);//Green
+      pixels.show(); 
+      //delay(3000);
+  #endif
 }
 
 

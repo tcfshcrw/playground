@@ -323,41 +323,43 @@ static const uint32_t STEPS_PER_MOTOR_REVOLUTION = 6400;
   #define ESPNow_Pairing_function
   #define Pairing_GPIO 0
   //#define ESPNow_debug_rudder
+  #define USING_LED
+  #define LED_GPIO 12
 #endif
 
 #if PCB_VERSION == 8
   // ADC defines
-  #define PIN_DRDY 4//19// 19 --> DRDY
+  #define PIN_DRDY 15//19// 19 --> DRDY
   #define PIN_RST  6 // X --> X
-  #define PIN_SCK 1//16 // 16 -->SCLK
-  #define PIN_MISO 3 // 18 --> DOUT
-  #define PIN_MOSI 2 // 17 --> DIN
-  #define PIN_CS 5//21 // 21 --> CS
+  #define PIN_SCK 16//16 // 16 -->SCLK
+  #define PIN_MISO 18 // 18 --> DOUT
+  #define PIN_MOSI 17 // 17 --> DIN
+  #define PIN_CS 7//21 // 21 --> CS
 
   // stepper pins
-  #define dirPinStepper    6//22
-  #define stepPinStepper   7//23
+  #define dirPinStepper    37//22
+  #define stepPinStepper   38//23
 
   //analog output pin
   //#define D_O 25   
   //MCP4725 SDA SCL
-  //#define MCP_SDA 5
-  //#define MCP_SCL 4
+  #define MCP_SDA 5
+  #define MCP_SCL 4
   
   // endstop pins
-  #define minPin 8
-  #define maxPin 9
+  #define minPin 12
+  #define maxPin 13
   // Pedal assignment pin
   #define PEDAL_ASSIGNMENT
-  #define CFG1 10
-  #define CFG2 11
+  #define CFG1 1
+  #define CFG2 2
 
-  //#define EMERGENCY_BUTTON
-  //#define ShutdownPin 6
+  #define EMERGENCY_BUTTON
+  #define ShutdownPin 6
   // level shifter is present on this PCB design
   #define SENSORLESS_HOMING true
-  #define ISV57_TXPIN 12//27 //17
-  #define ISV57_RXPIN 13//26 // 16
+  #define ISV57_TXPIN 10//27 //17
+  #define ISV57_RXPIN 9//26 // 16
 
   //#define Using_analog_output_ESP32_S3
   #define ESPNOW_Enable
@@ -366,4 +368,10 @@ static const uint32_t STEPS_PER_MOTOR_REVOLUTION = 6400;
   #define USB_JOYSTICK
 
   #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 5
+  #define ESPNow_Pairing_function
+  #define Pairing_GPIO 0
+  //#define ESPNow_debug_rudder
+  #define CONTROLLER_SPECIFIC_VIDPID
+  #define USING_LED
+  #define LED_GPIO 12
 #endif

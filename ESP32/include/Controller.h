@@ -16,6 +16,7 @@ static const int16_t JOYSTICK_RANGE = JOYSTICK_MAX_VALUE - JOYSTICK_MIN_VALUE;
 
 
 void SetupController();
+void SetupController_USB(uint8_t pedal_ID);
 bool IsControllerReady();
 
 void SetControllerOutputValue(int32_t value);

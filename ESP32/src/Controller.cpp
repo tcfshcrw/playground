@@ -28,6 +28,39 @@
     //USB.begin();
 
   }
+  void SetupController_USB(uint8_t pedal_ID) 
+  {
+    int PID;
+    char *APname;
+    switch(pedal_ID)
+    {
+      case 0:
+        PID=0x8214;
+        APname="FFB_Pedal_Clutch";
+        break;
+      case 1:
+        PID=0x8215;
+        APname="FFB_Pedal_Brake";
+        break;
+      case 2:
+        PID=0x8216;
+        APname="FFB_Pedal_Throttle";
+        break;
+      default:
+        PID=0x8217;
+        APname="FFB_Pedal_NOASSIGNMENT";
+        break;
+
+    }
+    USB.PID(PID);    
+    USB.VID(0x3035);
+    USB.productName(APname);
+    USB.manufacturerName("OpenSource");
+    USB.begin();
+    Joystick.setBrakeRange(JOYSTICK_MIN_VALUE, JOYSTICK_MAX_VALUE);
+    delay(100); 
+    Joystick.begin();
+  }
   bool IsControllerReady() { return true; }
   void SetControllerOutputValue(int32_t value) {
     Joystick.setBrake(value);
