@@ -160,7 +160,7 @@ static const uint32_t STEPS_PER_MOTOR_REVOLUTION = 6400;
   //#define USB_JOYSTICK
   #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 1
   #define ESPNow_Pairing_function
-  #define Pairing_GPIO 0
+  #define Pairing_GPIO 13
   //#define ESPNow_debug_rudder
 #endif
 
@@ -369,7 +369,7 @@ static const uint32_t STEPS_PER_MOTOR_REVOLUTION = 6400;
 
   #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 5
   #define ESPNow_Pairing_function
-  #define Pairing_GPIO 0
+  #define Pairing_GPIO 33
   //#define ESPNow_debug_rudder
   #define CONTROLLER_SPECIFIC_VIDPID
   #define USING_LED
