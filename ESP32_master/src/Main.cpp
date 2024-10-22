@@ -151,6 +151,7 @@ TaskHandle_t Task1;
 TaskHandle_t Task2;
 TaskHandle_t Task3;
 TaskHandle_t Task4;
+TaskHandle_t Task5;
 //static SemaphoreHandle_t semaphore_updateConfig=NULL;
   bool configUpdateAvailable = false;                              // semaphore protected data
   DAP_config_st dap_config_st_local;
@@ -219,7 +220,11 @@ void Joystick_Task( void * pvParameters);
 void LED_Task( void * pvParameters);
 void Serial_Task( void * pvParameters);
 void LED_Task_Dongle( void * pvParameters);
-FanatecInterface fanatec(18, 17); // RX: GPIO18, TX: GPIO17
+void FanatecUpdate(void * pvParameters);
+
+#ifdef Fanatec_comunication
+  FanatecInterface fanatec(Fanatec_serial_RX, Fanatec_serial_TX); // RX: GPIO18, TX: GPIO17
+#endif
 
 /**********************************************************************************************/
 /*                                                                                            */
@@ -235,7 +240,7 @@ void setup()
   //
   
 
-  #if PCB_VERSION == 6||PCB_VERSION == 7
+  #if PCB_VERSION == 5||PCB_VERSION == 6||PCB_VERSION == 7
     //Serial.setTxTimeoutMs(0);
     Serial.setRxBufferSize(1024);
     Serial.setTimeout(5);
@@ -260,14 +265,6 @@ void setup()
   Serial.println("[L]This work is licensed under a Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.");
   Serial.println("[L]Please check github repo for more detail: https://github.com/ChrGri/DIY-Sim-Racing-FFB-Pedal");
 
-  // Initialize FanatecInterface
-  fanatec.begin();
-
-  // Set connection callback
-  fanatec.onConnected([]() {
-      Serial.print("[L] ");
-      Serial.println("Connected to Fanatec device.");
-  });
 
   // setup multi tasking
   /*
@@ -409,6 +406,27 @@ void setup()
                           0);     
     delay(500);
   #endif
+  #ifdef Fanatec_comunication
+    // Initialize FanatecInterface
+    fanatec.begin();
+
+    // Set connection callback
+    fanatec.onConnected([]() {
+        Serial.print("");
+        Serial.println("[L]Connected to Fanatec device.");
+    });
+    delay(2000);
+    xTaskCreatePinnedToCore(
+                          FanatecUpdate,   
+                          "Fanatec_update_Task", 
+                          3000,  
+                          //STACK_SIZE_FOR_TASK_5,    
+                          NULL,      
+                          1,         
+                          &Task5,    
+                          1);     
+    delay(500);
+  #endif
   Serial.println("[L]Setup end");
   
 }
@@ -437,31 +455,9 @@ bool building_dap_esppairing_lcl =false;
 void loop() 
 {
   taskYIELD();
-  fanatecUpdate();
+  //fanatecUpdate();
 
-  delay(2); 
-}
-
-void fanatecUpdate() {
-  fanatec.communicationUpdate();
-  
-  uint16_t throttleValue = pedal_throttle_value;
-  uint16_t brakeValue = pedal_brake_value;
-  uint16_t clutchValue = pedal_cluth_value;
-  uint16_t handbrakeValue = 0;             // Set if needed
-
-  // Pedal input values to 0 - 10000
-  throttleValue = map(throttleValue, 0, 10000, 0, 65535);
-  brakeValue = map(brakeValue, 0, 10000, 0, 40960);
-  clutchValue = map(clutchValue, 0, 10000, 0, 65535);
-
-  // Set pedal values in FanatecInterface
-  fanatec.setThrottle(throttleValue);
-  fanatec.setBrake(brakeValue);
-  fanatec.setClutch(clutchValue);
-  fanatec.setHandbrake(handbrakeValue);
-  
-  fanatec.update();
+  //delay(2); 
 }
 
 void ESPNOW_SyncTask( void * pvParameters )
@@ -1163,6 +1159,35 @@ void LED_Task_Dongle( void * pvParameters)
   }
 }
 
+
+void FanatecUpdate(void * pvParameters) 
+{
+  for(;;)
+  {
+    #ifdef Fanatec_comunication
+      fanatec.communicationUpdate();
+      
+      uint16_t throttleValue = pedal_throttle_value;
+      uint16_t brakeValue = pedal_brake_value;
+      uint16_t clutchValue = pedal_cluth_value;
+      uint16_t handbrakeValue = 0;             // Set if needed
+
+      // Pedal input values to 0 - 10000
+      throttleValue = map(throttleValue, 0, 10000, 0, 65535);
+      brakeValue = map(brakeValue, 0, 10000, 0, 40960);
+      clutchValue = map(clutchValue, 0, 10000, 0, 65535);
+
+      // Set pedal values in FanatecInterface
+      fanatec.setThrottle(throttleValue);
+      fanatec.setBrake(brakeValue);
+      fanatec.setClutch(clutchValue);
+      fanatec.setHandbrake(handbrakeValue);
+      
+      fanatec.update();
+    #endif
+    delay(2);
+  }
+}
 
 /**********************************************************************************************/
 /*                                                                                            */
