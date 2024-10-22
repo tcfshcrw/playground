@@ -411,8 +411,7 @@ void setup()
     fanatec.begin();
 
     // Set connection callback
-    fanatec.onConnected([]() {
-        Serial.print("");
+    fanatec.onConnected([]() {        
         Serial.println("[L]Connected to Fanatec device.");
     });
     delay(2000);

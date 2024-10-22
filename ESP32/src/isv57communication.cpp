@@ -41,8 +41,37 @@ void isv57communication::readAllServoParameters() {
   }
 }
 
+// ToDo: 
+// Disable aixs command
+//retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_5_00+06, 1); // Dsable axis?
+// Alternatively disable axis via Pr4.08? see iSV57 docu 0x303: disable; 0x8383: enable psotion mode
+void isv57communication::disableAxis()
+{
+	modbus.checkAndReplaceParameter(slaveId, pr_5_00+06, 1); //  {0: enable axis; 1: disable axis}
+}
+
+void isv57communication::enableAxis() 
+{
+	modbus.checkAndReplaceParameter(slaveId, pr_5_00+06, 0); // {0: enable axis; 1: disable axis}
+}
+
+
+
+
+
+void  isv57communication::clearServoUnitPosition()
+{
+	// According to Leadshines User Manual of 2ELD2-RD DC Servo
+	// https://www.leadshine.com/upfiles/downloads/a3d7d12a120fd8e114f6288b6235ac1a_1690179981835.pdf
+	// Changing the position unit, will clear the position data
+
+  modbus.checkAndReplaceParameter(slaveId, pr_5_00+20, 0); // encoder output resolution  {0: Encoder units; 1: Command units; 2: 10000pulse/rotation}
+  delay(50);
+	modbus.checkAndReplaceParameter(slaveId, pr_5_00+20, 1); // encoder output resolution  {0: Encoder units; 1: Command units; 2: 10000pulse/rotation}
+}
+
 // send tuned servo parameters
-void isv57communication::sendTunedServoParameters() {
+void isv57communication::sendTunedServoParameters(bool commandRotationDirection) {
   
   bool retValue_b = false;
 
@@ -52,6 +81,7 @@ void isv57communication::sendTunedServoParameters() {
   retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+2, 0); // deactivate auto gain
   retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+3, 10); // machine stiffness
   retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+4, 80); // ratio of inertia
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+6, commandRotationDirection); // Command Pulse Rotational Direction
   retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+8, STEPS_PER_MOTOR_REVOLUTION); // microsteps
   retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+9, 1); // 1st numerator 
   retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+10, 1); // & denominator
@@ -101,7 +131,9 @@ void isv57communication::sendTunedServoParameters() {
   
   // Pr5 register
   retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_5_00+13, 5000); // overspeed level
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_5_00+20, 1); // encoder output resolution
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_5_00+20, 1); // encoder output resolution  {0: Encoder units; 1: Command units; 2: 10000pulse/rotation}
+  
+
 
   // Enable & tune reactive pumping. This will act like a braking resistor and reduce EMF voltage.
   // See https://en.wikipedia.org/wiki/Bleeder_resistor
@@ -116,6 +148,14 @@ void isv57communication::sendTunedServoParameters() {
   {
     Serial.println("Servo registered in NVM have been updated! Please power cycle the servo and the ESP!");
     modbus.holdingRegisterWrite(slaveId, 0x019A, 0x5555); // store the settings to servos NVM
+	// ToDo: according to iSV57 manual, 0x2211 is the command to write values to EEPROM
+	delay(500);
+	
+	
+	// ToDo: soft reset servo. The iSV57 docu says Pr0.25: 0x6666 is soft reset
+	// modbus.holdingRegisterWrite(slaveId, 0x019A, 0x6666); // store the settings to servos NVM
+	
+	
     isv57_update_parameter_b=true;
     delay(2000);
   }
@@ -231,6 +271,9 @@ bool isv57communication::clearServoAlarms() {
 
   // clear alarm list
   modbus.holdingRegisterWrite(slaveId, 0x019a, 0x7777); 
+  
+  
+  // ToDo: soft reset servo. The iSV57 docu says Pr0.25: 0x1111 resets current alarm; 0x1122 resets alarm history
     
   return 1;
 }
@@ -253,35 +296,35 @@ bool isv57communication::readCurrentAlarm() {
 
 bool isv57communication::readAlarmHistory() {
 
-// 
-Serial.println("\niSV57 alarm history: ");
-for (uint8_t idx=0; idx < 12; idx++)
-{
-  // example signal, read the 9th alarm
-  // 0x3f, 0x03, 0x12, 0x09, 0x00, 0x01, 0x55, 0xAE
+	// 
+	Serial.println("\niSV57 alarm history: ");
+	for (uint8_t idx=0; idx < 12; idx++)
+	{
+	  // example signal, read the 9th alarm
+	  // 0x3f, 0x03, 0x12, 0x09, 0x00, 0x01, 0x55, 0xAE
 
-  // read the four registers simultaneously
-  int bytesReceived_i = modbus.requestFrom(slaveId, 0x03, 0x1200 + idx, 1);
-  if(bytesReceived_i == (2))
-  {
-    modbus.RxRaw(raw,  len);
-    for (uint8_t regIdx = 0; regIdx < 1; regIdx++)
-    { 
-      uint16_t tmp = modbus.uint16(regIdx) & 0x0FFF; // mask the first half byte as it does not contain info
+	  // read the four registers simultaneously
+	  int bytesReceived_i = modbus.requestFrom(slaveId, 0x03, 0x1200 + idx, 1);
+	  if(bytesReceived_i == (2))
+	  {
+		modbus.RxRaw(raw,  len);
+		for (uint8_t regIdx = 0; regIdx < 1; regIdx++)
+		{ 
+		  uint16_t tmp = modbus.uint16(regIdx) & 0x0FFF; // mask the first half byte as it does not contain info
 
-      if (tmp > 0)
-      {
-        Serial.print("Alarm Idx: ");
-        Serial.print(idx);
-        Serial.print(",    Alarm Code: ");
-        Serial.println( tmp, HEX);
-      }
-      
-    }
-  }
-}
-  Serial.print("\n");
+		  if (tmp > 0)
+		  {
+			Serial.print("Alarm Idx: ");
+			Serial.print(idx);
+			Serial.print(",    Alarm Code: ");
+			Serial.println( tmp, HEX);
+		  }
+		  
+		}
+	  }
+	}
+	Serial.print("\n");
     
-  return 1;
+	return 1;
 }
 

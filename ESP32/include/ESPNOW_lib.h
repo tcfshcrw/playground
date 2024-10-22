@@ -260,11 +260,7 @@ void onRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len)
                 if (structChecker == true)
                 {
 
-                  //1=trigger reset pedal position
-                  if (dap_actions_st.payloadPedalAction_.system_action_u8==1)
-                  {
-                    resetPedalPosition = true;
-                  }
+                  
                   //2= restart pedal
                   if (dap_actions_st.payloadPedalAction_.system_action_u8==2)
                   {

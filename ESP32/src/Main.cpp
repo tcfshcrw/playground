@@ -3,7 +3,6 @@
 // https://github.com/espressif/arduino-esp32/issues/7779
 
 #define ESTIMATE_LOADCELL_VARIANCE
-#define ISV_COMMUNICATION
 //#define PRINT_SERVO_STATES
 
 #define DEBUG_INFO_0_CYCLE_TIMER 1
@@ -15,18 +14,12 @@
 #define DEBUG_INFO_0_STATE_EXTENDED_INFO_STRUCT 64
 #define DEBUG_INFO_0_CONTROL_LOOP_ALGO 128
 
-bool resetServoEncoder = true;
-bool isv57LifeSignal_b = false;
-bool isv57_not_live_b=false;
-#ifdef ISV_COMMUNICATION
-  #include "isv57communication.h"
-  int32_t servo_offset_compensation_steps_i32 = 0; 
-#endif
+
 
 #define OTA_update
 
-#define PI 3.14159267
-#define DEG_TO_RAD PI / 180
+//#define PI 3.14159267
+//#define DEG_TO_RAD PI / 180
 
 #include "Arduino.h"
 #include "Main.h"
@@ -74,7 +67,6 @@ uint16_t checksumCalculator(uint8_t * data, uint16_t length)
 
 bool systemIdentificationMode_b = false;
 
-int16_t servoPos_i16 = 0;
 
 
 
@@ -146,11 +138,6 @@ ForceCurve_Interpolated forceCurve;
 
 TaskHandle_t Task1;
 TaskHandle_t Task2;
-#ifdef ISV_COMMUNICATION
-  isv57communication isv57;
-  #define STACK_SIZE_FOR_TASK_3 0.2 * (configTOTAL_HEAP_SIZE / 4) 
-  TaskHandle_t Task3;
-#endif
 
 static SemaphoreHandle_t semaphore_updateConfig=NULL;
   bool configUpdateAvailable = false;                              // semaphore protected data
@@ -159,10 +146,7 @@ static SemaphoreHandle_t semaphore_updateConfig=NULL;
 static SemaphoreHandle_t semaphore_updateJoystick=NULL;
   int32_t joystickNormalizedToInt32 = 0;                           // semaphore protected data
 
-static SemaphoreHandle_t semaphore_resetServoPos=NULL;
-bool resetPedalPosition = false;
 
-static SemaphoreHandle_t semaphore_readServoValues=NULL;
 
 static SemaphoreHandle_t semaphore_updatePedalStates=NULL;
 
@@ -315,62 +299,9 @@ void setup()
 
 
   
-// check whether iSV57 communication can be established
-// and in case, (a) send tuned servo parameters and (b) prepare the servo for signal read
-#ifdef ISV_COMMUNICATION
-
-  bool isv57slaveIdFound_b = isv57.findServosSlaveId();
-  Serial.print("iSV57 slaveId found:  ");
-  Serial.println( isv57slaveIdFound_b );
-
-  if (!isv57slaveIdFound_b)
-  {
-    Serial.println( "Restarting ESP" );
-    #ifdef USING_LED
-      pixels.setBrightness(20);
-      pixels.setPixelColor(0,0xff,0x00,0x00);
-      pixels.show(); 
-      delay(3000);
-    #endif
-    
-    ESP.restart();
-  }
-
-  
-  // check whether iSV57 is connected
-  isv57LifeSignal_b = isv57.checkCommunication();
-  if (!isv57LifeSignal_b)
-  {
-    Serial.println( "Restarting ESP" );
-    #ifdef USING_LED
-      pixels.setBrightness(20);
-      pixels.setPixelColor(0,0xff,0x00,0x00);
-      pixels.show(); 
-      delay(3000);
-    #endif
-    ESP.restart();
-  }
-
-  // read servos alarm history
-  isv57.readAlarmHistory();
-  
-  // reset iSV57 alarms
-  bool servoAlarmsCleared = isv57.clearServoAlarms();
-  delay(500);
-
-  Serial.print("iSV57 communication state:  ");
-  Serial.println(isv57LifeSignal_b);
-
-  if (isv57LifeSignal_b)
-  {
-    isv57.setupServoStateReading();
-  	isv57.sendTunedServoParameters();
-  }
-  delay(200);
-#endif
-#ifdef Hardware_Pairing_button
-  pinMode(Pairing_GPIO, INPUT_PULLUP);
-#endif
+	#ifdef Hardware_Pairing_button
+    pinMode(Pairing_GPIO, INPUT_PULLUP);
+  #endif
 
 // initialize configuration and update local variables
   dap_config_st.initialiseDefaults();
@@ -463,17 +394,9 @@ void setup()
     loadcell->estimateVariance();       // automatically identify sensor noise for KF parameterization
   #endif
 
-  // find the min & max endstops
-  Serial.print("Start homing");
-  if (isv57LifeSignal_b && SENSORLESS_HOMING)
-  {
-    
-    stepper->findMinMaxSensorless(&isv57, dap_config_st);
-  }
-  else
-  {
-    stepper->findMinMaxEndstops();
-  }
+	// find the min & max endstops
+	Serial.println("Start homing");
+	stepper->findMinMaxSensorless(dap_config_st);
 
  
   Serial.print("Min Position is "); Serial.println(stepper->getLimitMin());
@@ -516,7 +439,6 @@ void setup()
   // setup multi tasking
   semaphore_updateJoystick = xSemaphoreCreateMutex();
   semaphore_updateConfig = xSemaphoreCreateMutex();
-  semaphore_resetServoPos = xSemaphoreCreateMutex();
   semaphore_updatePedalStates = xSemaphoreCreateMutex();
   delay(10);
 
@@ -531,19 +453,6 @@ void setup()
     Serial.println("Could not create semaphore");
     ESP.restart();
   }
-
-
-
-  // print all servo registers
-  if (dap_config_st.payLoadPedalConfig_.debug_flags_0 & DEBUG_INFO_0_PRINT_ALL_SERVO_REGISTERS) 
-  {
-    if (isv57LifeSignal_b)
-    {
-      isv57.readAllServoParameters();
-    }
-  }
-  
-  
 
 
   disableCore0WDT();
@@ -571,39 +480,30 @@ void setup()
                     0);     
   delay(500);
 
-  #ifdef ISV_COMMUNICATION
-    
-    xTaskCreatePinnedToCore(
-                      servoCommunicationTask,   
-                      "servoCommunicationTask", 
-                      10000,  
-                      //STACK_SIZE_FOR_TASK_2,    
-                      NULL,      
-                      1,         
-                      &Task3,    
-                      0);     
-    delay(500);
-#endif
 
-  switch(dap_config_st.payLoadPedalConfig_.pedal_type)
-  {
-    case 0:
-      APhost="FFBPedalClutch";
-      break;
-    case 1:
-      APhost="FFBPedalBrake";
-      break;
-    case 2:
-      APhost="FFBPedalGas";
-      break;
-    default:
-      APhost="FFBPedal";
-      break;        
+
+
+  //Serial.begin(115200);
+  #ifdef OTA_update
+  
+    switch(dap_config_st.payLoadPedalConfig_.pedal_type)
+    {
+      case 0:
+        APhost="FFBPedalClutch";
+        break;
+      case 1:
+        APhost="FFBPedalBrake";
+        break;
+      case 2:
+        APhost="FFBPedalGas";
+        break;
+      default:
+        APhost="FFBPedal";
+        break;        
 
   }   
   //Serial.begin(115200);
-  #ifdef OTA_update
-    xTaskCreatePinnedToCore(
+  xTaskCreatePinnedToCore(
                     OTATask,   
                     "OTATask", 
                     16000,  
@@ -901,19 +801,6 @@ void pedalUpdateTask( void * pvParameters )
 
 
 
-    // if reset pedal position was requested, reset pedal now
-    // This function is implemented, so that in case of lost steps, the user can request a reset of the pedal psotion
-    if (resetPedalPosition) {
-
-      if (isv57LifeSignal_b && SENSORLESS_HOMING)
-      {
-        stepper->refindMinLimitSensorless(&isv57);
-      }
-      
-      resetPedalPosition = false;
-      resetServoEncoder = true;
-    }
-
 
     //#define RECALIBRATE_POSITION
     #ifdef RECALIBRATE_POSITION
@@ -1043,11 +930,11 @@ void pedalUpdateTask( void * pvParameters )
 
 
     //#define DEBUG_STEPPER_POS
-    if (dap_config_st.payLoadPedalConfig_.debug_flags_0 & DEBUG_INFO_0_STEPPER_POS) 
+    /*if (dap_config_st.payLoadPedalConfig_.debug_flags_0 & DEBUG_INFO_0_STEPPER_POS) 
     {
       static RTDebugOutput<int32_t, 5> rtDebugFilter({ "ESP_pos", "ESP_tar_pos", "ISV_pos", "frac1"});
       rtDebugFilter.offerData({ stepper->getCurrentPositionFromMin(), Position_Next, -(int32_t)(isv57.servo_pos_given_p + isv57.servo_pos_error_p - isv57.getZeroPos()), (int32_t)(stepperPosFraction * 10000.)});
-    }
+    }*/
 
 
     // add dampening
@@ -1092,19 +979,12 @@ void pedalUpdateTask( void * pvParameters )
       }
     }
 
-    // if pedal in min position, recalibrate position 
-    #ifdef ISV_COMMUNICATION
-    // Take the semaphore and just update the config file, then release the semaphore
-        if(xSemaphoreTake(semaphore_resetServoPos, (TickType_t)1)==pdTRUE)
-        {
-          if (stepper->isAtMinPos())
-          {
-            stepper->correctPos(servo_offset_compensation_steps_i32);
-            servo_offset_compensation_steps_i32 = 0;
-          }
-          xSemaphoreGive(semaphore_resetServoPos);
-        }
-    #endif
+    // if pedal in min position, recalibrate position --> automatic step loss compensation
+	if (stepper->isAtMinPos())
+	{
+		stepper->correctPos();
+	}
+
 
 
 
@@ -1137,13 +1017,11 @@ void pedalUpdateTask( void * pvParameters )
         {
           if (1 == dap_config_st.payLoadPedalConfig_.travelAsJoystickOutput_u8)
           {
-            //joystickNormalizedToInt32 = NormalizeControllerOutputValue((Position_Next-dap_calculationVariables_st.stepperPosRange/2), dap_calculationVariables_st.stepperPosMin, dap_calculationVariables_st.stepperPosMin+dap_calculationVariables_st.stepperPosRange/2, dap_config_st.payLoadPedalConfig_.maxGameOutput);
             joystickNormalizedToInt32 = NormalizeControllerOutputValue((Position_Next-dap_calculationVariables_st.stepperPosRange/2), dap_calculationVariables_st.stepperPosMin, dap_calculationVariables_st.stepperPosMin+dap_calculationVariables_st.stepperPosRange/2, dap_config_st.payLoadPedalConfig_.maxGameOutput);
             joystickNormalizedToInt32 = constrain(joystickNormalizedToInt32,0,JOYSTICK_MAX_VALUE);
           }
           else
           {
-            //joystickNormalizedToInt32 = NormalizeControllerOutputValue(loadcellReading, dap_calculationVariables_st.Force_Min, dap_calculationVariables_st.Force_Max, dap_config_st.payLoadPedalConfig_.maxGameOutput);
             joystickNormalizedToInt32 = NormalizeControllerOutputValue((filteredReading), dap_calculationVariables_st.Force_Min, dap_calculationVariables_st.Force_Max, dap_config_st.payLoadPedalConfig_.maxGameOutput);
           }
         }
@@ -1224,15 +1102,14 @@ void pedalUpdateTask( void * pvParameters )
           ESPNow_error_code=0;
         }
         //dap_state_basic_st.payloadPedalState_Basic_.erroe_code_u8=200;
-        if(isv57.isv57_update_parameter_b)
+        /*if(isv57.isv57_update_parameter_b)
         {
           dap_state_basic_st.payloadPedalState_Basic_.erroe_code_u8=11;
           isv57.isv57_update_parameter_b=false;
-        }
-        if(isv57_not_live_b)
+        }*/
+        if( stepper->getLifelineSignal() )
         {
           dap_state_basic_st.payloadPedalState_Basic_.erroe_code_u8=12;
-          isv57_not_live_b=false;
         }
         // update extended struct 
         dap_state_extended_st.payloadPedalState_Extended_.timeInMs_u32 = millis();
@@ -1240,20 +1117,11 @@ void pedalUpdateTask( void * pvParameters )
         dap_state_extended_st.payloadPedalState_Extended_.pedalForce_filtered_fl32 =  filteredReading;
         dap_state_extended_st.payloadPedalState_Extended_.forceVel_est_fl32 =  changeVelocity;
 
-        if(semaphore_readServoValues!=NULL)
-        {
-          if(xSemaphoreTake(semaphore_readServoValues, (TickType_t)1)==pdTRUE) {
-            dap_state_extended_st.payloadPedalState_Extended_.servoPosition_i16 = servoPos_i16;
-            dap_state_extended_st.payloadPedalState_Extended_.servo_voltage_0p1V =  isv57.servo_voltage_0p1V;
-            dap_state_extended_st.payloadPedalState_Extended_.servo_current_percent_i16 = isv57.servo_current_percent;
-            
-            xSemaphoreGive(semaphore_readServoValues);
-          }
-        }
-        else
-        {
-          semaphore_readServoValues = xSemaphoreCreateMutex();
-        }
+		dap_state_extended_st.payloadPedalState_Extended_.servoPosition_i16 = stepper->getServosInternalPosition();
+		dap_state_extended_st.payloadPedalState_Extended_.servo_voltage_0p1V =  stepper->getServosVoltage();
+		dap_state_extended_st.payloadPedalState_Extended_.servo_current_percent_i16 = stepper->getServosCurrent();
+		
+
 
         dap_state_extended_st.payloadPedalState_Extended_.servoPositionTarget_i16 = stepper->getCurrentPositionFromMin();
         dap_state_extended_st.payLoadHeader_.PedalTag=dap_config_st.payLoadPedalConfig_.pedal_type;
@@ -1289,9 +1157,6 @@ void pedalUpdateTask( void * pvParameters )
 /*                         communication task                                                 */
 /*                                                                                            */
 /**********************************************************************************************/
-
-
-
 int64_t timeNow_serialCommunicationTask_l = 0;
 int64_t timePrevious_serialCommunicationTask_l = 0;
 #define REPETITION_INTERVAL_SERIALCOMMUNICATION_TASK (int64_t)10
@@ -1421,14 +1286,10 @@ void serialCommunicationTask( void * pvParameters )
             if (structChecker == true)
             {
 
-              // trigger reset pedal position
-              if (dap_actions_st.payloadPedalAction_.system_action_u8==1)
-              {
-                resetPedalPosition = true;
-              }
               //2= restart pedal
               if (dap_actions_st.payloadPedalAction_.system_action_u8==2)
               {
+                Serial.println("ESP restart by user request");
                 ESP.restart();
               }
               //3= Wifi OTA
@@ -1631,8 +1492,10 @@ void serialCommunicationTask( void * pvParameters )
 
   }
 }
-//OTA multitask
 
+
+
+//OTA multitask
 uint16_t OTA_count=0;
 bool message_out_b=false;
 bool OTA_enable_start=false;
@@ -1722,6 +1585,7 @@ void ESPNOW_SyncTask( void * pvParameters )
     //restart from espnow
     if(ESPNow_restart)
     {
+      Serial.println("ESP restart by ESP now request");
       ESP.restart();
     }
     //basic state sendout interval
@@ -1800,7 +1664,9 @@ void ESPNOW_SyncTask( void * pvParameters )
           if(now-Pairing_state_start>Pairing_timeout)
           {
             ESPNow_pairing_action_b=false;
-            Serial.println("Pedal pairing timeout");
+            Serial.print("Pedal: ");
+            Serial.print(dap_config_st.payLoadPedalConfig_.pedal_type);
+            Serial.println(" timeout.");
             if(UpdatePairingToEeprom)
             {
               EEPROM.put(EEPROM_offset,_ESP_pairing_reg);
@@ -1979,240 +1845,3 @@ void ESPNOW_SyncTask( void * pvParameters )
 #endif
 
 
-#ifdef ISV_COMMUNICATION
-
-
-int16_t servoPos_last_i16 = 0;
-int64_t timeSinceLastServoPosChange_l = 0;
-int64_t timeNow_l = 0;
-int64_t timeDiff = 0;
-
-#define TIME_SINCE_SERVO_POS_CHANGE_TO_DETECT_STANDSTILL_IN_MS 200
-
-bool previousIsv57LifeSignal_b = true;
-
-uint64_t print_cycle_counter_u64 = 0;
-unsigned long cycleTimeLastCall_lifelineCheck = 0;//micros();
-void servoCommunicationTask( void * pvParameters )
-{
-  
-  for(;;){
-    delay(1);
-    if (dap_config_st.payLoadPedalConfig_.debug_flags_0 & DEBUG_INFO_0_CYCLE_TIMER) 
-    {
-      static CycleTimer timerServoCommunication("Servo Com. cycle time");
-      timerServoCommunication.Bump();
-    }
-
-    // check if servo communication is still there every N milliseconds
-    unsigned long now = millis();
-    if ( (now - cycleTimeLastCall_lifelineCheck) > 500) 
-    {
-      // if target cycle time is reached, update last time
-      cycleTimeLastCall_lifelineCheck = now;
-
-      isv57LifeSignal_b = isv57.checkCommunication();
-      //Serial.println("Lifeline check");
-    }
-
-
-
-    if (isv57LifeSignal_b)
-    {
-
-
-        // when servo was restarted, the read states need to be initialized first
-        if (false == previousIsv57LifeSignal_b)
-        {
-          isv57.setupServoStateReading();
-          previousIsv57LifeSignal_b = true;
-          delay(50);
-        }
-        
-
-        isv57.readServoStates();
-
-        if(semaphore_readServoValues!=NULL)
-        {
-          if(xSemaphoreTake(semaphore_readServoValues, (TickType_t)1)==pdTRUE) {
-            servoPos_i16 = -( isv57.servo_pos_given_p - isv57.getZeroPos() );
-            xSemaphoreGive(semaphore_readServoValues);
-          }
-        }
-        else
-        {
-          semaphore_readServoValues = xSemaphoreCreateMutex();
-        }
-        
-        int32_t servo_offset_compensation_steps_local_i32 = 0;
-
-        // condition 1: servo must be at halt
-        // condition 2: the esp accel lib must be at halt
-        bool cond_1 = false;
-        bool cond_2 = false;
-
-        // check whether target position from ESP hasn't changed and is at min endstop position
-        cond_2 = stepper->isAtMinPos();
-
-        
-
-        if (cond_2 == true)
-        {
-          //isv57.readServoStates();
-          int16_t servoPos_now_i16 = isv57.servo_pos_given_p;
-          timeNow_l = millis();
-
-          // check whether servo position has changed, in case, update the halt detection variable
-          if (servoPos_last_i16 != servoPos_now_i16)
-          {
-            servoPos_last_i16 = servoPos_now_i16;
-            timeSinceLastServoPosChange_l = timeNow_l;
-          }
-
-          // compute the time difference since last servo position change
-          timeDiff = timeNow_l - timeSinceLastServoPosChange_l;
-
-          // if time between last servo position is larger than a threshold, detect servo standstill 
-          if ( (timeDiff > TIME_SINCE_SERVO_POS_CHANGE_TO_DETECT_STANDSTILL_IN_MS) 
-            && (timeNow_l > 0) )
-          {
-            cond_1 = true;
-          }
-          else
-          {
-            cond_1 = false;
-          }
-        }
-
-
-        
-        
-
-        // calculate zero position offset
-        if (cond_1 && cond_2)
-        {
-
-          // reset encoder position, when pedal is at min position
-          if (resetServoEncoder == true)
-          {
-            isv57.setZeroPos();
-            resetServoEncoder = false;
-          }
-
-          // calculate encoder offset
-          // movement to the back will reduce encoder value
-          servo_offset_compensation_steps_local_i32 = (int32_t)isv57.getZeroPos() - (int32_t)isv57.servo_pos_given_p;
-          // when pedal has moved to the back due to step losses --> offset will be positive 
-
-
-
-
-
-          // When the servo turned off during driving, the servo loses its zero position and the correction might not be valid anymore. If still applied, the servo will somehow srive against the block
-          // resulting in excessive servo load --> current load. We'll detect whether min or max block was reached, depending on the position error sign
-          bool servoCurrentLow_b = abs(isv57.servo_current_percent) < 200;
-          if (!servoCurrentLow_b)
-          {
-
-            // positive current means positive rotation 
-            bool minBlockCrashDetected_b = false;
-            bool maxBlockCrashDetected_b = false;
-            if (isv57.servo_current_percent > 0) // if current is positive, the rotation will be positive and thus the sled will move towards the user
-            {
-              minBlockCrashDetected_b = true; 
-              isv57.applyOfsetToZeroPos(-500); // bump up a bit to prevent the servo from pushing against the endstop continously
-            }
-            else
-            {
-              maxBlockCrashDetected_b = true;
-              isv57.applyOfsetToZeroPos(500); // bump up a bit to prevent the servo from pushing against the endstop continously
-            }
-
-            /*print_cycle_counter_u64++;
-            print_cycle_counter_u64 %= 10;
-
-            if (print_cycle_counter_u64 == 0)
-            {
-              Serial.print("minDet: ");
-              Serial.print(minBlockCrashDetected_b);
-
-              Serial.print("curr: ");
-              Serial.print(isv57.servo_current_percent);
-              
-              Serial.print("posError: ");
-              Serial.print(isv57.servo_pos_error_p);
-
-              Serial.println();
-            }*/
-
-
-            //servo_offset_compensation_steps_local_i32 = isv57.servo_pos_error_p;
-          }
-
-
-
-
-
-          // since the encoder positions are defined in int16 space, they wrap at multiturn
-          // to correct overflow, we apply modulo to take smallest possible deviation
-          if (servo_offset_compensation_steps_local_i32 > pow(2,15)-1)
-          {
-            servo_offset_compensation_steps_local_i32 -= pow(2,16);
-          }
-
-          if (servo_offset_compensation_steps_local_i32 < -pow(2,15))
-          {
-            servo_offset_compensation_steps_local_i32 += pow(2,16);
-          }
-        }
-
-
-        // invert the compensation wrt the motor direction
-        if (dap_config_st.payLoadPedalConfig_.invertMotorDirection_u8 == 1)
-        {
-          servo_offset_compensation_steps_local_i32 *= -1;
-        }
-
-
-        if(semaphore_resetServoPos!=NULL)
-          {
-
-            // Take the semaphore and just update the config file, then release the semaphore
-            if(xSemaphoreTake(semaphore_resetServoPos, (TickType_t)1)==pdTRUE)
-            {
-              servo_offset_compensation_steps_i32 = servo_offset_compensation_steps_local_i32;
-              xSemaphoreGive(semaphore_resetServoPos);
-            }
-
-          }
-          else
-          {
-            semaphore_resetServoPos = xSemaphoreCreateMutex();
-            //Serial.println("semaphore_resetServoPos == 0");
-          }
-
-
-
-        if (dap_config_st.payLoadPedalConfig_.debug_flags_0 & DEBUG_INFO_0_SERVO_READINGS) 
-        {
-          static RTDebugOutput<int16_t, 4> rtDebugFilter({ "pos_p", "pos_error_p", "curr_per", "offset"});
-          rtDebugFilter.offerData({ isv57.servo_pos_given_p, isv57.servo_pos_error_p, isv57.servo_current_percent, (int16_t)servo_offset_compensation_steps_i32});
-        }
-
-       
-
-        
-    }
-    else
-    {
-      Serial.println("Servo communication lost!");
-      delay(100);
-      previousIsv57LifeSignal_b = false;
-      isv57_not_live_b=true;
-    }
-
-
-  }
-}
-
-#endif

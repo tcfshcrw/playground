@@ -419,7 +419,7 @@ int32_t mpcBasedMove(float loadCellReadingKg, float stepperPosFraction, StepperW
 
   // where k = [0, 1, ..., N]
 
-  
+  return 0;
 }
 
 
@@ -479,7 +479,7 @@ void measureStepResponse(StepperWithLimits* stepper, const DAP_calculationVariab
       loadcellReading = (loadcellReading - calc_st->Force_Min) / calc_st->Force_Range; 
 
       static RTDebugOutput<float, 3, 9> rtDebugFilter;
-      rtDebugFilter.offerData({ ((float)t) *1e-6 , currentPos,  loadcellReading});   
+      rtDebugFilter.offerData({ ((float)t) *1e-6f , currentPos,  loadcellReading});   
     }
   }
 
