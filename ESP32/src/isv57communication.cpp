@@ -66,8 +66,9 @@ void  isv57communication::clearServoUnitPosition()
 	// Changing the position unit, will clear the position data
 
   modbus.checkAndReplaceParameter(slaveId, pr_5_00+20, 0); // encoder output resolution  {0: Encoder units; 1: Command units; 2: 10000pulse/rotation}
-  delay(50);
+  delay(100);
 	modbus.checkAndReplaceParameter(slaveId, pr_5_00+20, 1); // encoder output resolution  {0: Encoder units; 1: Command units; 2: 10000pulse/rotation}
+  delay(100);
 }
 
 // send tuned servo parameters

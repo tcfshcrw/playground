@@ -55,7 +55,7 @@ public:
 	void checkLimitsAndResetIfNecessary();
 	void updatePedalMinMaxPos(uint8_t pedalStartPosPct, uint8_t pedalEndPosPct);
 	bool isAtMinPos();
-	bool correctPos();
+	void correctPos();
 	void findMinMaxSensorless(DAP_config_st dap_config_st);
 	int8_t moveTo(int32_t position, bool blocking = false);
 	void moveSlowlyToPos(int32_t targetPos_ui32);
