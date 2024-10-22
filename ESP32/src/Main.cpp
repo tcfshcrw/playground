@@ -368,7 +368,9 @@ void setup()
   }
   delay(200);
 #endif
-pinMode(Pairing_GPIO, INPUT_PULLUP);
+#ifdef Hardware_Pairing_button
+  pinMode(Pairing_GPIO, INPUT_PULLUP);
+#endif
 
 // initialize configuration and update local variables
   dap_config_st.initialiseDefaults();
@@ -1753,7 +1755,13 @@ void ESPNOW_SyncTask( void * pvParameters )
     else
     {
       #ifdef ESPNow_Pairing_function
-        if(digitalRead(Pairing_GPIO)==LOW||software_pairing_action_b)
+       #ifdef Hardware_Pairing_button
+        if(digitalRead(Pairing_GPIO)==LOW)
+        {
+          hardware_pairing_action_b=true;
+        }
+       #endif
+        if(hardware_pairing_action_b||software_pairing_action_b)
         {
           Serial.println("Pedal Pairing.....");
           delay(1000);
@@ -1762,6 +1770,7 @@ void ESPNOW_SyncTask( void * pvParameters )
           ESPNow_pairing_action_b=true;
           building_dap_esppairing_lcl=true;
           software_pairing_action_b=false;
+          hardware_pairing_action_b=false;
           
         }
         if(ESPNow_pairing_action_b)
