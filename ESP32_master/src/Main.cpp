@@ -24,6 +24,7 @@
 #include "Main.h"
 #include "esp_system.h"
 #include "soc/rtc_cntl_reg.h"
+#include "FanatecInterface.h"
 
 
 
@@ -218,6 +219,8 @@ void Joystick_Task( void * pvParameters);
 void LED_Task( void * pvParameters);
 void Serial_Task( void * pvParameters);
 void LED_Task_Dongle( void * pvParameters);
+FanatecInterface fanatec(18, 17); // RX: GPIO18, TX: GPIO17
+
 /**********************************************************************************************/
 /*                                                                                            */
 /*                         setup function                                                     */
@@ -257,6 +260,14 @@ void setup()
   Serial.println("[L]This work is licensed under a Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.");
   Serial.println("[L]Please check github repo for more detail: https://github.com/ChrGri/DIY-Sim-Racing-FFB-Pedal");
 
+  // Initialize FanatecInterface
+  fanatec.begin();
+
+  // Set connection callback
+  fanatec.onConnected([]() {
+      Serial.print("[L] ");
+      Serial.println("Connected to Fanatec device.");
+  });
 
   // setup multi tasking
   /*
@@ -426,7 +437,31 @@ bool building_dap_esppairing_lcl =false;
 void loop() 
 {
   taskYIELD();
-  //delay(2); 
+  fanatecUpdate();
+
+  delay(2); 
+}
+
+void fanatecUpdate() {
+  fanatec.communicationUpdate();
+  
+  uint16_t throttleValue = pedal_throttle_value;
+  uint16_t brakeValue = pedal_brake_value;
+  uint16_t clutchValue = pedal_cluth_value;
+  uint16_t handbrakeValue = 0;             // Set if needed
+
+  // Pedal input values to 0 - 10000
+  throttleValue = map(throttleValue, 0, 10000, 0, 65535);
+  brakeValue = map(brakeValue, 0, 10000, 0, 40960);
+  clutchValue = map(clutchValue, 0, 10000, 0, 65535);
+
+  // Set pedal values in FanatecInterface
+  fanatec.setThrottle(throttleValue);
+  fanatec.setBrake(brakeValue);
+  fanatec.setClutch(clutchValue);
+  fanatec.setHandbrake(handbrakeValue);
+  
+  fanatec.update();
 }
 
 void ESPNOW_SyncTask( void * pvParameters )
