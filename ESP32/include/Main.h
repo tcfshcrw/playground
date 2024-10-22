@@ -195,6 +195,7 @@ static const uint32_t STEPS_PER_MOTOR_REVOLUTION = 6400;
   #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 3
   //#define Pairing_GPIO 0
   #define ESPNow_Pairing_function
+  #define ESPNow_ESP32
 #endif
 
 
