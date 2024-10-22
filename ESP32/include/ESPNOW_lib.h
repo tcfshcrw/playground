@@ -28,7 +28,7 @@ bool ESPNow_Pairing_status = false;
 bool UpdatePairingToEeprom = false;
 bool ESPNow_pairing_action_b = false;
 bool software_pairing_action_b = false;
-
+bool hardware_pairing_action_b = false;
 
 
 struct ESPNow_Send_Struct
