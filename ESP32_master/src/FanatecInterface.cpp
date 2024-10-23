@@ -3,8 +3,8 @@
 #include "FanatecInterface.h"
 
 // Constructor
-FanatecInterface::FanatecInterface(int rxPin, int txPin)
-    : _rxPin(rxPin), _txPin(txPin), _serial(&Serial1),
+FanatecInterface::FanatecInterface(int rxPin, int txPin, int plugPin)
+    : _rxPin(rxPin), _txPin(txPin), _plugPin(plugPin), _serial(&Serial1),
       _throttle(0), _brake(0), _clutch(0), _handbrake(0),
       _connected(false), _connectedCallback(nullptr), _initialized(false) {
 }
@@ -13,6 +13,7 @@ FanatecInterface::FanatecInterface(int rxPin, int txPin)
 void FanatecInterface::begin() {
     // Initialize serial port
     _serial->begin(250000, SERIAL_8N1, _rxPin, _txPin);
+    pinMode(_plugPin, INPUT_PULLDOWN);
 
     // Generate CRC table
     makeCRCTable(0x8C);
@@ -20,23 +21,38 @@ void FanatecInterface::begin() {
 
 // Communication update function (to be called periodically in the loop)
 void FanatecInterface::communicationUpdate() {
-    if (!_initialized) {
+    bool detectState = isPlugged();
+    if (!_initialized && detectState) {
         performCommunicationSteps();
+        if (!_initialized) {
+            // Call the connection callback if set
+            if (_connectedCallback) {
+                _connectedCallback(true);
+            }
+        }
         _initialized = true;
         _connected = true;
-
-        // Call the connection callback if set
+    }
+    if (!detectState && _initialized) {
+        _initialized = false;
+        _connected = false;
         if (_connectedCallback) {
-            _connectedCallback();
+            _connectedCallback(false);
         }
     }
 }
 
 void FanatecInterface::update() {
-    // Create and send pedal data packet
-    uint8_t packet[12];
-    createPacket(packet);
-    _serial->write(packet, 12);
+    if (isPlugged()) {
+        // Create and send pedal data packet
+        uint8_t packet[12];
+        createPacket(packet);
+        _serial->write(packet, 12);
+    }
+}
+
+bool FanatecInterface::isPlugged() {
+    return digitalRead(_plugPin);
 }
 
 // Functions to set pedal values
@@ -57,7 +73,7 @@ void FanatecInterface::setHandbrake(uint16_t value) {
 }
 
 // Function to set the connection callback
-void FanatecInterface::onConnected(void (*callback)()) {
+void FanatecInterface::onConnected(void (*callback)(bool)) {
     _connectedCallback = callback;
 }
 

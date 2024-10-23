@@ -457,6 +457,8 @@ void setup()
 
   disableCore0WDT();
 
+  Serial.println("Starting other tasks");
+
   //create a task that will be executed in the Task2code() function, with priority 1 and executed on core 1
   xTaskCreatePinnedToCore(
                     pedalUpdateTask,   /* Task function. */
@@ -613,6 +615,7 @@ void setup()
   #ifdef ESPNOW_Enable
   dap_calculationVariables_st.rudder_brake_status=false;
   
+  Serial.println("Starting ESP now tasks");
   if(dap_config_st.payLoadPedalConfig_.pedal_type==0||dap_config_st.payLoadPedalConfig_.pedal_type==1||dap_config_st.payLoadPedalConfig_.pedal_type==2)
   {
     ESPNow_initialize();
@@ -929,14 +932,6 @@ void pedalUpdateTask( void * pvParameters )
 
 
 
-    //#define DEBUG_STEPPER_POS
-    /*if (dap_config_st.payLoadPedalConfig_.debug_flags_0 & DEBUG_INFO_0_STEPPER_POS) 
-    {
-      static RTDebugOutput<int32_t, 5> rtDebugFilter({ "ESP_pos", "ESP_tar_pos", "ISV_pos", "frac1"});
-      rtDebugFilter.offerData({ stepper->getCurrentPositionFromMin(), Position_Next, -(int32_t)(isv57.servo_pos_given_p + isv57.servo_pos_error_p - isv57.getZeroPos()), (int32_t)(stepperPosFraction * 10000.)});
-    }*/
-
-
     // add dampening
     if (dap_calculationVariables_st.dampingPress  > 0.0001)
     {
@@ -980,11 +975,15 @@ void pedalUpdateTask( void * pvParameters )
     }
 
     // if pedal in min position, recalibrate position --> automatic step loss compensation
-	if (stepper->isAtMinPos())
-	{
-		stepper->correctPos();
-	}
+	// if (stepper->isAtMinPos())
+	// {
+	// 	stepper->correctPos();
+	// }
 
+
+
+    // Serial.print("Position next: ");
+    // Serial.println(Position_Next);
 
 
 
@@ -1582,12 +1581,16 @@ void ESPNOW_SyncTask( void * pvParameters )
     uint32_t targetWaitTime_u32 = constrain(timeDiff_espNowTask_l, 0, REPETITION_INTERVAL_ESPNOW_TASK);
     delay(targetWaitTime_u32); 
     timePrevious_espNowTask_l = millis();
+
+
     //restart from espnow
     if(ESPNow_restart)
     {
       Serial.println("ESP restart by ESP now request");
       ESP.restart();
     }
+
+    
     //basic state sendout interval
     if(ESPNOW_count%9==0)
     {
@@ -1784,25 +1787,6 @@ void ESPNOW_SyncTask( void * pvParameters )
           
     }
 
-    /*
-    if((dap_config_st.payLoadPedalConfig_.debug_flags_0 == DEBUG_INFO_0_RUDDER))
-    {
-      unsigned long now_rudder = millis();
-      if(now_rudder-Debug_rudder_last>1000)
-      {
-        Serial.print("Pedal:");
-        Serial.print(dap_config_st.payLoadPedalConfig_.pedal_type);
-        Serial.print(", Rudder Status:");
-        Serial.print(dap_calculationVariables_st.Rudder_status);
-        Serial.print(", Send Value: ");
-        Serial.print(_ESPNow_Send.pedal_position_ratio);
-        Serial.print(", Recieve Value");
-        Serial.println(_ESPNow_Recv.pedal_position_ratio);  
-        Debug_rudder_last=now_rudder;
-      }
-      
-    }
-    */
     #ifdef ESPNow_debug_rudder
       if(print_count>1000)
       {
@@ -1839,8 +1823,11 @@ void ESPNOW_SyncTask( void * pvParameters )
           
                
     #endif
-    //delay(1);
+
+
+
   }
+
 }
 #endif
 

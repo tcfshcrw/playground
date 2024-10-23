@@ -154,6 +154,7 @@
   #define Fanatec_comunication
   #define Fanatec_serial_RX 18
   #define Fanatec_serial_TX 17
+  #define Fanatec_plug 16
 #endif
 
 

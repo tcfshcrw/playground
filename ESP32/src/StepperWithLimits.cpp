@@ -134,7 +134,7 @@ StepperWithLimits::StepperWithLimits(uint8_t pinStep, uint8_t pinDirection, uint
 		xTaskCreatePinnedToCore(
 						  this->servoCommunicationTask,   
 						  "servoCommunicationTask", 
-						  10000,  
+						  5000,  
 						  //STACK_SIZE_FOR_TASK_2,    
 						  this,//NULL,      
 						  1,         
@@ -192,6 +192,7 @@ void StepperWithLimits::findMinMaxSensorless(DAP_config_st dap_config_st)
 		//_stepper->forceStopAndNewPosition(0);
 		_stepper->moveTo(0);
 		_endstopLimitMin = 0;
+		delay(100);
 		isv57.setZeroPos();
 		
 		Serial.println("Min endstop reached.");
@@ -203,14 +204,14 @@ void StepperWithLimits::findMinMaxSensorless(DAP_config_st dap_config_st)
 		// _stepper->disableAxis();
 		// _stepper->enableAxis();
 		//delay(500);
-		Serial.println("Servos position before 0 compensation: ");
-		Serial.println(isv57.servo_pos_given_p);
+		// Serial.println("Servos position before 0 compensation: ");
+		// Serial.println(isv57.servo_pos_given_p);
 		
-		isv57.clearServoUnitPosition(); // Resets servos internal position to 0 to align it with the ESPs position
+		// isv57.clearServoUnitPosition(); // Resets servos internal position to 0 to align it with the ESPs position
 		
-		//delay(500);
-		Serial.println("Servos position after 0 compensation: ");
-		Serial.println(isv57.servo_pos_given_p);
+		// //delay(500);
+		// Serial.println("Servos position after 0 compensation: ");
+		// Serial.println(isv57.servo_pos_given_p);
 		
 		
 		
@@ -225,7 +226,7 @@ void StepperWithLimits::findMinMaxSensorless(DAP_config_st dap_config_st)
 		float maxStepsToReachEndPos = maxRevToReachEndPos * (float)STEPS_PER_MOTOR_REVOLUTION;
   
   
-		endPosDetected = abs( isv57.servo_current_percent) > STEPPER_WITH_LIMITS_SENSORLESS_CURRENT_THRESHOLD_IN_PERCENT;
+		endPosDetected = false; //abs( isv57.servo_current_percent) > STEPPER_WITH_LIMITS_SENSORLESS_CURRENT_THRESHOLD_IN_PERCENT;
 		
 		// run continously in one direction until endstop is hit
 		//_stepper->runBackward();
@@ -234,8 +235,11 @@ void StepperWithLimits::findMinMaxSensorless(DAP_config_st dap_config_st)
 		// if endstop is reached, communication is lost or virtual endstop is hit
 		while( (!endPosDetected) && (getLifelineSignal()) ){
 			delay(10);
-			endPosDetected = abs( isv57.servo_current_percent) > STEPPER_WITH_LIMITS_SENSORLESS_CURRENT_THRESHOLD_IN_PERCENT;
-				
+			if (_stepper->getCurrentPosition() > MIN_POS_MAX_ENDSTOP)
+    		{
+				endPosDetected = abs( isv57.servo_current_percent) > STEPPER_WITH_LIMITS_SENSORLESS_CURRENT_THRESHOLD_IN_PERCENT;
+			}
+
 			// virtual endstop
 			endPosDetected |= (_stepper->getCurrentPosition() > maxStepsToReachEndPos);
 		}
@@ -341,7 +345,7 @@ bool StepperWithLimits::isAtMinPos()
 /************************************************************/
 /* 					Step loss recovery						*/
 /************************************************************/
-bool StepperWithLimits::correctPos()
+void StepperWithLimits::correctPos()
 {
 	if(semaphore_resetServoPos!=NULL)
 	{
@@ -657,6 +661,7 @@ void StepperWithLimits::servoCommunicationTask(void *pvParameters)
 				servo_offset_compensation_steps_local_i32 *= -1;
 				}
 
+				//servo_offset_compensation_steps_local_i32 *= -1;
 
 
 				if(semaphore_resetServoPos!=NULL)

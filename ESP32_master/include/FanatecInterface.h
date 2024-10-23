@@ -9,7 +9,7 @@
 class FanatecInterface {
 public:
     // Constructor
-    FanatecInterface(int rxPin, int txPin);
+    FanatecInterface(int rxPin, int txPin, int plugPin);
 
     // Initialization function
     void begin();
@@ -25,10 +25,11 @@ public:
     void setHandbrake(uint16_t value);
 
     // Function to set the connection callback
-    void onConnected(void (*callback)());
+    void onConnected(void (*callback)(bool));
 
     // Check if connected to the Fanatec device
     bool isConnected();
+    bool isPlugged();
 
 private:
     // Internal helper functions
@@ -38,9 +39,10 @@ private:
     uint8_t generateCRC(uint8_t* input, size_t length);
     void createPacket(uint8_t* packet);
 
-    // UART pin settings
+    // UART and plug pin settings
     int _rxPin;
     int _txPin;
+    int _plugPin;
 
     // HardwareSerial object
     HardwareSerial* _serial;
@@ -58,7 +60,7 @@ private:
     bool _connected;
 
     // Connection callback function pointer
-    void (*_connectedCallback)();
+    void (*_connectedCallback)(bool);
 
     // Initialization flag
     bool _initialized;
