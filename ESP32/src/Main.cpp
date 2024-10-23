@@ -290,7 +290,7 @@ void setup()
   #ifndef CONTROLLER_SPECIFIC_VIDPID
     // init controller
     SetupController();
-    delay(3000);
+    //delay(3000);
   #endif
   delay(3000);
   Serial.println("This work is licensed under a Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.");
@@ -1106,7 +1106,7 @@ void pedalUpdateTask( void * pvParameters )
           dap_state_basic_st.payloadPedalState_Basic_.erroe_code_u8=11;
           isv57.isv57_update_parameter_b=false;
         }*/
-        if( stepper->getLifelineSignal() )
+        if( stepper->getLifelineSignal()==false )
         {
           dap_state_basic_st.payloadPedalState_Basic_.erroe_code_u8=12;
         }
