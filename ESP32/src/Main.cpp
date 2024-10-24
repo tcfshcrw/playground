@@ -984,11 +984,10 @@ void pedalUpdateTask( void * pvParameters )
 
     // if (pos_printCount == 1000)
     // {
-    //   Serial.print("ESP pos: ");
-    //   Serial.print(stepper->getCurrentPosition());
-    //   Serial.print("Serovs pos: ");
-    //   Serial.println(stepper->getServosPos());
-    //   pos_printCount = 0;
+      // Serial.print("ESP pos: ");
+      // Serial.print(stepper->getCurrentPosition());
+      // Serial.print("Serovs pos: ");
+      // Serial.println(stepper->getServosPos());
     // }
     // pos_printCount++;
     
