@@ -712,6 +712,8 @@ int64_t timeNow_pedalUpdateTask_l = 0;
 int64_t timePrevious_pedalUpdateTask_l = 0;
 #define REPETITION_INTERVAL_PEDALUPDATE_TASK (int64_t)1
 
+
+uint32_t pos_printCount = 0;
 //void loop()
 void pedalUpdateTask( void * pvParameters )
 {
@@ -975,10 +977,21 @@ void pedalUpdateTask( void * pvParameters )
     }
 
     // if pedal in min position, recalibrate position --> automatic step loss compensation
-	// if (stepper->isAtMinPos())
-	// {
-	// 	stepper->correctPos();
-	// }
+    if (stepper->isAtMinPos())
+    {
+      stepper->correctPos();
+    }
+
+    // if (pos_printCount == 1000)
+    // {
+    //   Serial.print("ESP pos: ");
+    //   Serial.print(stepper->getCurrentPosition());
+    //   Serial.print("Serovs pos: ");
+    //   Serial.println(stepper->getServosPos());
+    //   pos_printCount = 0;
+    // }
+    // pos_printCount++;
+    
 
 
 
