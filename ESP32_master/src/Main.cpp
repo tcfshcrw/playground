@@ -224,6 +224,7 @@ void FanatecUpdate(void * pvParameters);
 
 #ifdef Fanatec_comunication
   FanatecInterface fanatec(Fanatec_serial_RX, Fanatec_serial_TX, Fanatec_plug); // RX: GPIO18, TX: GPIO17, PLUG: GPIO16
+  bool Fanatec_Mode=false;
 #endif
 
 /**********************************************************************************************/
@@ -790,6 +791,26 @@ void Serial_Task( void * pvParameters)
               #ifdef Using_Board_ESP32
                 Serial.println("[L]Command not supported ");
                 delay(1000); 
+              #endif
+
+            }
+            if(dap_bridge_state_lcl.payloadBridgeState_.Bridge_action==4)
+            {
+              //aciton=4 Fanatec Mode
+              #ifdef Fanatec_comunication
+                if(Fanatec_Mode)
+                {
+                  Fanatec_Mode=false;
+                  Serial.println("[L]Fanatec Mode off");
+                }
+                else
+                {
+                  Fanatec_Mode=true;
+                  Serial.println("[L]Fanatec Mode on");
+                }
+              #else
+                Serial.println("[L]Fanatec Mode Command not supported ");
+                delay(1000);
               #endif
 
             }
