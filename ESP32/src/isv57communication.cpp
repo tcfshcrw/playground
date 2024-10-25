@@ -174,14 +174,14 @@ void isv57communication::sendTunedServoParameters(bool commandRotationDirection)
 
     // identified with logic analyzer. See \StepperParameterization\Meesages\StoreSettingsToEEPROM_0.png
     modbus.holdingRegisterWrite(slaveId, 0x019A, 0x5555); // store the settings to servos NVM
-	// ToDo: according to iSV57 manual, 0x2211 is the command to write values to EEPROM
-	delay(500);
-	
-	
-	// ToDo: soft reset servo. The iSV57 docu says Pr0.25: 0x6666 is soft reset
-	// modbus.holdingRegisterWrite(slaveId, 0x019A, 0x6666); // store the settings to servos NVM
-	
-	
+    // ToDo: according to iSV57 manual, 0x2211 is the command to write values to EEPROM
+    delay(500);
+    
+    
+    // ToDo: soft reset servo. The iSV57 docu says Pr0.25: 0x6666 is soft reset
+    // modbus.holdingRegisterWrite(slaveId, 0x019A, 0x6666); // store the settings to servos NVM
+    
+    
     isv57_update_parameter_b=true;
     delay(2000);
   }

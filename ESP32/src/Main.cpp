@@ -463,7 +463,7 @@ void setup()
   xTaskCreatePinnedToCore(
                     pedalUpdateTask,   /* Task function. */
                     "pedalUpdateTask",     /* name of task. */
-                    10000,       /* Stack size of task */
+                    2000,       /* Stack size of task */
                     //STACK_SIZE_FOR_TASK_1,
                     NULL,        /* parameter of the task */
                     1,           /* priority of the task */
@@ -474,7 +474,7 @@ void setup()
   xTaskCreatePinnedToCore(
                     serialCommunicationTask,   
                     "serialCommunicationTask", 
-                    10000,  
+                    3000,  
                     //STACK_SIZE_FOR_TASK_2,    
                     NULL,      
                     1,         
@@ -508,7 +508,7 @@ void setup()
   xTaskCreatePinnedToCore(
                     OTATask,   
                     "OTATask", 
-                    16000,  
+                    2000,  
                     //STACK_SIZE_FOR_TASK_2,    
                     NULL,      
                     1,         
@@ -622,7 +622,7 @@ void setup()
     xTaskCreatePinnedToCore(
                         ESPNOW_SyncTask,   
                         "ESPNOW_update_Task", 
-                        5000,  
+                        2000,  
                         //STACK_SIZE_FOR_TASK_2,    
                         NULL,      
                         1,         
@@ -714,6 +714,8 @@ int64_t timePrevious_pedalUpdateTask_l = 0;
 
 
 uint32_t pos_printCount = 0;
+
+uint32_t controlTask_stackSizeIdx_u32 = 0;
 //void loop()
 void pedalUpdateTask( void * pvParameters )
 {
@@ -1128,10 +1130,10 @@ void pedalUpdateTask( void * pvParameters )
         dap_state_extended_st.payloadPedalState_Extended_.pedalForce_filtered_fl32 =  filteredReading;
         dap_state_extended_st.payloadPedalState_Extended_.forceVel_est_fl32 =  changeVelocity;
 
-		dap_state_extended_st.payloadPedalState_Extended_.servoPosition_i16 = stepper->getServosInternalPosition();
-		dap_state_extended_st.payloadPedalState_Extended_.servo_voltage_0p1V =  stepper->getServosVoltage();
-		dap_state_extended_st.payloadPedalState_Extended_.servo_current_percent_i16 = stepper->getServosCurrent();
-		
+        dap_state_extended_st.payloadPedalState_Extended_.servoPosition_i16 = stepper->getServosInternalPosition();
+        dap_state_extended_st.payloadPedalState_Extended_.servo_voltage_0p1V =  stepper->getServosVoltage();
+        dap_state_extended_st.payloadPedalState_Extended_.servo_current_percent_i16 = stepper->getServosCurrent();
+        
 
 
         dap_state_extended_st.payloadPedalState_Extended_.servoPositionTarget_i16 = stepper->getCurrentPositionFromMin();
@@ -1148,7 +1150,17 @@ void pedalUpdateTask( void * pvParameters )
     {
       semaphore_updatePedalStates = xSemaphoreCreateMutex();
     }
-    
+
+    #ifdef PRINT_TASK_FREE_STACKSIZE_IN_WORDS
+      if( controlTask_stackSizeIdx_u32 == 1000)
+      {
+        UBaseType_t stackHighWaterMark = uxTaskGetStackHighWaterMark(NULL);
+        Serial.print("StackSize (Pedal update): ");
+        Serial.println(stackHighWaterMark);
+        controlTask_stackSizeIdx_u32 = 0;
+      }
+      controlTask_stackSizeIdx_u32++;
+    #endif
 
   }
 }
@@ -1168,6 +1180,7 @@ void pedalUpdateTask( void * pvParameters )
 /*                         communication task                                                 */
 /*                                                                                            */
 /**********************************************************************************************/
+uint32_t communicationTask_stackSizeIdx_u32 = 0;
 int64_t timeNow_serialCommunicationTask_l = 0;
 int64_t timePrevious_serialCommunicationTask_l = 0;
 #define REPETITION_INTERVAL_SERIALCOMMUNICATION_TASK (int64_t)10
@@ -1501,6 +1514,17 @@ void serialCommunicationTask( void * pvParameters )
       }
     }
 
+    #ifdef PRINT_TASK_FREE_STACKSIZE_IN_WORDS
+      if( communicationTask_stackSizeIdx_u32 == 1000)
+			{
+				UBaseType_t stackHighWaterMark = uxTaskGetStackHighWaterMark(NULL);
+				Serial.print("StackSize (Serial communication): ");
+				Serial.println(stackHighWaterMark);
+				communicationTask_stackSizeIdx_u32 = 0;
+			}
+			communicationTask_stackSizeIdx_u32++;
+    #endif
+
   }
 }
 
@@ -1510,6 +1534,7 @@ void serialCommunicationTask( void * pvParameters )
 uint16_t OTA_count=0;
 bool message_out_b=false;
 bool OTA_enable_start=false;
+uint32_t otaTask_stackSizeIdx_u32 = 0;
 void OTATask( void * pvParameters )
 {
 
@@ -1559,6 +1584,17 @@ void OTATask( void * pvParameters )
     
     delay(1);
     #endif
+
+    #ifdef PRINT_TASK_FREE_STACKSIZE_IN_WORDS
+      if( otaTask_stackSizeIdx_u32 == 1000)
+      {
+        UBaseType_t stackHighWaterMark = uxTaskGetStackHighWaterMark(NULL);
+        Serial.print("StackSize (OTA): ");
+        Serial.println(stackHighWaterMark);
+        otaTask_stackSizeIdx_u32 = 0;
+      }
+      otaTask_stackSizeIdx_u32++;
+    #endif
   }
 }
 
@@ -1581,6 +1617,8 @@ bool building_dap_esppairing_lcl =false;
 unsigned long Pairing_state_start;
 unsigned long Pairing_state_last_sending;
 unsigned long Debug_rudder_last=0;
+
+uint32_t espNowTask_stackSizeIdx_u32 = 0;
 void ESPNOW_SyncTask( void * pvParameters )
 {
   for(;;)
@@ -1838,6 +1876,17 @@ void ESPNOW_SyncTask( void * pvParameters )
 
 
 
+    
+      #ifdef PRINT_TASK_FREE_STACKSIZE_IN_WORDS
+        if( espNowTask_stackSizeIdx_u32 == 1000)
+        {
+          UBaseType_t stackHighWaterMark = uxTaskGetStackHighWaterMark(NULL);
+          Serial.print("StackSize (ESP-Now): ");
+          Serial.println(stackHighWaterMark);
+          espNowTask_stackSizeIdx_u32 = 0;
+        }
+        espNowTask_stackSizeIdx_u32++;
+      #endif
   }
 
 }

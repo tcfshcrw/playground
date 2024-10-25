@@ -4,7 +4,7 @@
 #include "Math.h"
 
 
-#define STEPPER_WITH_LIMITS_SENSORLESS_CURRENT_THRESHOLD_IN_PERCENT 20
+#define STEPPER_WITH_LIMITS_SENSORLESS_CURRENT_THRESHOLD_IN_PERCENT 50
 #define MIN_POS_MAX_ENDSTOP STEPS_PER_MOTOR_REVOLUTION * 3 // servo has to drive minimum N steps before it allows the detection of the max endstop
 
 
@@ -70,8 +70,8 @@ StepperWithLimits::StepperWithLimits(uint8_t pinStep, uint8_t pinDirection, uint
     _stepper->setSpeedInTicks( maxSpeedInTicks ); // ticks
     _stepper->setAcceleration(MAXIMUM_STEPPER_ACCELERATION);  // steps/s²
 	_stepper->setLinearAcceleration(0);
-    //_stepper->setForwardPlanningTimeInMs(8);
-	_stepper->setForwardPlanningTimeInMs(4);
+    _stepper->setForwardPlanningTimeInMs(8);
+	//_stepper->setForwardPlanningTimeInMs(4);
 
 	
 	
@@ -135,7 +135,7 @@ StepperWithLimits::StepperWithLimits(uint8_t pinStep, uint8_t pinDirection, uint
 		xTaskCreatePinnedToCore(
 						  this->servoCommunicationTask,   
 						  "servoCommunicationTask", 
-						  5000,  
+						  2000,  
 						  //STACK_SIZE_FOR_TASK_2,    
 						  this,//NULL,      
 						  1,         
@@ -166,7 +166,7 @@ void StepperWithLimits::findMinMaxSensorless(DAP_config_st dap_config_st)
 		
 		// reduce speed and acceleration
 		_stepper->setSpeedInHz(MAXIMUM_STEPPER_SPEED / 10);
-		//_stepper->setAcceleration(MAXIMUM_STEPPER_ACCELERATION / 10);
+		_stepper->setAcceleration(MAXIMUM_STEPPER_ACCELERATION / 10);
 
 		// enable servo
 		restartServo = true;
@@ -222,10 +222,12 @@ void StepperWithLimits::findMinMaxSensorless(DAP_config_st dap_config_st)
 		restartServo = true;
 
 		bool servoAxisResetSuccessfull_b = false;
-		for (uint16_t waitTillServoCounterWasReset_Idx = 0; waitTillServoCounterWasReset_Idx < 100; waitTillServoCounterWasReset_Idx++)
+		for (uint16_t waitTillServoCounterWasReset_Idx = 0; waitTillServoCounterWasReset_Idx < 10; waitTillServoCounterWasReset_Idx++)
 		{
 			delay(100);
-			if ( (false == restartServo) && (0 == isv57.servo_pos_given_p ) )
+
+			bool servoPosRes_b = (50 > abs(isv57.servo_pos_given_p) ) || ( 50 > (INT16_MAX - abs(isv57.servo_pos_given_p))  );
+			if ( (false == restartServo) && (servoPosRes_b) )
 			{
 				Serial.print("Servo axis was reset succesfully! Current position: ");
 				Serial.println(isv57.servo_pos_given_p);
@@ -507,6 +509,7 @@ int16_t servoPos_last_i16 = 0;
 int64_t timeNow_l = 0;
 
 
+uint32_t stackSizeIdx_u32 = 0;
 void StepperWithLimits::servoCommunicationTask(void *pvParameters)
 {
   
@@ -546,9 +549,11 @@ void StepperWithLimits::servoCommunicationTask(void *pvParameters)
 			// restarting servo axis
 			if(true == stepper_cl->restartServo)
 			{
-				stepper_cl->isv57.disableAxis();				
+				stepper_cl->isv57.disableAxis();
+				delay(50);				
 				stepper_cl->isv57.enableAxis();
 				stepper_cl->restartServo = false;
+				delay(200);
 			}
 
 
@@ -723,9 +728,16 @@ void StepperWithLimits::servoCommunicationTask(void *pvParameters)
 				
 			}
 
-
-			
-		
+			#ifdef PRINT_TASK_FREE_STACKSIZE_IN_WORDS
+				if( stackSizeIdx_u32 == 1000)
+				{
+					UBaseType_t stackHighWaterMark = uxTaskGetStackHighWaterMark(NULL);
+					Serial.print("StackSize (Servo communication): ");
+					Serial.println(stackHighWaterMark);
+					stackSizeIdx_u32 = 0;
+				}
+				stackSizeIdx_u32++;
+			#endif
 
 			
 		}
