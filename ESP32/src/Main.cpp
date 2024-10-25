@@ -508,7 +508,7 @@ void setup()
   xTaskCreatePinnedToCore(
                     OTATask,   
                     "OTATask", 
-                    2000,  
+                    16000,  
                     //STACK_SIZE_FOR_TASK_2,    
                     NULL,      
                     1,         
