@@ -1,8 +1,10 @@
 {
   "Configurations": [
     {
-      "Version": "2.0.0",
-      "URL": "https://github.com/tcfshcrw/playground/blob/main/OTA/firmware.bin"
+      "Board": "Espressif ESP32-S3-DevKitC-1-N8 (8 MB QD, No PSRAM)",
+      "Device": "F0:F5:BD:4A:AE:E8",
+      "Version": "0.0.0",
+      "URL": "https://github.com/tcfshcrw/playground/blob/main/OTA/firmware.bin"      
     }
   ]
 }
