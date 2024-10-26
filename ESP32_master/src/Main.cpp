@@ -25,7 +25,7 @@
 #include "esp_system.h"
 #include "soc/rtc_cntl_reg.h"
 #include "FanatecInterface.h"
-
+#include "OTA_Pull.h"
 
 
 //#define ALLOW_SYSTEM_IDENTIFICATION
@@ -432,6 +432,13 @@ void setup()
     delay(500);
   #endif
   Serial.println("[L]Setup end");
+  //initialize wifi 
+  for(uint i=0;i<30;i++)
+  {
+    _basic_wifi_info.WIFI_PASS[i]=0;
+    _basic_wifi_info.WIFI_SSID[i]=0;
+  }
+  
   
 }
 
@@ -654,6 +661,8 @@ void Serial_Task( void * pvParameters)
     bool structChecker = true;
     if (n > 0)
     {
+      //Serial.print("[L]get size:");
+      //Serial.println(n);
       switch (n) 
       {
         case sizeof(DAP_actions_st) :            
@@ -817,7 +826,36 @@ void Serial_Task( void * pvParameters)
 
           }
           break;
-
+        case sizeof(Basic_WIfi_info) : 
+          Serial.println("[L]get basic wifi info");
+          Serial.readBytes((char*)&_basic_wifi_info, sizeof(Basic_WIfi_info));
+          SSID=new char[_basic_wifi_info.SSID_Length+1];
+          PASS=new char[_basic_wifi_info.PASS_Length+1];
+          memcpy(SSID,_basic_wifi_info.WIFI_SSID,_basic_wifi_info.SSID_Length);
+          memcpy(PASS,_basic_wifi_info.WIFI_PASS,_basic_wifi_info.PASS_Length);
+          SSID[_basic_wifi_info.SSID_Length]=0;
+          PASS[_basic_wifi_info.PASS_Length]=0;
+          Serial.print("[L]SSID(uint)=");
+          for(uint i=0; i<_basic_wifi_info.SSID_Length;i++)
+          {
+            Serial.print(_basic_wifi_info.WIFI_SSID[i]);
+            Serial.print(",");
+          }
+          Serial.println(" ");
+          Serial.print("[L]PASS(uint)=");
+          for(uint i=0; i<_basic_wifi_info.PASS_Length;i++)
+          {
+            Serial.print(_basic_wifi_info.WIFI_PASS[i]);
+            Serial.print(",");
+          }
+          Serial.println(" ");
+          
+          Serial.print("[L]SSID=");
+          Serial.println(SSID);
+          Serial.print("[L]PASS=");
+          Serial.println(PASS);   
+          wifi_initialized(SSID,PASS);
+          break;
         default:
         // flush the input buffer
           while (Serial.available()) 
