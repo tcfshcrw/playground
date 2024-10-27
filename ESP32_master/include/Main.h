@@ -249,5 +249,6 @@
   #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 5
   #define ESPNow_Pairing_function
   #define deviceID 99
+  #define OTA_Update
 #endif
 
