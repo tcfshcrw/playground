@@ -12,7 +12,7 @@ void setup() {
 
   
   Serial.begin(921600);
-  delay(2000);
+  delay(10000);
   /*
   if (!SPIFFS.begin(true)) {
     Serial.println("SPIFFS Mount Failed");

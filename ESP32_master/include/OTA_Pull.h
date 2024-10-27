@@ -1,7 +1,10 @@
 #include <Arduino.h>
-
+bool OTA_enable_b =false;
+bool OTA_status =false;
 struct Basic_WIfi_info
 { 
+    uint8_t payloadType;
+    uint8_t device_ID;
     uint8_t wifi_action;
     uint8_t mode_select;
     uint8_t SSID_Length;

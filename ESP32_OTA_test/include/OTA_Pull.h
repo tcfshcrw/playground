@@ -53,7 +53,10 @@ const char *errtext(int code)
 
 void connectToWiFi() {
   // Begin connecting to WiFi using the provided SSID and password
-  //esp_wifi_set_max_tx_power(WIFI_POWER_8_5dBm);
+  WiFi.mode(WIFI_STA);
+  WiFi.disconnect();
+  delay(100);
+  esp_wifi_set_max_tx_power(WIFI_POWER_8_5dBm);
   WiFi.begin(SSID, PASS);
 
   // Display connection progress
