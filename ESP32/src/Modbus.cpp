@@ -95,13 +95,13 @@ void Modbus::readParameter(uint16_t slaveId_local_u16, uint16_t parameterAdress)
 
 
   // if value is not target value --> overwrite value
-    Serial.print("Parameter address: ");
-    Serial.print(parameterAdress);
-    Serial.print(",    actual:");
-    Serial.println(returnValue);
+  Serial.print("Parameter address: ");
+  Serial.print(parameterAdress);
+  Serial.print(",    actual:");
+  Serial.println(returnValue);
 
 
-    delay(50);
+  delay(50);
 }
 
 
@@ -110,38 +110,50 @@ bool Modbus::checkAndReplaceParameter(uint16_t slaveId_local_u16, uint16_t param
 
   bool retValue_b = false;
 
-  // check if value at address is already target value
-  uint8_t raw2[2];
-  uint8_t len;
-  int16_t regArray[4];
-
-  // read the four registers simultaneously
-  if(requestFrom(slaveId_local_u16, 0x03, parameterAdress,  2) > 0)
-  {
-    RxRaw(raw2,  len);
-    regArray[0] = uint16(0);
-  }
   
-  // write to public variables
-  int16_t returnValue = regArray[0];
 
-
-
-  // if value is not target value --> overwrite value
-  if(returnValue!= value)
+  // check and set the register at maximum N times
+  for (uint8_t tryIdx_u8 = 0; tryIdx_u8 < 10; tryIdx_u8++)
   {
-    Serial.print("Parameter adresse: ");
-    Serial.print(parameterAdress);
-    Serial.print(",    actual:");
-    Serial.print(returnValue);
-    Serial.print(",    target:");
-    Serial.println(value);
 
+    if (true == retValue_b)
+    {
+      // when register has proper setting, break the loop
+      break;
+    }
 
+    // check if value at address is already target value
+    uint8_t raw2[2];
+    uint8_t len;
+    int16_t regArray[4];
 
-    holdingRegisterWrite(slaveId_local_u16, parameterAdress, value); 
-    delay(50);
-    retValue_b = true;
+    // read the four registers simultaneously
+    if(requestFrom(slaveId_local_u16, 0x03, parameterAdress,  2) > 0)
+    {
+      RxRaw(raw2,  len);
+      regArray[0] = uint16(0);
+    }
+    
+    // write to public variables
+    int16_t returnValue = regArray[0];
+
+    long targetValue_l = value;
+
+    // if value is not target value --> overwrite value
+    if(returnValue!= targetValue_l)
+    {
+      Serial.print("Parameter adresse: ");
+      Serial.print(parameterAdress);
+      Serial.print(",    actual:");
+      Serial.print(returnValue);
+      Serial.print(",    target:");
+      Serial.println(targetValue_l);
+
+      holdingRegisterWrite(slaveId_local_u16, parameterAdress, targetValue_l); 
+      delay(50);
+      retValue_b = true;
+    }
+
   }
 
   return retValue_b;
@@ -513,8 +525,10 @@ int Modbus::holdingRegisterWrite(int id, int address, uint16_t value)
     this->s->flush();
     digitalWrite(mode_,0);
     delay(1);
-	
-	
+
+  // verify return signal
+  // should be identical to transmit signal, otherwise error
+
 	return 1;
 	
 	

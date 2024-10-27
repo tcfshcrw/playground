@@ -176,6 +176,9 @@ void StepperWithLimits::findMinMaxSensorless(DAP_config_st dap_config_st)
 		//isv57.enableAxis();
 		//delay(50);
 
+		// move a tiny bit to enable axis
+		// _stepper->move(10, true);
+
 
 
 
@@ -205,6 +208,8 @@ void StepperWithLimits::findMinMaxSensorless(DAP_config_st dap_config_st)
 			Serial.print("Servo readings not plausible. Restarting ESP!");
 			ESP.restart();
 		}
+		
+
 		
 
 
@@ -283,9 +288,14 @@ void StepperWithLimits::findMinMaxSensorless(DAP_config_st dap_config_st)
 		}
 		*/
 
+		// Serial.print("Servo axis current position (before clearing): ");
+		// Serial.println(isv57.servo_pos_given_p);
 
+		// restartServo = true;
+		// delay(5000);
 
-
+		// Serial.print("Servo axis current position (after clearing): ");
+		// Serial.println(isv57.servo_pos_given_p);
 
 
 
@@ -600,14 +610,16 @@ void StepperWithLimits::servoCommunicationTask(void *pvParameters)
 		{
 
 			// restarting servo axis
-			/*if(true == stepper_cl->restartServo)
+			if(true == stepper_cl->restartServo)
 			{
-				stepper_cl->isv57.disableAxis();
-				delay(50);				
-				stepper_cl->isv57.enableAxis();
+				stepper_cl->isv57.resetAxisCounter();
+
+				// stepper_cl->isv57.disableAxis();
+				// delay(50);				
+				// stepper_cl->isv57.enableAxis();
 				stepper_cl->restartServo = false;
 				delay(200);
-			}*/
+			}
 
 
 			// when servo has been restarted, the read states need to be initialized first

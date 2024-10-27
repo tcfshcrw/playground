@@ -63,15 +63,29 @@ void isv57communication::enableAxis()
   Serial.println("Enabling servo");
 
   // 0x3f, 0x06, 0x00, 0x85, 0x03, 0x83, 0xdd, 0xac
+  // Pr4.08: 0x085
   modbus.holdingRegisterWrite(slaveId, 0x0085, 0x0383);
   delay(12);
   // 0x3f, 0x06, 0x01, 0x39, 0x00, 0x08, 0x5d, 0x23
   modbus.holdingRegisterWrite(slaveId, 0x0139, 0x0008);
   delay(10);
 
+  // modbus.holdingRegisterRead(0x0085);
+  // modbus.holdingRegisterRead(0x0139);
   
 }
 
+
+void isv57communication::resetAxisCounter() 
+{
+  Serial.println("Reset axis counter");
+
+  modbus.holdingRegisterRead(0x0085);
+  delay(10);
+  modbus.holdingRegisterRead(0x0139);
+  delay(10);
+  
+}
 
 
 
@@ -98,7 +112,7 @@ void isv57communication::sendTunedServoParameters(bool commandRotationDirection)
 
 
   // Pr0 register
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+1, 0); // control mode 
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+1, 0); // control mode #
   retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+2, 0); // deactivate auto gain
   retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+3, 10); // machine stiffness
   retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+4, 80); // ratio of inertia
@@ -165,7 +179,23 @@ void isv57communication::sendTunedServoParameters(bool commandRotationDirection)
   retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_7_00+33, 1); // bleeder hysteresis voltage; Contrary to the manual this seems to be an offset voltage, thus Braking disabling voltage = Pr7.32 + Pr.33
   
   // disable axis after servo startup --> ESP has to enable the axis first
-  //isv57communication::disableAxis();
+  // Pr4.08
+  // long servoEnableStatus = modbus.holdingRegisterRead(slaveId, 0x03, pr_4_00+8);
+  // Serial.print("Servo enable setting: ");
+  // Serial.println(servoEnableStatus, HEX);
+  // delay(100);
+  // if (servoEnableStatus != 0x303)
+  // {
+  //   isv57communication::disableAxis();
+  // }
+  // delay(100);
+  // servoEnableStatus = modbus.holdingRegisterRead(slaveId, 0x03, pr_4_00+8);
+  // Serial.print("Servo enable setting: ");
+  // Serial.println(servoEnableStatus, HEX);
+
+
+  isv57communication::enableAxis();
+  
 
 
   // store the settings to servos NVM if necesssary
@@ -184,8 +214,9 @@ void isv57communication::sendTunedServoParameters(bool commandRotationDirection)
     
     
     isv57_update_parameter_b=true;
-    delay(2000);
+    delay(1000);
   }
+
 
 }
 
