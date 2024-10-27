@@ -3,13 +3,13 @@
 #include <esp_wifi.h>
 #define VERSION "0.0.0"
 #if PCB_VERSION==5
-	#define JSON_URL   "https://raw.githubusercontent.com/tcfshcrw/playground/main/OTA/Fanatec_Bridge/Version.json"
+	#define JSON_URL   "https://raw.githubusercontent.com/ChrGri/DIY-Sim-Racing-FFB-Pedal/develop/OTA/Bridge/Fanatec_Bridge/Version.json"
 #endif
 #if PCB_VERSION==6
-	#define JSON_URL   "https://raw.githubusercontent.com/tcfshcrw/playground/main/OTA/dev_kit/Version.json"
+	#define JSON_URL   "https://raw.githubusercontent.com/ChrGri/DIY-Sim-Racing-FFB-Pedal/develop/OTA/Bridge/dev_kit/Version.json"
 #endif
 #if PCB_VERSION==7
-	#define JSON_URL   "https://raw.githubusercontent.com/tcfshcrw/playground/main/OTA/Gilphilbert_dongle/Version.json"
+	#define JSON_URL   "https://raw.githubusercontent.com/ChrGri/DIY-Sim-Racing-FFB-Pedal/develop/OTA/Bridge/Gilphilbert_dongle/Version.json"
 #endif
 
 bool OTA_enable_b =false;
