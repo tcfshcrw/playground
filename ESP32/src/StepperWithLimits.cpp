@@ -219,7 +219,7 @@ void StepperWithLimits::findMinMaxSensorless(DAP_config_st dap_config_st)
 		/*			thus step loss recovery is simplified.			*/
 		/************************************************************/
 		// restart servo axis. This will reset the seros reg_add_position_given_p count to zero, thus equalizing the ESP zero and the servos zero position.
-		restartServo = true;
+		/*restartServo = true;
 
 		bool servoAxisResetSuccessfull_b = false;
 		for (uint16_t waitTillServoCounterWasReset_Idx = 0; waitTillServoCounterWasReset_Idx < 10; waitTillServoCounterWasReset_Idx++)
@@ -242,6 +242,7 @@ void StepperWithLimits::findMinMaxSensorless(DAP_config_st dap_config_st)
 			Serial.print("Servo axis not reset. Restarting ESP!");
 			ESP.restart();
 		}
+		*/
 
 
 		isv57.setZeroPos();
@@ -390,8 +391,11 @@ void StepperWithLimits::correctPos()
 			// 	Serial.print(",   ");
 			// 	Serial.println(stepOffset);
 			// }
+
+			// offset = ESPs position - servos position
+			// new ESP pos = ESPs position - offset = ESPs position - ESPs position + servos position = servos position
 			
-			_stepper->setCurrentPosition(_stepper->getCurrentPosition() + stepOffset);
+			_stepper->setCurrentPosition(_stepper->getCurrentPosition() - stepOffset);
 			servo_offset_compensation_steps_i32 = 0; // reset lost step variable to prevent overcompensation
 			xSemaphoreGive(semaphore_resetServoPos);
 		}
@@ -577,7 +581,16 @@ void StepperWithLimits::servoCommunicationTask(void *pvParameters)
 			if(semaphore_readServoValues!=NULL)
 			{
 				if(xSemaphoreTake(semaphore_readServoValues, (TickType_t)1)==pdTRUE) {
-					stepper_cl->servoPos_i16 = -( stepper_cl->isv57.servo_pos_given_p - stepper_cl->isv57.getZeroPos() );
+
+					// caclulate servos positions from endstop
+					stepper_cl->servoPos_i16 = stepper_cl->isv57.servo_pos_given_p - stepper_cl->isv57.getZeroPos() ;
+
+					// in normal configuration, where servo is at front of the pedal, a positive servo rotation will make the sled move to the front. We want it to be the other way around though. Movement to the back means positive rotation
+					if (false == stepper_cl->invertMotorDir_global_b)
+					{
+						stepper_cl->servoPos_i16 *= -1;
+					}
+
 					xSemaphoreGive(semaphore_readServoValues);
 				}
 			}
@@ -639,11 +652,8 @@ void StepperWithLimits::servoCommunicationTask(void *pvParameters)
 			{
 
 
-				// calculate encoder offset
-				// movement to the back will reduce encoder value
-				//servo_offset_compensation_steps_local_i32 = (int32_t)stepper_cl->isv57.getZeroPos() - (int32_t)stepper_cl->isv57.servo_pos_given_p;
-				// when pedal has moved to the back due to step losses --> offset will be positive 
-				servo_offset_compensation_steps_local_i32 = -(stepper_cl->getCurrentPosition() + (int32_t)( stepper_cl->isv57.servo_pos_given_p - stepper_cl->isv57.getZeroPos()) );
+				
+
 
 				// When the servo turned off during driving, the servo loses its zero position and the correction might not be valid anymore. If still applied, the servo will somehow srive against the block
 				// resulting in excessive servo load --> current load. We'll detect whether min or max block was reached, depending on the position error sign
@@ -688,26 +698,32 @@ void StepperWithLimits::servoCommunicationTask(void *pvParameters)
 
 
 
-
+				// calculate encoder offset
+				// movement to the back will reduce encoder value
+				//servo_offset_compensation_steps_local_i32 = (int32_t)stepper_cl->isv57.getZeroPos() - (int32_t)stepper_cl->isv57.servo_pos_given_p;
+				// when pedal has moved to the back due to step losses --> offset will be positive 
+				//servo_offset_compensation_steps_local_i32 = -(stepper_cl->getCurrentPosition() + (int32_t)( stepper_cl->isv57.servo_pos_given_p - stepper_cl->isv57.getZeroPos()) );
+				servo_offset_compensation_steps_local_i32 = stepper_cl->getCurrentPosition() - stepper_cl->getServosInternalPosition(); 
+				
 
 				// since the encoder positions are defined in int16 space, they wrap at multiturn
 				// to correct overflow, we apply modulo to take smallest possible deviation
-				// if (servo_offset_compensation_steps_local_i32 > TWO_TO_THE_POWER_OF_15_MINUS_1)
-				// {
-				// 	servo_offset_compensation_steps_local_i32 -= INT16_MAX;
-				// }
-
-				// if (servo_offset_compensation_steps_local_i32 < -TWO_TO_THE_POWER_OF_15_MINUS_1)
-				// {
-				// 	servo_offset_compensation_steps_local_i32 += INT16_MAX;
-				// }
-			
-			
-				// invert the compensation wrt the motor direction
-				if (true == stepper_cl->invertMotorDir_global_b)
+				if (servo_offset_compensation_steps_local_i32 > TWO_TO_THE_POWER_OF_15_MINUS_1)
 				{
-					servo_offset_compensation_steps_local_i32 *= -1;
+					servo_offset_compensation_steps_local_i32 -= INT16_MAX;
 				}
+
+				if (servo_offset_compensation_steps_local_i32 < -TWO_TO_THE_POWER_OF_15_MINUS_1)
+				{
+					servo_offset_compensation_steps_local_i32 += INT16_MAX;
+				}
+			
+			
+				// // invert the compensation wrt the motor direction
+				// if (true == stepper_cl->invertMotorDir_global_b)
+				// {
+				// 	servo_offset_compensation_steps_local_i32 *= -1;
+				// }
 
 
 				if(semaphore_resetServoPos!=NULL)
