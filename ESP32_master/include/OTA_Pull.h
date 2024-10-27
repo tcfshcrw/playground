@@ -3,7 +3,7 @@
 #include <esp_wifi.h>
 #define VERSION "0.0.0"
 #if PCB_VERSION==5
-	#define JSON_URL   "https://raw.githubusercontent.com/tcfshcrw/playground/main/OTA/dev_kit/Version.json"
+	#define JSON_URL   "https://raw.githubusercontent.com/tcfshcrw/playground/main/OTA/Fanatec_Bridge/Version.json"
 #endif
 #if PCB_VERSION==6
 	#define JSON_URL   "https://raw.githubusercontent.com/tcfshcrw/playground/main/OTA/dev_kit/Version.json"
