@@ -245,6 +245,12 @@ int16_t isv57communication::getZeroPos()
 // read servo states
 void isv57communication::readServoStates() {
 
+  // initialize with -1 to indicate non-trustworthyness
+  regArray[0] = -1;
+  regArray[1] = -1;
+  regArray[2] = -1;
+  regArray[3] = -1;
+
   // read the four registers simultaneously
   int8_t numberOfRegistersToRead_u8 = 4;
   int bytesReceived_i = modbus.requestFrom(slaveId, 0x03, ref_cyclic_read_0, numberOfRegistersToRead_u8);
@@ -255,13 +261,14 @@ void isv57communication::readServoStates() {
     { 
       regArray[regIdx] = modbus.uint16(regIdx);
     }
-
-    // write to public variables
-    servo_pos_given_p = regArray[0];
-    servo_current_percent = regArray[1];
-    servo_pos_error_p = regArray[2];
-    servo_voltage_0p1V = regArray[3];
   }
+
+  // write to public variables
+  servo_pos_given_p = regArray[0];
+  servo_current_percent = regArray[1];
+  servo_pos_error_p = regArray[2];
+  servo_voltage_0p1V = regArray[3];
+  
   //Serial.print("Bytes :");
   //Serial.println(bytesReceived_i);
   

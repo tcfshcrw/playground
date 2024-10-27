@@ -115,6 +115,9 @@ StepperWithLimits::StepperWithLimits(uint8_t pinStep, uint8_t pinDirection, uint
 		Serial.print("iSV57 communication state:  ");
 		Serial.println( getLifelineSignal() );
 
+		isv57.enableAxis();
+		delay(100);
+
 		// flash iSV57 registers
 		isv57.setupServoStateReading();
 		invertMotorDir_global_b = invertMotorDir_b;
@@ -170,7 +173,43 @@ void StepperWithLimits::findMinMaxSensorless(DAP_config_st dap_config_st)
 
 		// enable servo
 		//restartServo = true;
-		delay(50);
+		//isv57.enableAxis();
+		//delay(50);
+
+
+
+
+		/************************************************************/
+		/* 					servo reading check 					*/
+		/************************************************************/
+		// check if servo readings are trustworthy, by checking if servos bus voltage is in reasonable range. Otherwise restart servo.
+		bool servoRadingsTrustworthy_b = false;
+		for (uint16_t waitTillServoCounterWasReset_Idx = 0; waitTillServoCounterWasReset_Idx < 10; waitTillServoCounterWasReset_Idx++)
+		{
+			delay(100);
+
+			// voltage return is given in 0.1V units --> 10V range --> threshold 100
+			// at beginning the values typically are initialized with -1
+			servoRadingsTrustworthy_b = getServosVoltage() > 100;
+
+			if (true == servoRadingsTrustworthy_b)
+			{
+				Serial.print("Servo readings plausible! Current position (raw): ");
+				Serial.println(isv57.servo_pos_given_p);
+				break;
+			}
+		}
+
+		if(false == servoRadingsTrustworthy_b)
+		{
+			Serial.print("Servo readings not plausible. Restarting ESP!");
+			ESP.restart();
+		}
+		
+
+
+
+
 
 		/************************************************************/
 		/* 					min endstop	detection					*/
@@ -244,6 +283,15 @@ void StepperWithLimits::findMinMaxSensorless(DAP_config_st dap_config_st)
 		}
 		*/
 
+
+
+
+
+
+
+
+		
+		
 
 		isv57.setZeroPos();
 
@@ -552,14 +600,14 @@ void StepperWithLimits::servoCommunicationTask(void *pvParameters)
 		{
 
 			// restarting servo axis
-			if(true == stepper_cl->restartServo)
+			/*if(true == stepper_cl->restartServo)
 			{
 				stepper_cl->isv57.disableAxis();
 				delay(50);				
 				stepper_cl->isv57.enableAxis();
 				stepper_cl->restartServo = false;
 				delay(200);
-			}
+			}*/
 
 
 			// when servo has been restarted, the read states need to be initialized first
