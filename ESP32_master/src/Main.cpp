@@ -659,6 +659,26 @@ void ESPNOW_SyncTask( void * pvParameters )
       //Serial.println("Broadcast sent");
       dap_action_update=false;
     }
+    //forward the basic wifi info for pedals
+    if(pedal_OTA_action_b)
+    {
+      switch(_basic_wifi_info.device_ID)
+      {
+        case 0:
+          ESPNow.send_message(Clu_mac,(uint8_t *) &_basic_wifi_info,sizeof(Basic_WIfi_info));
+          Serial.println("[L]Forward to Clutch");
+        break;
+        case 1:
+          ESPNow.send_message(Brk_mac,(uint8_t *) &_basic_wifi_info,sizeof(Basic_WIfi_info));
+          Serial.println("[L]Forward to Brake");
+        break;
+        case 2:
+          ESPNow.send_message(Gas_mac,(uint8_t *) &_basic_wifi_info,sizeof(Basic_WIfi_info));
+          Serial.println("[L]Forward to Throttle");
+        break;
+      }
+      pedal_OTA_action_b=false;
+    }
 
     delay(2);
   }
@@ -822,26 +842,7 @@ void Serial_Task( void * pvParameters)
               #endif
 
             }
-            if(dap_bridge_state_lcl.payloadBridgeState_.Bridge_action==4)
-            {
-              //aciton=4 Fanatec Mode
-              #ifdef Fanatec_comunication
-                if(Fanatec_Mode)
-                {
-                  Fanatec_Mode=false;
-                  Serial.println("[L]Fanatec Mode off");
-                }
-                else
-                {
-                  Fanatec_Mode=true;
-                  Serial.println("[L]Fanatec Mode on");
-                }
-              #else
-                Serial.println("[L]Fanatec Mode Command not supported ");
-                delay(1000);
-              #endif
-
-            }
+            
 
           }
           break;
@@ -857,6 +858,7 @@ void Serial_Task( void * pvParameters)
               memcpy(PASS,_basic_wifi_info.WIFI_PASS,_basic_wifi_info.PASS_Length);
               SSID[_basic_wifi_info.SSID_Length]=0;
               PASS[_basic_wifi_info.PASS_Length]=0;
+              /*
               Serial.print("[L]SSID(uint)=");
               for(uint i=0; i<_basic_wifi_info.SSID_Length;i++)
               {
@@ -876,7 +878,13 @@ void Serial_Task( void * pvParameters)
               Serial.println(SSID);
               Serial.print("[L]PASS=");
               Serial.println(PASS);   
+              */
               OTA_enable_b=true;
+            }
+            else
+            {
+              pedal_OTA_action_b=true;
+
             }
           #endif
           
@@ -1154,12 +1162,23 @@ void OTATask( void * pvParameters )
           wifi_initialized(SSID,PASS);
           delay(2000);
           ESP32OTAPull ota;
-
+          int ret;
           ota.SetCallback(OTAcallback);
-          //Serial.printf("We are running version %s of the sketch, Board='%s', Device='%s'.\n", VERSION, ARDUINO_BOARD, WiFi.macAddress().c_str());
-          Serial.printf("[L]Checking %s to see if an update is available...\n", JSON_URL);
-          int ret = ota.CheckForOTAUpdate(JSON_URL, VERSION);
-          Serial.printf("[L]CheckForOTAUpdate returned %d (%s)\n\n", ret, errtext(ret));
+          switch (_basic_wifi_info.mode_select)
+          {
+            case 1:
+              Serial.printf("[L]Flashing to latest Main, checking %s to see if an update is available...\n", JSON_URL_main);
+              ret = ota.CheckForOTAUpdate(JSON_URL_main, VERSION);
+              Serial.printf("[L]CheckForOTAUpdate returned %d (%s)\n\n", ret, errtext(ret));
+              break;
+            case 2:
+              Serial.printf("[L]Flashing to latest Dev, checking %s to see if an update is available...\n", JSON_URL_dev);
+              ret = ota.CheckForOTAUpdate(JSON_URL_main, VERSION);
+              Serial.printf("[L]CheckForOTAUpdate returned %d (%s)\n\n", ret, errtext(ret));
+              break;
+            default:
+            break;
+          }
 
           delay(3000);
         }

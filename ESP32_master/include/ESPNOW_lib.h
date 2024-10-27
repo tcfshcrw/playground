@@ -24,6 +24,7 @@ bool ESPNow_update= false;
 bool ESPNow_no_device=false;
 bool update_basic_state=false;
 bool update_extend_state=false;
+bool pedal_OTA_action_b=false;
 uint16_t Joystick_value[]={0,0,0};
 bool ESPNow_request_config_b[3]={false,false,false};
 bool ESPNow_error_b=false;
