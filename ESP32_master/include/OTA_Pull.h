@@ -3,16 +3,16 @@
 #include <esp_wifi.h>
 #define VERSION "0.0.0"
 #if PCB_VERSION==5
-	#define JSON_URL_dev   "https://raw.githubusercontent.com/ChrGri/DIY-Sim-Racing-FFB-Pedal/develop/OTA/Bridge/Fanatec_Bridge/Version.json"
-	#define JSON_URL_main   "https://raw.githubusercontent.com/ChrGri/DIY-Sim-Racing-FFB-Pedal/main/OTA/Bridge/Fanatec_Bridge/Version.json"
+	#define JSON_URL_dev   "https://raw.githubusercontent.com/tcfshcrw/FFBPedalOTA_Json/main/JSON/dev/Bridge/Version_Fanatec_bridge.json"
+	#define JSON_URL_main   "https://raw.githubusercontent.com/tcfshcrw/FFBPedalOTA_Json/main/JSON/main/Bridge/Version_Fanatec_bridge.json"
 #endif
 #if PCB_VERSION==6
-	#define JSON_URL_dev   "https://raw.githubusercontent.com/ChrGri/DIY-Sim-Racing-FFB-Pedal/develop/OTA/Bridge/dev_kit/Version.json"
-	#define JSON_URL_main   "https://raw.githubusercontent.com/ChrGri/DIY-Sim-Racing-FFB-Pedal/main/OTA/Bridge/dev_kit/Version.json"
+	#define JSON_URL_dev   "https://raw.githubusercontent.com/tcfshcrw/FFBPedalOTA_Json/main/JSON/dev/Bridge/Version_devkit.json"
+	#define JSON_URL_main   "https://raw.githubusercontent.com/tcfshcrw/FFBPedalOTA_Json/main/JSON/main/Bridge/Version_devkit.json"
 #endif
 #if PCB_VERSION==7
-	#define JSON_URL_dev   "https://raw.githubusercontent.com/ChrGri/DIY-Sim-Racing-FFB-Pedal/develop/OTA/Bridge/Gilphilbert_dongle/Version.json"
-	#define JSON_URL_main   "https://raw.githubusercontent.com/ChrGri/DIY-Sim-Racing-FFB-Pedal/main/OTA/Bridge/Gilphilbert_dongle/Version.json"
+	#define JSON_URL_dev   "https://raw.githubusercontent.com/tcfshcrw/FFBPedalOTA_Json/main/JSON/dev/Bridge/Version_Gilphilbert_dongle.json"
+	#define JSON_URL_main   "https://raw.githubusercontent.com/tcfshcrw/FFBPedalOTA_Json/main/JSON/main/Bridge/Version_Gilphilbert_dongle.json"
 #endif
 
 bool OTA_enable_b =false;
@@ -89,7 +89,7 @@ const char *errtext(int code)
 	}
 	return "Unknown error";
 }
-
+/*
 void DisplayInfo()
 {
 	char exampleImageURL[256];
@@ -113,6 +113,7 @@ void DisplayInfo()
 	Serial.printf("Post the JSON at, e.g., %s\n", JSON_URL_main);
 	Serial.printf("Post the compiled bin at, e.g., %s\n\n", exampleImageURL);
 }
+*/
 
 void OTAcallback(int offset, int totallength)
 {
