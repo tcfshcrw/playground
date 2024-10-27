@@ -169,7 +169,7 @@ void StepperWithLimits::findMinMaxSensorless(DAP_config_st dap_config_st)
 		_stepper->setAcceleration(MAXIMUM_STEPPER_ACCELERATION / 10);
 
 		// enable servo
-		restartServo = true;
+		//restartServo = true;
 		delay(50);
 
 		/************************************************************/
@@ -226,7 +226,8 @@ void StepperWithLimits::findMinMaxSensorless(DAP_config_st dap_config_st)
 		{
 			delay(100);
 
-			bool servoPosRes_b = (50 > abs(isv57.servo_pos_given_p) ) || ( 50 > (INT16_MAX - abs(isv57.servo_pos_given_p))  );
+			//bool servoPosRes_b = (50 > abs(isv57.servo_pos_given_p) ) || ( 50 > (INT16_MAX - abs(isv57.servo_pos_given_p))  );
+			bool servoPosRes_b = 0 == (isv57.servo_pos_given_p); 
 			if ( (false == restartServo) && (servoPosRes_b) )
 			{
 				Serial.print("Servo axis was reset succesfully! Current position: ");
