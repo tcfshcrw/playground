@@ -39,7 +39,7 @@ void wifi_initialized(char* Wifi_SSID, char* Wifi_PASS)
     WiFi.mode(WIFI_STA);
     WiFi.disconnect();
     delay(100);
-    esp_wifi_set_max_tx_power(WIFI_POWER_8_5dBm);
+    //esp_wifi_set_max_tx_power(WIFI_POWER_8_5dBm);
     WiFi.begin(Wifi_SSID, Wifi_PASS);
 
     // Display connection progress
