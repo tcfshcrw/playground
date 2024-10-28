@@ -1173,7 +1173,7 @@ void OTATask( void * pvParameters )
               break;
             case 2:
               Serial.printf("[L]Flashing to latest Dev, checking %s to see if an update is available...\n", JSON_URL_dev);
-              ret = ota.CheckForOTAUpdate(JSON_URL_main, VERSION);
+              ret = ota.CheckForOTAUpdate(JSON_URL_dev, VERSION);
               Serial.printf("[L]CheckForOTAUpdate returned %d (%s)\n\n", ret, errtext(ret));
               break;
             default:

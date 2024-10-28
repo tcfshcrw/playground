@@ -46,8 +46,9 @@ void wifi_initialized(char* Wifi_SSID, char* Wifi_PASS)
     WiFi.begin(Wifi_SSID, Wifi_PASS);
 
     // Display connection progress
-    Serial.print("[L]Connecting to WiFi");
-    
+    Serial.print("[L]Connecting to WiFi:");
+    Serial.print(WiFi.SSID());
+	Serial.print(" ");
     // Wait until WiFi is connected
     while (WiFi.status() != WL_CONNECTED) {
         delay(500);
@@ -117,7 +118,7 @@ void DisplayInfo()
 
 void OTAcallback(int offset, int totallength)
 {
-	Serial.print("[L]Updating");
+	Serial.print("[L]Updating: ");
     Serial.print(offset);
     Serial.print(" of ");
     Serial.print(totallength);
