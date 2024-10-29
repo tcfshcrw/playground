@@ -165,6 +165,8 @@ static const uint32_t STEPS_PER_MOTOR_REVOLUTION = 6400;
   #define ESPNow_Pairing_function
   //#define Pairing_GPIO 13
   //#define ESPNow_debug_rudder
+  #define OTA_update_ESP32
+  
 #endif
 
 
@@ -233,6 +235,7 @@ static const uint32_t STEPS_PER_MOTOR_REVOLUTION = 6400;
   #define Pairing_GPIO 0
   #define ESPNow_Pairing_function
   #define ESPNow_ESP32
+  #define OTA_update_ESP32
 #endif
 
 
@@ -279,6 +282,7 @@ static const uint32_t STEPS_PER_MOTOR_REVOLUTION = 6400;
   #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 5
   #define ESPNow_Pairing_function
   #define Pairing_GPIO 0
+  #define OTA_update
 #endif
 
 // For Gilphilbert PCBA design
@@ -331,6 +335,7 @@ static const uint32_t STEPS_PER_MOTOR_REVOLUTION = 6400;
   //#define ESPNow_debug_rudder
   #define USING_LED
   #define LED_GPIO 12
+  #define OTA_update
 #endif
 
 #if PCB_VERSION == 8
@@ -381,4 +386,5 @@ static const uint32_t STEPS_PER_MOTOR_REVOLUTION = 6400;
   #define CONTROLLER_SPECIFIC_VIDPID
   #define USING_LED
   #define LED_GPIO 12
+  #define OTA_update
 #endif

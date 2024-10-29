@@ -116,6 +116,7 @@ bool Modbus::checkAndReplaceParameter(uint16_t slaveId_local_u16, uint16_t param
   for (uint8_t tryIdx_u8 = 0; tryIdx_u8 < 10; tryIdx_u8++)
   {
 
+    delay(5);
     if (true == retValue_b)
     {
       // when register has proper setting, break the loop
@@ -142,6 +143,8 @@ bool Modbus::checkAndReplaceParameter(uint16_t slaveId_local_u16, uint16_t param
     // if value is not target value --> overwrite value
     if(returnValue!= targetValue_l)
     {
+
+      delay(50);
       Serial.print("Parameter adresse: ");
       Serial.print(parameterAdress);
       Serial.print(",    actual:");
@@ -150,7 +153,7 @@ bool Modbus::checkAndReplaceParameter(uint16_t slaveId_local_u16, uint16_t param
       Serial.println(targetValue_l);
 
       holdingRegisterWrite(slaveId_local_u16, parameterAdress, targetValue_l); 
-      delay(50);
+      
       retValue_b = true;
     }
 

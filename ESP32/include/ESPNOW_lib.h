@@ -29,7 +29,7 @@ bool UpdatePairingToEeprom = false;
 bool ESPNow_pairing_action_b = false;
 bool software_pairing_action_b = false;
 bool hardware_pairing_action_b = false;
-
+bool OTA_update_action_b=false;
 
 struct ESPNow_Send_Struct
 { 
@@ -367,6 +367,13 @@ void onRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len)
             
               
       }
+      if(data_len==sizeof(Basic_WIfi_info))
+      {        
+        memcpy(&_basic_wifi_info, data, sizeof(Basic_WIfi_info));
+        OTA_update_action_b=true;
+      }
+      
+
     }
 
     

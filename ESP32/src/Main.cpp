@@ -16,7 +16,7 @@
 
 
 
-#define OTA_update
+
 
 //#define PI 3.14159267
 //#define DEG_TO_RAD PI / 180
@@ -226,9 +226,16 @@ bool moveSlowlyToPosition_b = false;
 /**********************************************************************************************/
 //OTA update
 #ifdef OTA_update
-#include "ota.h"
+//#include "ota.h"
+#include "OTA_Pull.h"
 TaskHandle_t Task4;
 char* APhost;
+#endif
+#ifdef OTA_update_ESP32
+  #include "ota.h"
+  //#include "OTA_Pull.h"
+  TaskHandle_t Task4;
+  char* APhost;
 #endif
 
 
@@ -1425,7 +1432,23 @@ void serialCommunicationTask( void * pvParameters )
             }
 
             break;
-
+          case sizeof(Basic_WIfi_info) : 
+          Serial.println("get basic wifi info");
+          Serial.readBytes((char*)&_basic_wifi_info, sizeof(Basic_WIfi_info));
+          #ifdef OTA_update
+            if(_basic_wifi_info.device_ID==dap_config_st.payLoadPedalConfig_.pedal_type)
+            {
+              SSID=new char[_basic_wifi_info.SSID_Length+1];
+              PASS=new char[_basic_wifi_info.PASS_Length+1];
+              memcpy(SSID,_basic_wifi_info.WIFI_SSID,_basic_wifi_info.SSID_Length);
+              memcpy(PASS,_basic_wifi_info.WIFI_PASS,_basic_wifi_info.PASS_Length);
+              SSID[_basic_wifi_info.SSID_Length]=0;
+              PASS[_basic_wifi_info.PASS_Length]=0;
+              OTA_enable_b=true;
+            }
+          #endif
+          
+          break;
           default:
 
             // flush the input buffer
@@ -1543,7 +1566,7 @@ void OTATask( void * pvParameters )
 
   for(;;)
   {
-    #ifdef OTA_update
+    
     if(OTA_count>200)
     {
       message_out_b=true;
@@ -1554,7 +1577,7 @@ void OTATask( void * pvParameters )
       OTA_count++;
     }
 
-    
+    #if defined(OTA_update)  || defined(OTA_update_ESP32)
     if(OTA_enable_b)
     {
       if(message_out_b)
@@ -1564,8 +1587,9 @@ void OTATask( void * pvParameters )
       }
       if(OTA_status)
       {
-        
-        server.handleClient();
+        #ifdef OTA_update_esp32
+          server.handleClient();
+        #endif
       }
       else
       {
@@ -1579,7 +1603,33 @@ void OTATask( void * pvParameters )
         {
           OTA_status=true;
           delay(1000);
+          #ifdef OTA_update_ESP32
           ota_wifi_initialize(APhost);
+          #endif
+          #ifdef OTA_update
+          wifi_initialized(SSID,PASS);
+          delay(2000);
+          ESP32OTAPull ota;
+          int ret;
+          ota.SetCallback(OTAcallback);
+          switch (_basic_wifi_info.mode_select)
+          {
+            case 1:
+              Serial.printf("[L]Flashing to latest Main, checking %s to see if an update is available...\n", JSON_URL_main);
+              ret = ota.CheckForOTAUpdate(JSON_URL_main, VERSION);
+              Serial.printf("[L]CheckForOTAUpdate returned %d (%s)\n\n", ret, errtext(ret));
+              break;
+            case 2:
+              Serial.printf("[L]Flashing to latest Dev, checking %s to see if an update is available...\n", JSON_URL_dev);
+              ret = ota.CheckForOTAUpdate(JSON_URL_dev, VERSION);
+              Serial.printf("[L]CheckForOTAUpdate returned %d (%s)\n\n", ret, errtext(ret));
+              break;
+            default:
+            break;
+          }
+          #endif
+
+          delay(3000);
         }
 
       }
@@ -1598,6 +1648,7 @@ void OTATask( void * pvParameters )
       }
       otaTask_stackSizeIdx_u32++;
     #endif
+    delay(2);
   }
 }
 
@@ -1816,7 +1867,28 @@ void ESPNOW_SyncTask( void * pvParameters )
         OTA_enable_start=true;
         ESPNow_OTA_enable=false;
       }
-          
+      if(OTA_update_action_b)
+      {
+        Serial.println("Get OTA command");
+        OTA_enable_b=true;
+        OTA_enable_start=true;
+        ESPNow_OTA_enable=false;
+        Serial.println("get basic wifi info");
+        Serial.readBytes((char*)&_basic_wifi_info, sizeof(Basic_WIfi_info));
+        #ifdef OTA_update
+          if(_basic_wifi_info.device_ID==dap_config_st.payLoadPedalConfig_.pedal_type)
+          {
+            SSID=new char[_basic_wifi_info.SSID_Length+1];
+            PASS=new char[_basic_wifi_info.PASS_Length+1];
+            memcpy(SSID,_basic_wifi_info.WIFI_SSID,_basic_wifi_info.SSID_Length);
+            memcpy(PASS,_basic_wifi_info.WIFI_PASS,_basic_wifi_info.PASS_Length);
+            SSID[_basic_wifi_info.SSID_Length]=0;
+            PASS[_basic_wifi_info.PASS_Length]=0;
+            OTA_enable_b=true;
+          }
+          #endif
+
+      } 
       //rudder sync
       if(dap_calculationVariables_st.Rudder_status)
       {              
