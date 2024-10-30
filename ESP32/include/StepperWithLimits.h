@@ -79,6 +79,7 @@ public:
 	int32_t getServosCurrent();
 	int32_t getServosPos();
 	bool getLifelineSignal();
+	
 
 
 	static void servoCommunicationTask( void * pvParameters );

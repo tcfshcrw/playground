@@ -6,7 +6,7 @@
 
 #define STEPPER_WITH_LIMITS_SENSORLESS_CURRENT_THRESHOLD_IN_PERCENT 50
 #define MIN_POS_MAX_ENDSTOP STEPS_PER_MOTOR_REVOLUTION * 3 // servo has to drive minimum N steps before it allows the detection of the max endstop
-
+#define INCLUDE_vTaskDelete 1
 
 //uint32_t speed_in_hz = TICKS_PER_S / ticks;
 // TICKS_PER_S = 16000000L
@@ -851,6 +851,7 @@ void StepperWithLimits::servoCommunicationTask(void *pvParameters)
 
 	return servo_offset_compensation_steps_i32;
 }*/
+
 
 
 
