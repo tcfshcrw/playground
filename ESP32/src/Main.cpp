@@ -304,7 +304,10 @@ void setup()
   Serial.println("This work is licensed under a Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.");
   Serial.println("Please check github repo for more detail: https://github.com/ChrGri/DIY-Sim-Racing-FFB-Pedal");
   //printout the github releasing version
-
+  #ifdef OTA_update
+    Serial.print("Firmware Version:");
+    Serial.println(VERSION);
+  #endif
 
   
 	#ifdef Hardware_Pairing_button
@@ -1610,7 +1613,7 @@ void OTATask( void * pvParameters )
           #ifdef USING_LED
             pixels.setPixelColor(0,0xff,0x00,0x00);//red
             pixels.show(); 
-            delay(1000);
+            delay(500);
             pixels.setPixelColor(0,0x00,0x00,0x00);//no color
             pixels.show();            
           #endif

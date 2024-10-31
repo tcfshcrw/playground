@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <ESP32OTAPull.h>
 #include <esp_wifi.h>
-#define VERSION "0.0.0"
+#define VERSION "0.87.1"
 #if PCB_VERSION==5
 	#define JSON_URL_dev   "https://raw.githubusercontent.com/tcfshcrw/FFBPedalOTA_Json/main/JSON/dev/Bridge/Version_Fanatec_bridge.json"
 	#define JSON_URL_main   "https://raw.githubusercontent.com/tcfshcrw/FFBPedalOTA_Json/main/JSON/main/Bridge/Version_Fanatec_bridge.json"

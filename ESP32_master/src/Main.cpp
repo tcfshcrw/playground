@@ -271,7 +271,8 @@ void setup()
   
   Serial.println("[L]This work is licensed under a Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.");
   Serial.println("[L]Please check github repo for more detail: https://github.com/ChrGri/DIY-Sim-Racing-FFB-Pedal");
-
+  Serial.print("[L]Version:");
+  Serial.println(VERSION);
 
   // setup multi tasking
   /*
