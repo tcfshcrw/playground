@@ -295,15 +295,30 @@ void ESPNow_initialize()
       {
         if(i==0)
         {
-          memcpy(&Clu_mac,&_ESP_pairing_reg.Pair_mac[i],6);
+          if(MacCheck(_ESP_pairing_reg.Pair_mac[0],_ESP_pairing_reg.Pair_mac[1])||MacCheck(_ESP_pairing_reg.Pair_mac[0],_ESP_pairing_reg.Pair_mac[2]))
+          {
+            Serial.println("[L]Clutch mac address is same with others, no clutch reading will apply");
+          }
+          else
+          {
+            memcpy(&Clu_mac,&_ESP_pairing_reg.Pair_mac[i],6);
+          }
+          
         }
         if(i==1)
         {
-          memcpy(&Brk_mac,&_ESP_pairing_reg.Pair_mac[i],6);
+          memcpy(&Brk_mac,&_ESP_pairing_reg.Pair_mac[i],6);          
         }
         if(i==2)
         {
-          memcpy(&Gas_mac,&_ESP_pairing_reg.Pair_mac[i],6);
+          if(MacCheck(_ESP_pairing_reg.Pair_mac[1],_ESP_pairing_reg.Pair_mac[2]))
+          {
+            Serial.println("[L]Throttle mac address is same with Brake, no Throttle reading will apply");
+          }
+          else
+          {
+            memcpy(&Gas_mac,&_ESP_pairing_reg.Pair_mac[i],6);
+          }          
         }        
         if(i==3)
         {
