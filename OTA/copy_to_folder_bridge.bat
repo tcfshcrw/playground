@@ -1,4 +1,5 @@
 @echo off
+
 set source=..\ESP32_master\.pio\build\esp32s3-Fanatec\firmware.bin
 set destination=..\OTA\Bridge\Fanatec_Bridge\
 
