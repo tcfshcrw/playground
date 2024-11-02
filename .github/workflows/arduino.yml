@@ -128,6 +128,7 @@ jobs:
           pio system info
           pio run --environment esp32s3usbotg
           pio run --environment esp32 
+          pio run --environment esp32s3-Fanatec
     # copy files to dir
       - name: Copy files to packing dir
         run: | 
