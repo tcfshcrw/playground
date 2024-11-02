@@ -82,5 +82,5 @@ jobs:
           git add OTA/Bridge/Fanatec_Bridge/firmware.bin OTA/Bridge/Fanatec_Bridge/partitions.bin
           git add OTA/Bridge/Gilphilbert_dongle/firmware.bin OTA/Bridge/Gilphilbert_dongle/partitions.bin
           git push
-          env:
+        env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
