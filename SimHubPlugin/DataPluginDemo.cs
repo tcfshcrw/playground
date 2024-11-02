@@ -25,14 +25,16 @@ using static System.Net.Mime.MediaTypeNames;
 static class Constants
 {
     // payload revisiom
-    public const uint pedalConfigPayload_version = 139;
+    public const uint pedalConfigPayload_version = 141;
 
 
     // pyload types
     public const uint pedalConfigPayload_type = 100;
     public const uint pedalActionPayload_type = 110;
     public const uint pedalStateBasicPayload_type = 120;
-    public const uint pedalStateExtendedPayload_type = 130;
+    public const uint pedalStateExtendedPayload_type = 130;   
+    public const uint bridgeStatePayloadType = 210;
+    public const uint Basic_Wifi_info_type = 220;
 }
 
 
@@ -89,6 +91,15 @@ public struct payloadPedalState_Extended
     public Int16 servo_current_percent_i16;
 };
 
+public struct payloadBridgeState
+{
+    public byte Pedal_RSSI;
+    public byte Pedal_availability_0;
+    public byte Pedal_availability_1;
+    public byte Pedal_availability_2;
+    public byte Bridge_action;//0=none, 1=enable pairing
+};
+
 public struct payloadPedalConfig
 {
     // configure pedal start and endpoint
@@ -97,8 +108,8 @@ public struct payloadPedalConfig
     public byte pedalEndPosition;
 
     // configure pedal forces
-    public byte maxForce;
-    public byte preloadForce;
+    public float maxForce;
+    public float preloadForce;
 
     // design force vs travel curve
     // In percent
@@ -207,10 +218,10 @@ public struct payloadPedalConfig
     public byte pedal_type;
 
     // OTA update flag
-    public byte OTA_flag;
+    //public byte OTA_flag;
 
-    // OTA update flag
-    public byte enableReboot_u8;
+    // Misc flags
+    public byte enableMiscFlags_u8;
 
 }
 
@@ -251,6 +262,25 @@ public struct DAP_state_extended_st
     public payloadFooter payloadFooter_;
 }
 
+public struct DAP_bridge_state_st
+{
+    public payloadHeader payLoadHeader_;
+    public payloadBridgeState payloadBridgeState_;
+    public payloadFooter payloadFooter_;
+};
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+unsafe public struct Basic_WIfi_info
+{
+    public byte payload_Type;
+    public byte device_ID;
+    public byte wifi_action;
+    public byte mode_select;
+    public byte SSID_Length;
+    public byte PASS_Length;
+    public fixed byte WIFI_SSID[30];
+    public fixed byte WIFI_PASS[30];
+};
 
 namespace User.PluginSdkDemo
 {
@@ -299,6 +329,11 @@ namespace User.PluginSdkDemo
         public byte PedalErrorCode = 0;
         public byte PedalErrorIndex = 0;
         public byte[] random_pedal_action_interval=new byte[3] { 50,51,53};
+        public byte Rudder_RPM_Effect_last_value = 0;
+        public byte Rudder_G_last_value = 0;
+        public bool MSFS_status = false;
+        public byte Rudder_Wind_Force_last_value = 0;
+        public bool MSFS_Plugin_Status = false;
 
 
 
@@ -318,17 +353,10 @@ namespace User.PluginSdkDemo
         //Road effect
         DateTime RoadTrigger_currentTime = DateTime.Now;
         DateTime RoadTrigger_lastTime = DateTime.Now;
+        //Rudder update
+        DateTime Rudder_Action_currentTime = DateTime.Now;
+        DateTime Rudder_Action_lastTime = DateTime.Now;
 
-        //// payload revisiom
-        //public uint pedalConfigPayload_version = 110;
-
-        //// pyload types
-        //public uint pedalConfigPayload_type = 100;
-        //public uint pedalActionPayload_type = 110;
-
-        //public SettingsControlDemo settings { get; }
-
-        //SettingsControlDemo wpfHandler;
 
 
         //https://www.c-sharpcorner.com/uploadfile/eclipsed4utoo/communicating-with-serial-port-in-C-Sharp/
@@ -336,7 +364,7 @@ namespace User.PluginSdkDemo
             new SerialPort("COM7", 921600, Parity.None, 8, StopBits.One),
             new SerialPort("COM7", 921600, Parity.None, 8, StopBits.One),new SerialPort("COM7", 921600, Parity.None, 8, StopBits.One)};
 
-        public SerialPort ESPsync_serialPort = new SerialPort("COM7", 921600, Parity.None, 8, StopBits.One);
+        public SerialPort ESPsync_serialPort = new SerialPort("COM7", 3000000, Parity.None, 8, StopBits.One);
 
         //for (byte pedalIdx_lcl = 0; pedalIdx_lcl< 3; pedalIdx_lcl++)
         //{
@@ -418,7 +446,31 @@ namespace User.PluginSdkDemo
 
             return myBuffer;
         }
+        public byte[] getBytes_Bridge(DAP_bridge_state_st aux)
+        {
+            int length = Marshal.SizeOf(aux);
+            IntPtr ptr = Marshal.AllocHGlobal(length);
+            byte[] myBuffer = new byte[length];
 
+            Marshal.StructureToPtr(aux, ptr, true);
+            Marshal.Copy(ptr, myBuffer, 0, length);
+            Marshal.FreeHGlobal(ptr);
+
+            return myBuffer;
+        }
+
+        public byte[] getBytes_Basic_Wifi_info(Basic_WIfi_info aux)
+        {
+            int length = Marshal.SizeOf(aux);
+            IntPtr ptr = Marshal.AllocHGlobal(length);
+            byte[] myBuffer = new byte[length];
+
+            Marshal.StructureToPtr(aux, ptr, true);
+            Marshal.Copy(ptr, myBuffer, 0, length);
+            Marshal.FreeHGlobal(ptr);
+
+            return myBuffer;
+        }
         unsafe public void DataUpdate(PluginManager pluginManager, ref GameData data)
         {
 			
@@ -686,6 +738,7 @@ namespace User.PluginSdkDemo
                                 }
                             }
                         }
+                        //custom effcts
                         if (Settings.CV1_enable_flag[pedalIdx] == true)
                         {
                             if (pluginManager.GetPropertyValue(Settings.CV1_bindings[pedalIdx]) != null)
@@ -718,7 +771,7 @@ namespace User.PluginSdkDemo
 
                         if (pedalIdx == 1)
                         {
-                            if (sendAbsSignal_local_b & Settings.ABS_enable_flag[pedalIdx] ==1)
+                            if (sendAbsSignal_local_b && Settings.ABS_enable_flag[pedalIdx] ==1)
                             {
                                 //_serialPort[1].Write("2");
 
@@ -730,7 +783,7 @@ namespace User.PluginSdkDemo
                         }
                         if (pedalIdx == 2)
                         {
-                            if (sendTcSignal_local_b & Settings.ABS_enable_flag[pedalIdx] == 1)
+                            if (sendTcSignal_local_b && Settings.ABS_enable_flag[pedalIdx] == 1)
                             {
                                 // compute checksum
 
@@ -745,7 +798,7 @@ namespace User.PluginSdkDemo
                         Action_currentTime[pedalIdx] = DateTime.Now;
                         TimeSpan diff_action = Action_currentTime[pedalIdx] - Action_lastTime[pedalIdx];
                         int millisceonds_action = (int)diff_action.TotalMilliseconds;
-                        if (millisceonds_action <= random_pedal_action_interval[pedalIdx])
+                        if (millisceonds_action <= Settings.Pedal_action_interval[pedalIdx])
                         {
                             update_flag = false;
                         }
@@ -777,7 +830,7 @@ namespace User.PluginSdkDemo
                                 {
                                     ESPsync_serialPort.DiscardInBuffer();
                                     ESPsync_serialPort.Write(newBuffer, 0, newBuffer.Length);
-                                    System.Threading.Thread.Sleep(10);
+                                    System.Threading.Thread.Sleep(7);
                                 }
 
                             }
@@ -857,6 +910,7 @@ namespace User.PluginSdkDemo
 
                             // send query command
                             _serialPort[PIDX].Write(newBuffer, 0, newBuffer.Length);
+                            System.Threading.Thread.Sleep(50);
                         }
                     }
                 }
@@ -906,24 +960,137 @@ namespace User.PluginSdkDemo
                             System.Threading.Thread.Sleep(5);
                         }
                     }
-                    else
-                    {
-                        if (_serialPort[PIDX].IsOpen)
-                        {
-                            // clear inbuffer 
-                            _serialPort[PIDX].DiscardInBuffer();
-
-                            // send query command
-                            _serialPort[PIDX].Write(newBuffer, 0, newBuffer.Length);
-                        }
-
-                    }
 
                     
                     Rudder_enable_flag = false;
                     System.Threading.Thread.Sleep(50);
                 }
                 SystemSounds.Beep.Play();
+
+            }
+
+            //Rudder effect runtine
+            //check MSFS plugin version
+            if (((string)pluginManager.GetPropertyValue("FlightPlugin.MSFS_PLUGIN_VERSION")) == "1.0.0.0")
+            {
+                MSFS_Plugin_Status = true;
+            }
+            else
+            {
+                MSFS_Plugin_Status = false;
+            }
+
+            if (Rudder_status && MSFS_Plugin_Status)
+            {
+                if (Convert.ToByte(pluginManager.GetPropertyValue("FlightPlugin.IS_MSFS_DATA_UPDATING")) == 1)
+                {
+                    MSFS_status = true;
+
+                }
+                else
+                {
+                    if (MSFS_status)
+                    {
+                        clear_action = true;
+                        MSFS_status = false;
+                    }
+                }
+                if (MSFS_status)
+                {
+                    Rudder_Action_currentTime = DateTime.Now;
+                    TimeSpan diff_action = Rudder_Action_currentTime - Rudder_Action_lastTime;
+                    int millisceonds_action = (int)diff_action.TotalMilliseconds;
+                    if (millisceonds_action > 40)
+                    {
+                        bool Rudder_Effect_update_b = false;
+                        DAP_action_st tmp;
+                        tmp.payloadHeader_.version = (byte)Constants.pedalConfigPayload_version;
+                        tmp.payloadHeader_.payloadType = (byte)Constants.pedalActionPayload_type;
+                        tmp.payloadPedalAction_.triggerAbs_u8 = 0;
+                        tmp.payloadPedalAction_.RPM_u8 = Rudder_RPM_Effect_last_value;
+                        tmp.payloadPedalAction_.G_value = 128;
+                        tmp.payloadPedalAction_.WS_u8 = 0;
+                        tmp.payloadPedalAction_.impact_value = Rudder_G_last_value;
+                        //tmp.payloadPedalAction_.impact_value = 0;
+                        tmp.payloadPedalAction_.Trigger_CV_1 = 0;
+                        tmp.payloadPedalAction_.Trigger_CV_2 = 0;
+                        tmp.payloadPedalAction_.Rudder_action = 0;
+                        tmp.payloadPedalAction_.Rudder_brake_action = 0;
+                        //action here
+
+                        //RPM effect
+                        if (Settings.Rudder_RPM_effect_b)
+                        {
+                            byte Rudder_RPM_value = Convert.ToByte(pluginManager.GetPropertyValue("FlightPlugin.FlightData.GENERAL_ENG_PCT_MAX_RPM_1"));
+                            if (Math.Abs(Rudder_RPM_value - Rudder_RPM_Effect_last_value) > 3)
+                            {
+                                tmp.payloadPedalAction_.RPM_u8 = Rudder_RPM_value;
+                                Rudder_Effect_update_b = true;
+                                Rudder_Action_lastTime = DateTime.Now;
+                                Rudder_RPM_Effect_last_value = Rudder_RPM_value;
+                            }
+                        }
+
+                        if (Settings.Rudder_ACC_effect_b)
+                        {
+                            double Rudder_Wind_Froce_Ratio = 0;
+
+                            if (Settings.Rudder_ACC_WindForce)
+                            {
+                                double RELATIVE_WIND_VELOCITY_BODY_Z = Math.Abs(Convert.ToDouble(pluginManager.GetPropertyValue("FlightPlugin.FlightData.RELATIVE_WIND_VELOCITY_BODY_Z")));
+                                double Rudder_Radians = Math.Abs(Convert.ToDouble(pluginManager.GetPropertyValue("FlightPlugin.FlightData.RUDDER_DEFLECTION")));
+                                double Rudder_Wind_Force = Math.Sin(Rudder_Radians) * RELATIVE_WIND_VELOCITY_BODY_Z;
+                                Rudder_Wind_Force_last_value = (Byte)Rudder_Wind_Force;
+                                double Max_Wind_Force = 100;
+                                Rudder_Wind_Force = Math.Min(Max_Wind_Force, Rudder_Wind_Force);//clipping max force
+                                Rudder_Wind_Froce_Ratio = 0.5 * 100 * (Rudder_Wind_Force / Max_Wind_Force);
+                            }
+                            //G-effect
+                            double Rudder_G_percent = 0;
+                            double max_G = 100;
+                            double Rudder_G_value_dz = Convert.ToDouble(pluginManager.GetPropertyValue("FlightPlugin.FlightData.ACCELERATION_BODY_Z"));
+                            double Rudder_G_value_dy = Convert.ToDouble(pluginManager.GetPropertyValue("FlightPlugin.FlightData.ACCELERATION_BODY_Y"));
+                            double Rudder_G_value_combined = Math.Sqrt(Rudder_G_value_dz * Rudder_G_value_dz + Rudder_G_value_dy * Rudder_G_value_dy);                            
+                            double Rudder_G_constrain = Math.Min(Rudder_G_value_combined, max_G);
+                            Rudder_G_percent = Rudder_G_constrain / max_G * 100.0f;
+                            double Rudder_G_Wind_combined = Math.Min(Rudder_G_percent + Rudder_Wind_Froce_Ratio, max_G);
+
+                            if (Math.Abs(Rudder_G_last_value - Rudder_G_percent) > 2)
+                            {
+                                tmp.payloadPedalAction_.impact_value = (Byte)Rudder_G_Wind_combined;
+                                Rudder_Effect_update_b = true;
+                                Rudder_Action_lastTime = DateTime.Now;
+                                Rudder_G_last_value = (Byte)Rudder_G_Wind_combined;
+                            }
+                        }
+
+
+
+
+                        //Write to Pedal
+                        if (Rudder_Effect_update_b)
+                        {
+                            for (uint PIDX = 1; PIDX < 3; PIDX++)
+                            {
+                                tmp.payloadHeader_.PedalTag = (byte)PIDX;
+                                DAP_action_st* v = &tmp;
+                                byte* p = (byte*)v;
+                                tmp.payloadFooter_.checkSum = checksumCalc(p, sizeof(payloadHeader) + sizeof(payloadPedalAction));
+                                int length = sizeof(DAP_action_st);
+                                byte[] newBuffer = new byte[length];
+                                newBuffer = getBytes_Action(tmp);
+                                if (ESPsync_serialPort.IsOpen)
+                                {
+                                    ESPsync_serialPort.DiscardInBuffer();
+                                    ESPsync_serialPort.Write(newBuffer, 0, newBuffer.Length);
+                                    System.Threading.Thread.Sleep(7);
+                                }
+                            }
+                            Rudder_Effect_update_b = false;
+                        }
+                    }
+                }
+                
 
             }
 
@@ -969,7 +1136,7 @@ namespace User.PluginSdkDemo
                         {
                             ESPsync_serialPort.DiscardInBuffer();
                             ESPsync_serialPort.Write(newBuffer, 0, newBuffer.Length);
-                            System.Threading.Thread.Sleep(5);
+                            System.Threading.Thread.Sleep(10);
                         }
                     }
                     else
@@ -1025,7 +1192,7 @@ namespace User.PluginSdkDemo
                         {
                             ESPsync_serialPort.DiscardInBuffer();
                             ESPsync_serialPort.Write(newBuffer, 0, newBuffer.Length);
-                            System.Threading.Thread.Sleep(5);
+                            System.Threading.Thread.Sleep(10);
                         }
                     }
                     else
@@ -1062,8 +1229,8 @@ namespace User.PluginSdkDemo
             pluginManager.SetPropertyValue("pedal_position", this.GetType(), pedal_state_in_ratio);
             pluginManager.SetPropertyValue("PedalErrorIndex", this.GetType(), PedalErrorIndex);
             pluginManager.SetPropertyValue("PedalErrorCode", this.GetType(), PedalErrorCode);
-
-
+            pluginManager.SetPropertyValue("FlightRudder_G", this.GetType(), Rudder_G_last_value);
+            pluginManager.SetPropertyValue("FlightRudder_Wind_Force", this.GetType(), Rudder_Wind_Force_last_value);
         }
 
 
@@ -1471,7 +1638,8 @@ namespace User.PluginSdkDemo
             pluginManager.AddProperty("pedal_position", this.GetType(), pedal_state_in_ratio);
             pluginManager.AddProperty("PedalErrorIndex", this.GetType(), PedalErrorIndex);
             pluginManager.AddProperty("PedalErrorCode", this.GetType(), PedalErrorCode);
-
+            pluginManager.AddProperty("FlightRudder_G", this.GetType(), Rudder_G_last_value);
+            pluginManager.AddProperty("FlightRudder_Wind_Force", this.GetType(), Rudder_Wind_Force_last_value);
             for (uint pedali=0; pedali < 3; pedali++)
             {
                 Action_currentTime[pedali] = new DateTime();
@@ -1721,6 +1889,7 @@ namespace User.PluginSdkDemo
                 SimHub.Logging.Current.Info("Rudder Brake");
 
             });
+            /*
             this.AddAction("Rudder", (a, b) =>
             {
 
@@ -1728,6 +1897,7 @@ namespace User.PluginSdkDemo
                 SimHub.Logging.Current.Info("Rudder action");
 
             });
+            */
 
             //Settings.selectedJsonIndexLast[0]
             //SimHub.Logging.Current.Info("Diy active pedas plugin - Test 1");
@@ -1929,8 +2099,8 @@ namespace User.PluginSdkDemo
 
             dap_config_initial_st.payloadPedalConfig_.spindlePitch_mmPerRev_u8 = 5;
             dap_config_initial_st.payloadPedalConfig_.pedal_type = 0;
-            dap_config_initial_st.payloadPedalConfig_.OTA_flag = 0;
-            dap_config_initial_st.payloadPedalConfig_.enableReboot_u8 = 1;
+            //dap_config_initial_st.payloadPedalConfig_.OTA_flag = 0;
+            dap_config_initial_st.payloadPedalConfig_.enableMiscFlags_u8 = 1;
 
 
 

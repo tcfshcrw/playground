@@ -66,7 +66,7 @@ class isv57communication {
 	void clearServoUnitPosition();
     void disableAxis();
 	void enableAxis();
-    void resetAxisCounter(); 
+    //void resetAxisCounter(); 
 
 
     void setZeroPos();

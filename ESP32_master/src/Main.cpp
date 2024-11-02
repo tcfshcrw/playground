@@ -271,8 +271,12 @@ void setup()
   
   Serial.println("[L]This work is licensed under a Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.");
   Serial.println("[L]Please check github repo for more detail: https://github.com/ChrGri/DIY-Sim-Racing-FFB-Pedal");
-  Serial.print("[L]Version:");
-  Serial.println(VERSION);
+  #ifdef OTA_Update
+    Serial.print("[L]Board:");
+    Serial.println(Board);
+    Serial.print("[L]Version:");
+    Serial.println(VERSION);
+  #endif
 
   // setup multi tasking
   /*
@@ -1124,70 +1128,72 @@ void OTATask( void * pvParameters )
   for(;;)
   {
     #ifdef OTA_Update
-    if(OTA_count>200)
-    {
-      message_out_b=true;
-      OTA_count=0;
-    }
-    else
-    {
-      OTA_count++;
-    }
-
-    
-    if(OTA_enable_b)
-    {
-      if(message_out_b)
+      if(OTA_count>200)
       {
-        message_out_b=false;
-        Serial1.println("[L]OTA enable flag on");
-      }
-      if(OTA_status)
-      {
-        
-        //server.handleClient();
+        message_out_b=true;
+        OTA_count=0;
       }
       else
       {
-        Serial.println("[L]de-initialize espnow");
-        Serial.println("[L]wait...");
-        esp_err_t result= esp_now_deinit();
-        ESPNow_initial_status=false;
-        ESPNOW_status=false;
-        delay(200);
-        if(result==ESP_OK)
+        OTA_count++;
+      }
+
+      
+      if(OTA_enable_b)
+      {
+        if(message_out_b)
         {
-          OTA_status=true;
-          delay(1000);
-          //ota_wifi_initialize(APhost);
-          wifi_initialized(SSID,PASS);
-          delay(2000);
-          ESP32OTAPull ota;
-          int ret;
-          ota.SetCallback(OTAcallback);
-          switch (_basic_wifi_info.mode_select)
+          message_out_b=false;
+          Serial1.println("[L]OTA enable flag on");
+        }
+        if(OTA_status)
+        {
+          
+          //server.handleClient();
+        }
+        else
+        {
+          Serial.println("[L]de-initialize espnow");
+          Serial.println("[L]wait...");
+          esp_err_t result= esp_now_deinit();
+          ESPNow_initial_status=false;
+          ESPNOW_status=false;
+          delay(200);
+          if(result==ESP_OK)
           {
-            case 1:
-              Serial.printf("[L]Flashing to latest Main, checking %s to see if an update is available...\n", JSON_URL_main);
-              ret = ota.CheckForOTAUpdate(JSON_URL_main, VERSION);
-              Serial.printf("[L]CheckForOTAUpdate returned %d (%s)\n\n", ret, errtext(ret));
+            OTA_status=true;
+            delay(1000);
+            //ota_wifi_initialize(APhost);
+            wifi_initialized(SSID,PASS);
+            delay(2000);
+            ESP32OTAPull ota;
+            int ret;
+            ota.SetCallback(OTAcallback);
+            switch (_basic_wifi_info.mode_select)
+            {
+              case 1:
+                Serial.printf("[L]Flashing to latest Main, checking %s to see if an update is available...\n", JSON_URL_main);
+                ret = ota.OverrideBoard(Board) 
+                        .CheckForOTAUpdate(JSON_URL_main, VERSION);
+                Serial.printf("[L]CheckForOTAUpdate returned %d (%s)\n\n", ret, errtext(ret));
+                break;
+              case 2:
+                Serial.printf("[L]Flashing to latest Dev, checking %s to see if an update is available...\n", JSON_URL_dev);
+                ret = ota.OverrideBoard(Board)                       
+                        .CheckForOTAUpdate(JSON_URL_dev, VERSION);
+                Serial.printf("[L]CheckForOTAUpdate returned %d (%s)\n\n", ret, errtext(ret));
+                break;
+              default:
               break;
-            case 2:
-              Serial.printf("[L]Flashing to latest Dev, checking %s to see if an update is available...\n", JSON_URL_dev);
-              ret = ota.CheckForOTAUpdate(JSON_URL_dev, VERSION);
-              Serial.printf("[L]CheckForOTAUpdate returned %d (%s)\n\n", ret, errtext(ret));
-              break;
-            default:
-            break;
+            }
+
+            delay(3000);
           }
 
-          delay(3000);
         }
-
       }
-    }
-    
-    delay(2);
+      
+      //delay(2);
     #endif
 
     #ifdef PRINT_TASK_FREE_STACKSIZE_IN_WORDS
@@ -1200,6 +1206,7 @@ void OTATask( void * pvParameters )
       }
       otaTask_stackSizeIdx_u32++;
     #endif
+    delay(2);
   }
 }
 

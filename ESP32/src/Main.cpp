@@ -305,6 +305,8 @@ void setup()
   Serial.println("Please check github repo for more detail: https://github.com/ChrGri/DIY-Sim-Racing-FFB-Pedal");
   //printout the github releasing version
   #ifdef OTA_update
+    Serial.print("Board: ");
+    Serial.println(Board);
     Serial.print("Firmware Version:");
     Serial.println(VERSION);
   #endif
@@ -1001,6 +1003,8 @@ void pedalUpdateTask( void * pvParameters )
     }
 
     // if pedal in min position, recalibrate position --> automatic step loss compensation
+
+    stepper->configSteplossRecovAndCrashDetection(dap_config_st.payLoadPedalConfig_.enableMiscFlags_u8);
     if (stepper->isAtMinPos() && OTA_status==false)
     {
       stepper->correctPos();
@@ -1615,7 +1619,8 @@ void OTATask( void * pvParameters )
             pixels.show(); 
             delay(500);
             pixels.setPixelColor(0,0x00,0x00,0x00);//no color
-            pixels.show();            
+            pixels.show();
+            delay(500);    
           #endif
         #endif
         
@@ -1652,12 +1657,14 @@ void OTATask( void * pvParameters )
           {
             case 1:
               Serial.printf("Flashing to latest Main, checking %s to see if an update is available...\n", JSON_URL_main);
-              ret = ota.CheckForOTAUpdate(JSON_URL_main, VERSION);
+              ret = ota.OverrideBoard(Board)
+                       .CheckForOTAUpdate(JSON_URL_main, VERSION);
               Serial.printf("CheckForOTAUpdate returned %d (%s)\n\n", ret, errtext(ret));
               break;
             case 2:
               Serial.printf("Flashing to latest Dev, checking %s to see if an update is available...\n", JSON_URL_dev);
-              ret = ota.CheckForOTAUpdate(JSON_URL_dev, VERSION);
+              ret = ota.OverrideBoard(Board)
+                       .CheckForOTAUpdate(JSON_URL_dev, VERSION);
               Serial.printf("CheckForOTAUpdate returned %d (%s)\n\n", ret, errtext(ret));
               break;
             default:

@@ -1,0 +1,4 @@
+${{ github.workspace }}/ESP32/.pio/build/esp32s3usbotg/firmware.bin
+${{ github.workspace }}/ESP32/.pio/build/esp32s3usbotg/bootloader.bin
+${{ github.workspace }}/ESP32/.pio/build/esp32s3usbotg/partitions.bin
+./Helper/bins/esp32s3/boot_app0.bin

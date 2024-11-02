@@ -108,20 +108,22 @@ void Modbus::readParameter(uint16_t slaveId_local_u16, uint16_t parameterAdress)
 // check target values at register address. If target value was already present, return 0. If target value has to be set, return 1.
 bool Modbus::checkAndReplaceParameter(uint16_t slaveId_local_u16, uint16_t parameterAdress, long value) {
 
-  bool retValue_b = false;
+  bool registerWritten_b = false;
+  bool registerValueAsTarget_b = false;
 
   
 
   // check and set the register at maximum N times
   for (uint8_t tryIdx_u8 = 0; tryIdx_u8 < 10; tryIdx_u8++)
   {
-
-    delay(5);
-    if (true == retValue_b)
+    
+    if (true == registerValueAsTarget_b)
     {
       // when register has proper setting, break the loop
       break;
     }
+
+    delay(5);
 
     // check if value at address is already target value
     uint8_t raw2[2];
@@ -144,22 +146,26 @@ bool Modbus::checkAndReplaceParameter(uint16_t slaveId_local_u16, uint16_t param
     if(returnValue!= targetValue_l)
     {
 
-      delay(50);
+      delay(30);
       Serial.print("Parameter adresse: ");
       Serial.print(parameterAdress);
-      Serial.print(",    actual:");
+      Serial.print(",    actual: ");
       Serial.print(returnValue);
-      Serial.print(",    target:");
+      Serial.print(",    target: ");
       Serial.println(targetValue_l);
 
       holdingRegisterWrite(slaveId_local_u16, parameterAdress, targetValue_l); 
-      
-      retValue_b = true;
+
+      registerWritten_b = true;
+    }
+    else
+    {
+      registerValueAsTarget_b = true;
     }
 
   }
 
-  return retValue_b;
+  return registerWritten_b;
 }
 
 
@@ -212,7 +218,7 @@ long Modbus::inputRegisterRead(int id, int address, int block)
 }
 
 
-
+ 
 
 
 
@@ -253,8 +259,9 @@ int Modbus::requestFrom(int slaveId, int type, int address, int nb)
     int ll = 0;
     int rx;
     uint8_t found = 0;
-  
-    while((millis() - t) < timeout_){
+
+    bool allDataReceived_b = false;
+    while( (false == allDataReceived_b) && ((millis() - t) < timeout_)){
        if(this->s->available())
        {
         rx = this->s->read();
@@ -289,7 +296,10 @@ int Modbus::requestFrom(int slaveId, int type, int address, int nb)
          // Byte N: CRC LSB
 
          // The total message length is thus N = 5+m
-         if(lenRx >= rawRx[2] + 5) { break; }
+         if(lenRx >= rawRx[2] + 5) { 
+            allDataReceived_b = true;
+            break; 
+          }
         }
         
        }
@@ -523,18 +533,47 @@ int Modbus::holdingRegisterWrite(int id, int address, uint16_t value)
 	
 	// send signal
 	digitalWrite(mode_,1);
-    delay(1);
-    this->s->write(txout,8);
-    this->s->flush();
-    digitalWrite(mode_,0);
-    delay(1);
+  delay(1);
+  this->s->write(txout,8);
+  this->s->flush();
+  digitalWrite(mode_,0);
+  delay(1);
 
   // verify return signal
   // should be identical to transmit signal, otherwise error
 
-	return 1;
+  uint32_t t = millis();
+  int ll = 0;
+  int rx;
+  
+  bool returnSignalIsCopyOfTransmittedSignal_b = false;
+  while((millis() - t) < timeout_){
+      if(this->s->available())
+      {
+        rx = this->s->read();
+        t = millis();
+        
+        if(txout[ll] == rx){ll++;}else{ll = 0;}
+
+        if (ll == 8)
+        {
+          returnSignalIsCopyOfTransmittedSignal_b = true;
+          break;
+        }
+
+      }
+  }
+
+  // Serial.print("Returnsignal: ");
+  // Serial.print(returnSignalIsCopyOfTransmittedSignal_b);
+  // Serial.print(",    Adress: ");
+  // Serial.print(address);
+  // Serial.print(",    value: ");
+  // Serial.println(value);
 	
-	
-	
-	
+
+  delay(5);
+
+  return returnSignalIsCopyOfTransmittedSignal_b;
+
 }

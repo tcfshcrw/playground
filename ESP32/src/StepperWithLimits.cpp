@@ -115,13 +115,17 @@ StepperWithLimits::StepperWithLimits(uint8_t pinStep, uint8_t pinDirection, uint
 		Serial.print("iSV57 communication state:  ");
 		Serial.println( getLifelineSignal() );
 
-		isv57.enableAxis();
-		delay(100);
+		
 
 		// flash iSV57 registers
 		isv57.setupServoStateReading();
 		invertMotorDir_global_b = invertMotorDir_b;
 		isv57.sendTunedServoParameters(invertMotorDir_global_b);
+
+
+		delay(30);
+		isv57.enableAxis();
+		delay(100);
 		
 		// ToDo: 
 		// - set servos internal rotation direction via debug port, thus ESPs and servos direction are aligned
@@ -193,12 +197,14 @@ void StepperWithLimits::findMinMaxSensorless(DAP_config_st dap_config_st)
 
 			// voltage return is given in 0.1V units --> 10V range --> threshold 100
 			// at beginning the values typically are initialized with -1
-			servoRadingsTrustworthy_b = getServosVoltage() > 100;
+			float servosBusVoltageInVolt_fl32 = ( (float)getServosVoltage() ) / 10.0f;
+			servoRadingsTrustworthy_b = ( servosBusVoltageInVolt_fl32 >= 16) && ( servosBusVoltageInVolt_fl32 < 48);
 
 			if (true == servoRadingsTrustworthy_b)
 			{
-				Serial.print("Servo readings plausible! Current position (raw): ");
-				Serial.println(isv57.servo_pos_given_p);
+				Serial.print("Servos bus voltage in expected range: ");
+				Serial.print( servosBusVoltageInVolt_fl32 );
+				Serial.println("V");
 				break;
 			}
 		}
@@ -226,8 +232,8 @@ void StepperWithLimits::findMinMaxSensorless(DAP_config_st dap_config_st)
 		// wait some time to check if signal stabilized
 		for (uint16_t tryIdx = 0; tryIdx < 500; tryIdx++)
 		{
-			delay(10);
-			endPosDetected = abs( isv57.servo_current_percent) > STEPPER_WITH_LIMITS_SENSORLESS_CURRENT_THRESHOLD_IN_PERCENT;
+			delay(5);
+			endPosDetected = abs( getServosCurrent() ) > STEPPER_WITH_LIMITS_SENSORLESS_CURRENT_THRESHOLD_IN_PERCENT;
 
 			if (false == endPosDetected)
 			{
@@ -243,8 +249,8 @@ void StepperWithLimits::findMinMaxSensorless(DAP_config_st dap_config_st)
 		_stepper->move(INT32_MIN, false);
 		
 		while( (!endPosDetected) && (getLifelineSignal()) ){
-			delay(10);
-			endPosDetected = abs( isv57.servo_current_percent) > STEPPER_WITH_LIMITS_SENSORLESS_CURRENT_THRESHOLD_IN_PERCENT;
+			delay(2);
+			endPosDetected = abs( getServosCurrent() ) > STEPPER_WITH_LIMITS_SENSORLESS_CURRENT_THRESHOLD_IN_PERCENT;
 		}
 		setPosition = - 5 * ENDSTOP_MOVEMENT_SENSORLESS;
 		_stepper->forceStopAndNewPosition(setPosition);
@@ -263,7 +269,7 @@ void StepperWithLimits::findMinMaxSensorless(DAP_config_st dap_config_st)
 		/*			thus step loss recovery is simplified.			*/
 		/************************************************************/
 		// restart servo axis. This will reset the seros reg_add_position_given_p count to zero, thus equalizing the ESP zero and the servos zero position.
-		/*restartServo = true;
+		restartServo = true;
 
 		bool servoAxisResetSuccessfull_b = false;
 		for (uint16_t waitTillServoCounterWasReset_Idx = 0; waitTillServoCounterWasReset_Idx < 10; waitTillServoCounterWasReset_Idx++)
@@ -286,7 +292,7 @@ void StepperWithLimits::findMinMaxSensorless(DAP_config_st dap_config_st)
 			Serial.print("Servo axis not reset. Restarting ESP!");
 			ESP.restart();
 		}
-		*/
+		
 
 		// Serial.print("Servo axis current position (before clearing): ");
 		// Serial.println(isv57.servo_pos_given_p);
@@ -321,10 +327,10 @@ void StepperWithLimits::findMinMaxSensorless(DAP_config_st dap_config_st)
 		
 		// if endstop is reached, communication is lost or virtual endstop is hit
 		while( (!endPosDetected) && (getLifelineSignal()) ){
-			delay(10);
+			delay(2);
 			if (_stepper->getCurrentPosition() > MIN_POS_MAX_ENDSTOP)
     		{
-				endPosDetected = abs( isv57.servo_current_percent) > STEPPER_WITH_LIMITS_SENSORLESS_CURRENT_THRESHOLD_IN_PERCENT;
+				endPosDetected = abs( getServosCurrent() ) > STEPPER_WITH_LIMITS_SENSORLESS_CURRENT_THRESHOLD_IN_PERCENT;
 			}
 
 			// virtual endstop
@@ -564,7 +570,11 @@ int32_t StepperWithLimits::getServosInternalPosition()
 }
 
 
-
+void StepperWithLimits::configSteplossRecovAndCrashDetection(uint8_t flags_u8)
+{
+	disableSteplossRecov_b = (flags_u8 >> 1) & 1;
+	disableCrashDetection_b = (flags_u8 >> 2) & 1;
+}
 
 int64_t timeSinceLastServoPosChange_l = 0;
 int64_t timeDiff = 0;
@@ -612,13 +622,13 @@ void StepperWithLimits::servoCommunicationTask(void *pvParameters)
 			// restarting servo axis
 			if(true == stepper_cl->restartServo)
 			{
-				stepper_cl->isv57.resetAxisCounter();
+				//stepper_cl->isv57.resetAxisCounter();
 
-				// stepper_cl->isv57.disableAxis();
-				// delay(50);				
-				// stepper_cl->isv57.enableAxis();
+				stepper_cl->isv57.disableAxis();
+				delay(15);				
+				stepper_cl->isv57.enableAxis();
 				stepper_cl->restartServo = false;
-				delay(200);
+				delay(15);
 			}
 
 
@@ -713,77 +723,90 @@ void StepperWithLimits::servoCommunicationTask(void *pvParameters)
 
 
 				
-
-
-				// When the servo turned off during driving, the servo loses its zero position and the correction might not be valid anymore. If still applied, the servo will somehow srive against the block
-				// resulting in excessive servo load --> current load. We'll detect whether min or max block was reached, depending on the position error sign
-				bool servoCurrentLow_b = abs(stepper_cl->isv57.servo_current_percent) < 50;//200;
-				if (!servoCurrentLow_b)
+				if (false == stepper_cl->disableCrashDetection_b)
 				{
-
-					// positive current means positive rotation 
-					bool minBlockCrashDetected_b = false;
-					bool maxBlockCrashDetected_b = false;
-					if (stepper_cl->isv57.servo_current_percent > 0) // if current is positive, the rotation will be positive and thus the sled will move towards the user
+					// When the servo turned off during driving, the servo loses its zero position and the correction might not be valid anymore. If still applied, the servo will somehow srive against the block
+					// resulting in excessive servo load --> current load. We'll detect whether min or max block was reached, depending on the position error sign
+					bool servoCurrentLow_b = abs(stepper_cl->isv57.servo_current_percent) < 50;//200;
+					if (!servoCurrentLow_b)
 					{
-						minBlockCrashDetected_b = true; 
-						stepper_cl->isv57.applyOfsetToZeroPos(-500); // bump up a bit to prevent the servo from pushing against the endstop continously
+
+						// positive current means positive rotation 
+						bool minBlockCrashDetected_b = false;
+						bool maxBlockCrashDetected_b = false;
+						if (stepper_cl->isv57.servo_current_percent > 0) // if current is positive, the rotation will be positive and thus the sled will move towards the user
+						{
+							minBlockCrashDetected_b = true; 
+							stepper_cl->isv57.applyOfsetToZeroPos(-500); // bump up a bit to prevent the servo from pushing against the endstop continously
+						}
+						else
+						{
+							maxBlockCrashDetected_b = true;
+							stepper_cl->isv57.applyOfsetToZeroPos(500); // bump up a bit to prevent the servo from pushing against the endstop continously
+						}
+
+						/*print_cycle_counter_u64++;
+						print_cycle_counter_u64 %= 10;
+
+						if (print_cycle_counter_u64 == 0)
+						{
+						Serial.print("minDet: ");
+						Serial.print(minBlockCrashDetected_b);
+
+						Serial.print("curr: ");
+						Serial.print(isv57.servo_current_percent);
+						
+						Serial.print("posError: ");
+						Serial.print(isv57.servo_pos_error_p);
+
+						Serial.println();
+						}*/
+
+
+						//servo_offset_compensation_steps_local_i32 = isv57.servo_pos_error_p;
 					}
-					else
-					{
-						maxBlockCrashDetected_b = true;
-						stepper_cl->isv57.applyOfsetToZeroPos(500); // bump up a bit to prevent the servo from pushing against the endstop continously
-					}
-
-					/*print_cycle_counter_u64++;
-					print_cycle_counter_u64 %= 10;
-
-					if (print_cycle_counter_u64 == 0)
-					{
-					Serial.print("minDet: ");
-					Serial.print(minBlockCrashDetected_b);
-
-					Serial.print("curr: ");
-					Serial.print(isv57.servo_current_percent);
-					
-					Serial.print("posError: ");
-					Serial.print(isv57.servo_pos_error_p);
-
-					Serial.println();
-					}*/
-
-
-					//servo_offset_compensation_steps_local_i32 = isv57.servo_pos_error_p;
 				}
 
-
-
-				// calculate encoder offset
-				// movement to the back will reduce encoder value
-				//servo_offset_compensation_steps_local_i32 = (int32_t)stepper_cl->isv57.getZeroPos() - (int32_t)stepper_cl->isv57.servo_pos_given_p;
-				// when pedal has moved to the back due to step losses --> offset will be positive 
-				//servo_offset_compensation_steps_local_i32 = -(stepper_cl->getCurrentPosition() + (int32_t)( stepper_cl->isv57.servo_pos_given_p - stepper_cl->isv57.getZeroPos()) );
-				servo_offset_compensation_steps_local_i32 = stepper_cl->getCurrentPosition() - stepper_cl->getServosInternalPosition(); 
 				
 
-				// since the encoder positions are defined in int16 space, they wrap at multiturn
-				// to correct overflow, we apply modulo to take smallest possible deviation
-				if (servo_offset_compensation_steps_local_i32 > TWO_TO_THE_POWER_OF_15_MINUS_1)
-				{
-					servo_offset_compensation_steps_local_i32 -= INT16_MAX;
-				}
 
-				if (servo_offset_compensation_steps_local_i32 < -TWO_TO_THE_POWER_OF_15_MINUS_1)
+
+				
+				
+
+				if (false == stepper_cl->disableSteplossRecov_b)
 				{
-					servo_offset_compensation_steps_local_i32 += INT16_MAX;
+					// calculate encoder offset
+					// movement to the back will reduce encoder value
+
+					// unwrap the servos position by aligning it to the ESPs position
+					int32_t servoPosCorrected_i32 = stepper_cl->getServosInternalPosition();
+					int32_t espPos_i32 = stepper_cl->getCurrentPosition();
+					for (uint8_t wrapIndex_u8 = 0; wrapIndex_u8 < 10; wrapIndex_u8++)
+					{
+						if ( ( espPos_i32 - servoPosCorrected_i32 ) > INT16_MAX )
+						{
+							// 4294967296 = 2^16
+							servoPosCorrected_i32 += 4294967296;
+						}
+
+						if ( ( espPos_i32 - servoPosCorrected_i32 ) < INT16_MIN )
+						{
+							// 4294967296 = 2^16
+							servoPosCorrected_i32 -= 4294967296;
+						}
+					}
+					
+					servo_offset_compensation_steps_local_i32 = espPos_i32 - servoPosCorrected_i32;
+					// if (false == stepper_cl->invertMotorDir_global_b)
+					// {
+					// 	servo_offset_compensation_steps_local_i32 *= -1;
+					// }
 				}
-			
-			
-				// // invert the compensation wrt the motor direction
-				// if (true == stepper_cl->invertMotorDir_global_b)
-				// {
-				// 	servo_offset_compensation_steps_local_i32 *= -1;
-				// }
+				else
+				{
+					servo_offset_compensation_steps_local_i32 = 0;
+				}
 
 
 				if(semaphore_resetServoPos!=NULL)

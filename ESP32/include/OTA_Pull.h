@@ -1,30 +1,27 @@
 #include <Arduino.h>
 #include <ESP32OTAPull.h>
 #include <esp_wifi.h>
-#define VERSION "0.87.1"
+#define VERSION "0.87.2"
+#define JSON_URL_dev   "https://raw.githubusercontent.com/tcfshcrw/FFBPedalOTA_Json/main/JSON/dev/ControlBoard/Version_ControlBoard.json"
+#define JSON_URL_main   "https://raw.githubusercontent.com/tcfshcrw/FFBPedalOTA_Json/main/JSON/main/ControlBoard/Version_ControlBoard.json"
 #if PCB_VERSION==3
-	#define JSON_URL_dev   "https://raw.githubusercontent.com/tcfshcrw/FFBPedalOTA_Json/main/JSON/dev/ControlBoard/Version_esp32.json"
-	#define JSON_URL_main   "https://raw.githubusercontent.com/tcfshcrw/FFBPedalOTA_Json/main/JSON/main/ControlBoard/Version_esp32.json"
+	#define Board "V3_ESP32"
 #endif
 
 #if PCB_VERSION==5
-	#define JSON_URL_dev   "https://raw.githubusercontent.com/tcfshcrw/FFBPedalOTA_Json/main/JSON/dev/ControlBoard/Version_Speedcrafter.json"
-	#define JSON_URL_main   "https://raw.githubusercontent.com/tcfshcrw/FFBPedalOTA_Json/main/JSON/main/ControlBoard/Version_Speedcrafter.json"
+	#define Board "Speedcrafter"
 #endif
 
 #if PCB_VERSION==6
-	#define JSON_URL_dev   "https://raw.githubusercontent.com/tcfshcrw/FFBPedalOTA_Json/main/JSON/dev/ControlBoard/Version_esp32S3.json"
-	#define JSON_URL_main   "https://raw.githubusercontent.com/tcfshcrw/FFBPedalOTA_Json/main/JSON/main/ControlBoard/Version_esp32S3.json"
+	#define Board "V4_ESP32S3"
 #endif
 
 #if PCB_VERSION==7
-	#define JSON_URL_dev   "https://raw.githubusercontent.com/tcfshcrw/FFBPedalOTA_Json/main/JSON/dev/ControlBoard/Version_Gilphilbert_1_2.json"
-	#define JSON_URL_main   "https://raw.githubusercontent.com/tcfshcrw/FFBPedalOTA_Json/main/JSON/main/ControlBoard/Version_Gilphilbert_1_2.json"
+	#define Board "Gilphilbert_PCBAv1"
 #endif
 
 #if PCB_VERSION==8
-	#define JSON_URL_dev   "https://raw.githubusercontent.com/tcfshcrw/FFBPedalOTA_Json/main/JSON/dev/ControlBoard/Version_Gilphilbert_2_0.json"
-	#define JSON_URL_main   "https://raw.githubusercontent.com/tcfshcrw/FFBPedalOTA_Json/main/JSON/main/ControlBoard/Version_Gilphilbert_2_0.json"
+	#define Board "Gilphilbert_PCBAv2"
 #endif
 bool OTA_enable_b =false;
 bool OTA_status =false;

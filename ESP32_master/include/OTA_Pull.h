@@ -1,7 +1,23 @@
 #include <Arduino.h>
 #include <ESP32OTAPull.h>
 #include <esp_wifi.h>
-#define VERSION "0.87.1"
+#define VERSION "0.87.2"
+#define JSON_URL_dev   "https://raw.githubusercontent.com/tcfshcrw/FFBPedalOTA_Json/main/JSON/dev/Bridge/Version_Bridge.json"
+#define JSON_URL_main "https://raw.githubusercontent.com/tcfshcrw/FFBPedalOTA_Json/main/JSON/main/Bridge/Version_Bridge.json"
+
+#if PCB_VERSION==5
+	#define Board   "Bridge_FANATEC"
+#endif
+#if PCB_VERSION==6
+	#define Board   "DevKit"
+#endif
+#if PCB_VERSION==7
+	#define Board   "Gilphilbert_Dongle"
+#endif
+
+
+
+/*
 #if PCB_VERSION==5
 	#define JSON_URL_dev   "https://raw.githubusercontent.com/tcfshcrw/FFBPedalOTA_Json/main/JSON/dev/Bridge/Version_Fanatec_bridge.json"
 	#define JSON_URL_main   "https://raw.githubusercontent.com/tcfshcrw/FFBPedalOTA_Json/main/JSON/main/Bridge/Version_Fanatec_bridge.json"
@@ -14,6 +30,7 @@
 	#define JSON_URL_dev   "https://raw.githubusercontent.com/tcfshcrw/FFBPedalOTA_Json/main/JSON/dev/Bridge/Version_Gilphilbert_dongle.json"
 	#define JSON_URL_main   "https://raw.githubusercontent.com/tcfshcrw/FFBPedalOTA_Json/main/JSON/main/Bridge/Version_Gilphilbert_dongle.json"
 #endif
+*/
 
 bool OTA_enable_b =false;
 bool OTA_status =false;

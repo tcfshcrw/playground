@@ -1,0 +1,4 @@
+${{ github.workspace }}/ESP32/.pio/build/esp32-speedcrafter/firmware.bin
+${{ github.workspace }}/ESP32/.pio/build/esp32-speedcrafter/bootloader.bin
+${{ github.workspace }}/ESP32/.pio/build/esp32-speedcrafter/partitions.bin
+./Helper/bins/esp32_speedcrafter_PCB_V1p4/boot_app0.bin
