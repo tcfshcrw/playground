@@ -72,7 +72,7 @@ jobs:
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git checkout -b built-firmware
+          git checkout -b main
           git add OTA/ControlBoard/esp32/firmware.bin OTA/ControlBoard/esp32/partitions.bin 
           git add OTA/ControlBoard/esp32S3/firmware.bin OTA/ControlBoard/esp32S3/partitions.bin
           git add OTA/ControlBoard/Speedcrafter/firmware.bin OTA/ControlBoard/Speedcrafter/partitions.bin
@@ -83,6 +83,6 @@ jobs:
           git add OTA/Bridge/Fanatec_Bridge/firmware.bin OTA/Bridge/Fanatec_Bridge/partitions.bin
           git add OTA/Bridge/Gilphilbert_dongle/firmware.bin OTA/Bridge/Gilphilbert_dongle/partitions.bin
           git commit -m "Add built firmware"
-          git push -u origin built-firmware
+          git push -u origin main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
