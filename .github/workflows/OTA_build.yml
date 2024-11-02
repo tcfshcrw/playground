@@ -1,4 +1,4 @@
-name: PreRelease Bump Version
+name: OTA_Binary_building
 
 on:
   workflow_dispatch:
