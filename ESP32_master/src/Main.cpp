@@ -1367,7 +1367,7 @@ void FanatecUpdate(void * pvParameters)
 
         // Pedal input values to 0 - 10000
         throttleValue = map(throttleValue, 0, 10000, 0, 65535);
-        brakeValue = map(brakeValue, 0, 10000, 0, 40960);
+        brakeValue = map(brakeValue, 0, 10000, 0, 22000);
         clutchValue = map(clutchValue, 0, 10000, 0, 65535);
 
         // Set pedal values in FanatecInterface
@@ -1379,7 +1379,7 @@ void FanatecUpdate(void * pvParameters)
         fanatec.update();
       }
     #endif
-    delay(2);
+    delay(10);
   }
 }
 

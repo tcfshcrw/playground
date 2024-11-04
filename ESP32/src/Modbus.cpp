@@ -123,7 +123,7 @@ bool Modbus::checkAndReplaceParameter(uint16_t slaveId_local_u16, uint16_t param
       break;
     }
 
-    delay(5);
+    delay(10);
 
     // check if value at address is already target value
     uint8_t raw2[2];

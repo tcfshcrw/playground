@@ -2,8 +2,8 @@
 #include <ESP32OTAPull.h>
 #include <esp_wifi.h>
 #define VERSION "0.87.2"
-#define JSON_URL_dev   "https://raw.githubusercontent.com/tcfshcrw/FFBPedalOTA_Json/main/JSON/dev/ControlBoard/Version_ControlBoard.json"
-#define JSON_URL_main   "https://raw.githubusercontent.com/tcfshcrw/FFBPedalOTA_Json/main/JSON/main/ControlBoard/Version_ControlBoard.json"
+#define JSON_URL_dev   "https://raw.githubusercontent.com/gilphilbert/pedal-flasher/main/json/dev/Version_ControlBoard.json"
+#define JSON_URL_main   "https://raw.githubusercontent.com/gilphilbert/pedal-flasher/main/json/main/Version_ControlBoard.json"
 #if PCB_VERSION==3
 	#define Board "V3_ESP32"
 #endif
