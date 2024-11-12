@@ -301,8 +301,11 @@ void setup()
     ESP.restart();
   }
   */
+  #ifndef CONFIG_IDF_TARGET_ESP32S3
+    disableCore0WDT();
+    disableCore1WDT();
+  #endif
 
-  disableCore0WDT();
   //enable ESP-NOW
   ESPNow_initialize();
   //ESPNow multi-tasking    
@@ -410,7 +413,7 @@ void setup()
     xTaskCreatePinnedToCore(
                           LED_Task_Dongle,   
                           "LED_update_Task", 
-                          3000,  
+                          4000,  
                           //STACK_SIZE_FOR_TASK_2,    
                           NULL,      
                           1,         
