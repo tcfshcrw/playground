@@ -286,9 +286,11 @@ void setup()
   semaphore_updatePedalStates = xSemaphoreCreateMutex();
   */
   delay(10);
+  #ifdef ESPNow_Pairing_function
   //button read setup
   pinMode(Pairing_GPIO, INPUT_PULLUP);
   EEPROM.begin(256);
+  #endif
 /*
   if(semaphore_updateJoystick==NULL)
   {
@@ -490,9 +492,6 @@ bool building_dap_esppairing_lcl =false;
 void loop() 
 {
   taskYIELD();
-  //fanatecUpdate();
-
-  //delay(2); 
 }
 
 void ESPNOW_SyncTask( void * pvParameters )
@@ -536,7 +535,7 @@ void ESPNOW_SyncTask( void * pvParameters )
         //timeout check
         if(now-Pairing_state_start>Pairing_timeout)
         {
-          Serial.println("[L]Bridge Timeout!");
+          Serial.println("[L]Bridge Pairing timeout!");
           ESPNow_pairing_action_b=false;
           LED_Status=0;
           if(UpdatePairingToEeprom)
@@ -556,8 +555,10 @@ void ESPNOW_SyncTask( void * pvParameters )
                 Serial.print(i);
                 Serial.print("Pair: ");
                 Serial.print(ESP_pairing_reg_local.Pair_status[i]);
-                Serial.printf(" Mac: %02X:%02X:%02X:%02X:%02X:%02X\n", ESP_pairing_reg_local.Pair_mac[i][0], ESP_pairing_reg_local.Pair_mac[i][1], ESP_pairing_reg_local.Pair_mac[i][2], ESP_pairing_reg_local.Pair_mac[i][3], ESP_pairing_reg_local.Pair_mac[i][4], ESP_pairing_reg_local.Pair_mac[i][5]);
+                Serial.printf(" Mac: %02X:%02X:%02X:%02X:%02X:%02X", ESP_pairing_reg_local.Pair_mac[i][0], ESP_pairing_reg_local.Pair_mac[i][1], ESP_pairing_reg_local.Pair_mac[i][2], ESP_pairing_reg_local.Pair_mac[i][3], ESP_pairing_reg_local.Pair_mac[i][4], ESP_pairing_reg_local.Pair_mac[i][5]);
+                Serial.println("");
               }
+              Serial.println("");
             }
             Serial.println("");
             //adding peer
@@ -822,8 +823,13 @@ void Serial_Task( void * pvParameters)
           {
             if(dap_bridge_state_lcl.payloadBridgeState_.Bridge_action==1)
             {
-              Serial.println("[L]Bridge Pairing...");
-              software_pairing_action_b=true;
+              #ifdef ESPNow_Pairing_function
+                Serial.println("[L]Bridge Pairing...");
+                software_pairing_action_b=true;
+              #endif
+              #ifndef ESPNow_Pairing_function
+                Serial.println("[L]Pairing command didn't supported");
+              #endif
             }
             //action=2, restart
             if(dap_bridge_state_lcl.payloadBridgeState_.Bridge_action==2)

@@ -30,7 +30,7 @@ bool ESPNow_pairing_action_b = false;
 bool software_pairing_action_b = false;
 bool hardware_pairing_action_b = false;
 bool OTA_update_action_b=false;
-
+bool Config_update_b=false;
 struct ESPNow_Send_Struct
 { 
   uint16_t pedal_position;
@@ -219,7 +219,8 @@ void onRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len)
               if (structChecker == true)
               {
                 //Serial.println("Updating pedal config");
-                configUpdateAvailable = true;          
+                configUpdateAvailable = true;   
+                Config_update_b=true;       
               }
                 xSemaphoreGive(semaphore_updateConfig);
             }

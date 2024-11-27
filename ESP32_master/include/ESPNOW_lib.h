@@ -249,16 +249,18 @@ void ESPNow_initialize()
     Serial.println("[L]Initializing ESPNow, please wait"); 
     WiFi.macAddress(esp_Mac); 
     Serial.printf("[L]Device Mac: %02X:%02X:%02X:%02X:%02X:%02X\n", esp_Mac[0], esp_Mac[1], esp_Mac[2], esp_Mac[3], esp_Mac[4], esp_Mac[5]);
+    
     //Serial.print("Current MAC Address:  ");  
     //Serial.println(WiFi.macAddress());
     #ifndef ESPNow_Pairing_function
+      Serial.println("Overwriting Mac address.......");
       esp_wifi_set_mac(WIFI_IF_STA, &esp_Host[0]);
       delay(300);
-      Serial.print("Modified MAC Address:  ");  
+      Serial.print("[L]Modified MAC Address:  ");  
       Serial.println(WiFi.macAddress());
     #endif
     ESPNow.init();
-    Serial.println("Wait for ESPNOW");
+    Serial.println("[L]Waiting for ESPNOW");
     delay(3000);
     #ifdef Using_Board_ESP32
     esp_wifi_config_espnow_rate(WIFI_IF_STA, WIFI_PHY_RATE_MCS0_LGI);
