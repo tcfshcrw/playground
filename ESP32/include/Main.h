@@ -25,7 +25,9 @@
 // target cycle time for pedal update task, to get constant cycle times, required for FIR filtering
 #define DAP_MICROSECONDS_PER_SECOND 1000000
 
-static const uint32_t STEPS_PER_MOTOR_REVOLUTION = 6400;
+// static const uint32_t STEPS_PER_MOTOR_REVOLUTION = 6400;
+static const uint32_t STEPS_PER_MOTOR_REVOLUTION = 3200;
+static const float STEPS_PER_MOTOR_REVOLUTION_INV = 1.0f / STEPS_PER_MOTOR_REVOLUTION;
 
 // 15kHz
 //#define ADC_SAMPLE_RATE ADS1256_DRATE_15000SPS
@@ -40,12 +42,12 @@ static const uint32_t STEPS_PER_MOTOR_REVOLUTION = 6400;
 //#define PUT_TARGET_CYCLE_TIME_IN_US DAP_MICROSECONDS_PER_SECOND / 3750
 
 // 2.0kHz
-// #define ADC_SAMPLE_RATE ADS1256_DRATE_2000SPS
-// #define PUT_TARGET_CYCLE_TIME_IN_US DAP_MICROSECONDS_PER_SECOND / 2000
+#define ADC_SAMPLE_RATE ADS1256_DRATE_2000SPS
+#define PUT_TARGET_CYCLE_TIME_IN_US DAP_MICROSECONDS_PER_SECOND / 2000
 
 // 1.0kHz
-#define ADC_SAMPLE_RATE ADS1256_DRATE_1000SPS
-#define PUT_TARGET_CYCLE_TIME_IN_US DAP_MICROSECONDS_PER_SECOND / 1000
+//#define ADC_SAMPLE_RATE ADS1256_DRATE_1000SPS
+//#define PUT_TARGET_CYCLE_TIME_IN_US DAP_MICROSECONDS_PER_SECOND / 1000
 
 
 
@@ -154,7 +156,7 @@ static const uint32_t STEPS_PER_MOTOR_REVOLUTION = 6400;
   #define PEDAL_ASSIGNMENT
   #define CFG1 15
   #define CFG2 12
-  #define Using_analog_output
+  //#define Using_analog_output
   //#define Using_I2C_Sync
   #define ESPNOW_Enable
   #define ESPNow_ESP32
@@ -162,7 +164,7 @@ static const uint32_t STEPS_PER_MOTOR_REVOLUTION = 6400;
   #define BLUETOOTH_GAMEPAD
   //#define USB_JOYSTICK
   #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 1
-  #define ESPNow_Pairing_function
+  //#define ESPNow_Pairing_function
   //#define Pairing_GPIO 13
   //#define ESPNow_debug_rudder
   #define OTA_update_ESP32
@@ -199,7 +201,7 @@ static const uint32_t STEPS_PER_MOTOR_REVOLUTION = 6400;
 
   #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 3
   //#define Pairing_GPIO 0
-  #define ESPNow_Pairing_function
+  //#define ESPNow_Pairing_function
   #define ESPNow_ESP32
 #endif
 
@@ -233,7 +235,7 @@ static const uint32_t STEPS_PER_MOTOR_REVOLUTION = 6400;
   //#define USB_JOYSTICK
   #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 3
   #define Pairing_GPIO 0
-  #define ESPNow_Pairing_function
+  //#define ESPNow_Pairing_function
   #define ESPNow_ESP32
   #define OTA_update_ESP32
 #endif
@@ -273,14 +275,14 @@ static const uint32_t STEPS_PER_MOTOR_REVOLUTION = 6400;
   #define ISV57_TXPIN 10//27 //17
   #define ISV57_RXPIN 9//26 // 16
 
-  #define Using_analog_output_ESP32_S3
+  //#define Using_analog_output_ESP32_S3
 
   //#define BLUETOOTH_GAMEPAD
   #define USB_JOYSTICK
   #define ESPNOW_Enable
   #define ESPNow_S3
   #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 5
-  #define ESPNow_Pairing_function
+  //#define ESPNow_Pairing_function
   #define Pairing_GPIO 0
   #define OTA_update
 #endif
@@ -329,13 +331,14 @@ static const uint32_t STEPS_PER_MOTOR_REVOLUTION = 6400;
   #define USB_JOYSTICK
 
   #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 5
-  #define ESPNow_Pairing_function
-  #define Hardware_Pairing_button
+  //#define ESPNow_Pairing_function
+  //#define Hardware_Pairing_button
   #define Pairing_GPIO 0
   //#define ESPNow_debug_rudder
   #define USING_LED
   #define LED_GPIO 12
   #define OTA_update
+  #define USING_BUZZER
 #endif
 
 #if PCB_VERSION == 8
@@ -379,12 +382,101 @@ static const uint32_t STEPS_PER_MOTOR_REVOLUTION = 6400;
   #define USB_JOYSTICK
 
   #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 5
-  #define ESPNow_Pairing_function
-  #define Hardware_Pairing_button
+  //#define ESPNow_Pairing_function
+  //#define Hardware_Pairing_button
   #define Pairing_GPIO 33
   //#define ESPNow_debug_rudder
   #define CONTROLLER_SPECIFIC_VIDPID
   #define USING_LED
   #define LED_GPIO 12
+  #define OTA_update
+  #define USING_BUZZER
+#endif
+
+// V3 version of dev PCB for inverted serial, dev only
+#if PCB_VERSION == 9
+  // ADC defines
+  #define PIN_DRDY 19// 19 --> DRDY
+  #define PIN_RST  15 // X --> X
+  #define PIN_SCK 16 // 16 -->SCLK
+  #define PIN_MISO 18 // 18 --> DOUT
+  #define PIN_MOSI 17 // 17 --> DIN
+  #define PIN_CS 21 // 21 --> CS
+
+  // stepper pins
+  #define dirPinStepper    22
+  #define stepPinStepper   23
+  //analog output pin
+  #define D_O 25 
+  //I2Cpins
+  #define I2C_SDA 32
+  #define I2C_SCL 33
+  
+  // endstop pins
+  #define minPin 12
+  #define maxPin 13
+
+  // level shifter is present on this PCB design
+  #define SENSORLESS_HOMING true
+  #define ISV57_TXPIN 27 //17
+  #define ISV57_RXPIN 26 // 16
+  //pedal assignment
+  #define PEDAL_ASSIGNMENT
+  #define CFG1 15
+  #define CFG2 12
+  //#define Using_analog_output
+  //#define Using_I2C_Sync
+  #define ESPNOW_Enable
+  #define ESPNow_ESP32
+  #define I2C_slave_address 0x15
+  #define BLUETOOTH_GAMEPAD
+  //#define USB_JOYSTICK
+  #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 1
+  //#define ESPNow_Pairing_function
+  //#define Pairing_GPIO 13
+  //#define ESPNow_debug_rudder
+  #define OTA_update_ESP32
+  
+  
+#endif
+
+// V4 version of dev PCB for inverted serial, dev only
+#if PCB_VERSION == 10
+  // ADC defines
+  #define PIN_DRDY 15//19// 19 --> DRDY
+  #define PIN_RST  6 // X --> X
+  #define PIN_SCK 16//16 // 16 -->SCLK
+  #define PIN_MISO 18 // 18 --> DOUT
+  #define PIN_MOSI 17 // 17 --> DIN
+  #define PIN_CS 7//21 // 21 --> CS
+
+  // stepper pins
+  #define dirPinStepper    37//22
+  #define stepPinStepper   38//23
+
+  //analog output pin
+  //#define D_O 25   
+  //MCP4725 SDA SCL
+  #define MCP_SDA 48
+  #define MCP_SCL 47
+  
+  // endstop pins
+  #define minPin 12
+  #define maxPin 13
+
+  // level shifter is present on this PCB design
+  #define SENSORLESS_HOMING true
+  #define ISV57_TXPIN 10//27 //17
+  #define ISV57_RXPIN 9//26 // 16
+
+  //#define Using_analog_output_ESP32_S3
+
+  //#define BLUETOOTH_GAMEPAD
+  #define USB_JOYSTICK
+  #define ESPNOW_Enable
+  #define ESPNow_S3
+  #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 5
+  //#define ESPNow_Pairing_function
+  #define Pairing_GPIO 0
   #define OTA_update
 #endif

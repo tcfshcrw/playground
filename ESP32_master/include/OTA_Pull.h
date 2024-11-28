@@ -1,19 +1,11 @@
 #include <Arduino.h>
 #include <ESP32OTAPull.h>
 #include <esp_wifi.h>
-#define VERSION "0.87.3"
+
 #define JSON_URL_dev   "https://raw.githubusercontent.com/gilphilbert/pedal-flasher/main/json/dev/Version_Bridge.json"
 #define JSON_URL_main "https://raw.githubusercontent.com/gilphilbert/pedal-flasher/main/json/main/Version_Bridge.json"
 
-#if PCB_VERSION==5
-	#define Board   "Bridge_FANATEC"
-#endif
-#if PCB_VERSION==6
-	#define Board   "DevKit"
-#endif
-#if PCB_VERSION==7
-	#define Board   "Gilphilbert_Dongle"
-#endif
+
 
 
 
