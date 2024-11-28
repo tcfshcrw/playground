@@ -1,35 +1,9 @@
 #include <Arduino.h>
 #include <ESP32OTAPull.h>
 #include <esp_wifi.h>
-#define VERSION "0.87.4"
 #define JSON_URL_dev   "https://raw.githubusercontent.com/gilphilbert/pedal-flasher/main/json/dev/Version_ControlBoard.json"
 //#define JSON_URL_dev "https://raw.githubusercontent.com/tcfshcrw/playground/main/OTA_test_repo/GH2/Version.json"
 #define JSON_URL_main   "https://raw.githubusercontent.com/gilphilbert/pedal-flasher/main/json/main/Version_ControlBoard.json"
-#if PCB_VERSION==3
-	#define Board "V3_ESP32"
-#endif
-
-#if PCB_VERSION==5
-	#define Board "Speedcrafter"
-#endif
-
-#if PCB_VERSION==6
-	#define Board "V4_ESP32S3"
-#endif
-
-#if PCB_VERSION==7
-	#define Board "Gilphilbert_PCBAv1"
-#endif
-
-#if PCB_VERSION==8
-	#define Board "Gilphilbert_PCBAv2"
-#endif
-#if PCB_VERSION==9
-	#define Board "V3_ESP32"
-#endif
-#if PCB_VERSION==10
-	#define Board "V4_ESP32S3"
-#endif
 bool OTA_enable_b =false;
 bool OTA_status =false;
 struct Basic_WIfi_info

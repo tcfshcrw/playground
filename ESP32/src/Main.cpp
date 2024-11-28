@@ -23,7 +23,7 @@
 
 #include "Arduino.h"
 #include "Main.h"
-
+#include "Version_Board.h"
 #ifdef Using_analog_output_ESP32_S3
 #include <Wire.h>
 #include <Adafruit_MCP4725.h>
@@ -311,12 +311,12 @@ void setup()
   Serial.println("This work is licensed under a Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.");
   Serial.println("Please check github repo for more detail: https://github.com/ChrGri/DIY-Sim-Racing-FFB-Pedal");
   //printout the github releasing version
-  #ifdef OTA_update
-    Serial.print("Board: ");
-    Serial.println(Board);
-    Serial.print("Firmware Version:");
-    Serial.println(VERSION);
-  #endif
+  //#ifdef OTA_update
+  Serial.print("Board: ");
+  Serial.println(CONTROL_BOARD);
+  Serial.print("Firmware Version:");
+  Serial.println(DAP_FIRMWARE_VERSION);
+  //#endif
 
   
 	#ifdef Hardware_Pairing_button
@@ -1728,19 +1728,27 @@ void OTATask( void * pvParameters )
           ESP32OTAPull ota;
           int ret;
           ota.SetCallback(OTAcallback);
+          ota.OverrideBoard(CONTROL_BOARD);
+          char* version_tag;
+          if(_basic_wifi_info.wifi_action==1)
+          {
+            version_tag="0.0.0";
+          }
+          else
+          {
+            version_tag=DAP_FIRMWARE_VERSION;
+          }
           switch (_basic_wifi_info.mode_select)
           {
             case 1:
               Serial.printf("Flashing to latest Main, checking %s to see if an update is available...\n", JSON_URL_main);
-              ret = ota.OverrideBoard(Board)
-                       .CheckForOTAUpdate(JSON_URL_main, VERSION, ESP32OTAPull::UPDATE_BUT_NO_BOOT);
+              ret = ota.CheckForOTAUpdate(JSON_URL_main, version_tag, ESP32OTAPull::UPDATE_BUT_NO_BOOT);
               Serial.printf("CheckForOTAUpdate returned %d (%s)\n\n", ret, errtext(ret));
               OTA_update_status=ret;
               break;
             case 2:
               Serial.printf("Flashing to latest Dev, checking %s to see if an update is available...\n", JSON_URL_dev);
-              ret = ota.OverrideBoard(Board)
-                       .CheckForOTAUpdate(JSON_URL_dev, VERSION, ESP32OTAPull::UPDATE_BUT_NO_BOOT);
+              ret = ota.CheckForOTAUpdate(JSON_URL_dev, version_tag, ESP32OTAPull::UPDATE_BUT_NO_BOOT);
               Serial.printf("CheckForOTAUpdate returned %d (%s)\n\n", ret, errtext(ret));
               OTA_update_status=ret;
               break;

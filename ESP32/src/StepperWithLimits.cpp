@@ -34,6 +34,19 @@ static SemaphoreHandle_t semaphore_getSetCorrectedServoPos = xSemaphoreCreateMut
 
 
 
+FastAccelStepperEngine& stepperEngine() {
+  static FastAccelStepperEngine myEngine = FastAccelStepperEngine();   // this is a factory and manager for all stepper instances
+
+  static bool firstTime = true;
+  if (firstTime) {
+     myEngine.init();
+     firstTime = false;
+  }
+  
+  myEngine.task_rate(4);
+  return myEngine;
+}
+
 
 StepperWithLimits::StepperWithLimits(uint8_t pinStep, uint8_t pinDirection, uint8_t pinMin, uint8_t pinMax, bool invertMotorDir_b)
   : _pinMin(pinMin), _pinMax(pinMax)
@@ -46,12 +59,17 @@ StepperWithLimits::StepperWithLimits(uint8_t pinStep, uint8_t pinDirection, uint
 	pinMode(pinMax, INPUT);
 
 	Serial.printf("InvertStepperDir: %d\n", invertMotorDir_b);
-	_stepper = new FastNonAccelStepper(pinStep, pinDirection, invertMotorDir_b); 
+	_stepper = stepperEngine().stepperConnectToPin(pinStep);	
 
+	_stepper->setDirectionPin(pinDirection, invertMotorDir_b);
+    _stepper->setAutoEnable(true);
+    _stepper->setAbsoluteSpeedLimit( maxSpeedInTicks ); // ticks
+    _stepper->setSpeedInTicks( maxSpeedInTicks ); // ticks
+    _stepper->setAcceleration(MAXIMUM_STEPPER_ACCELERATION);  // steps/s²
+	_stepper->setLinearAcceleration(0);
+    _stepper->setForwardPlanningTimeInMs(8);
+	//_stepper->setForwardPlanningTimeInMs(4);
 
-	//FastNonAccelStepper _stepper(pinStep, pinDirection, invertMotorDir_b);
-	_stepper->setMaxSpeed(MAXIMUM_STEPPER_SPEED);
-	
 	
 	/************************************************************/
 	/* 					iSV57 initialization					*/
@@ -205,10 +223,13 @@ void StepperWithLimits::findMinMaxSensorless(DAP_config_st dap_config_st)
 			}	
 		}
 			
-		
+		// reduce speed and acceleration
+		_stepper->setSpeedInHz(MAXIMUM_STEPPER_SPEED / 10);
+		_stepper->setAcceleration(MAXIMUM_STEPPER_ACCELERATION / 10);
 		
 		// run continously in one direction until endstop is hit
-		_stepper->keepRunningBackward(MAXIMUM_STEPPER_SPEED / 10);
+		//_stepper->keepRunningBackward(MAXIMUM_STEPPER_SPEED / 10);
+		_stepper->move(INT32_MIN, false);
 		
 		while( (!endPosDetected) && (getLifelineSignal()) ){
 			delay(2);
@@ -291,8 +312,9 @@ void StepperWithLimits::findMinMaxSensorless(DAP_config_st dap_config_st)
 		endPosDetected = false; //abs( isv57.servo_current_percent) > STEPPER_WITH_LIMITS_SENSORLESS_CURRENT_THRESHOLD_IN_PERCENT;
 		
 		// run continously in one direction until endstop is hit
-		_stepper->keepRunningForward(MAXIMUM_STEPPER_SPEED / 10);
-		
+		//_stepper->keepRunningForward(MAXIMUM_STEPPER_SPEED / 10);
+		_stepper->move(INT32_MAX, false);
+
 		// if endstop is reached, communication is lost or virtual endstop is hit
 		while( (!endPosDetected) && (getLifelineSignal()) ){
 			delay(1);
@@ -317,7 +339,9 @@ void StepperWithLimits::findMinMaxSensorless(DAP_config_st dap_config_st)
 		
 		
 		// increase speed and accelerartion back to normal
-		_stepper->setMaxSpeed(MAXIMUM_STEPPER_SPEED);
+		//_stepper->setMaxSpeed(MAXIMUM_STEPPER_SPEED);
+		_stepper->setAcceleration(MAXIMUM_STEPPER_ACCELERATION);
+		_stepper->setSpeedInHz(MAXIMUM_STEPPER_SPEED);
 	}	
 	
 
@@ -326,14 +350,16 @@ void StepperWithLimits::findMinMaxSensorless(DAP_config_st dap_config_st)
 
 void StepperWithLimits::moveSlowlyToPos(int32_t targetPos_ui32) {
   // reduce speed and accelerartion
-  _stepper->setMaxSpeed(MAXIMUM_STEPPER_SPEED / 4);
+  //_stepper->setMaxSpeed(MAXIMUM_STEPPER_SPEED / 4);
+  _stepper->setSpeedInHz(MAXIMUM_STEPPER_SPEED / 4);
 
   // move to min
   _stepper->moveTo(targetPos_ui32, true);
 
 
   // increase speed and accelerartion
-  _stepper->setMaxSpeed(MAXIMUM_STEPPER_SPEED);
+  //_stepper->setMaxSpeed(MAXIMUM_STEPPER_SPEED);
+  _stepper->setSpeedInHz(MAXIMUM_STEPPER_SPEED);
 }
 
 
@@ -379,7 +405,8 @@ int32_t StepperWithLimits::getTargetPositionSteps() const {
 
 void StepperWithLimits::setSpeed(uint32_t speedInStepsPerSecond) 
 {
-  _stepper->setMaxSpeed(speedInStepsPerSecond);            // steps/s 
+  //_stepper->setMaxSpeed(speedInStepsPerSecond);            // steps/s 
+  _stepper->setSpeedInHz(MAXIMUM_STEPPER_SPEED);
 }
 
 bool StepperWithLimits::isAtMinPos()

@@ -1,4 +1,4 @@
-#include <FastNonAccelStepper.h>
+#include <FastAccelStepper.h>
 #include "isv57communication.h"
 #include "DiyActivePedal_types.h"
 #include "Main.h"
@@ -13,7 +13,7 @@ static const int32_t MAXIMUM_STEPPER_ACCELERATION = INT32_MAX;                  
 
 class StepperWithLimits {
 private:
-	FastNonAccelStepper* _stepper;
+	FastAccelStepper* _stepper;
 	uint8_t _pinMin,   _pinMax;      // pins that limit switches attach to
 	int32_t _endstopLimitMin, _endstopLimitMax;    // stepper position at limit switches
 	int32_t _posMin,   _posMax;      // stepper position at min/max of travel
