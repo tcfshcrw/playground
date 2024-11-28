@@ -1733,6 +1733,7 @@ void OTATask( void * pvParameters )
           if(_basic_wifi_info.wifi_action==1)
           {
             version_tag="0.0.0";
+            Serial.println("Force update");
           }
           else
           {
