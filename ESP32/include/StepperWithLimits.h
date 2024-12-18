@@ -4,17 +4,12 @@
 #include "Main.h"
 
 // these are physical properties of the stepper
-static const uint32_t MAXIMUM_STEPPER_RPM = 4000;     
-static const uint32_t SECONDS_PER_MINUTE = 60;
-//static const uint32_t MAXIMUM_STEPPER_SPEED = (  (float)MAXIMUM_STEPPER_RPM * (float)STEPS_PER_MOTOR_REVOLUTION) / (float)SECONDS_PER_MINUTE;   // steps/s
-#define MAXIMUM_STEPPER_SPEED (uint32_t)250000//  max steps per second, see https://github.com/gin66/FastAccelStepper
-static const int32_t MAXIMUM_STEPPER_ACCELERATION = INT32_MAX;                                                 // steps/s²
-
+static const int32_t MAXIMUM_STEPPER_ACCELERATION = INT32_MAX / 10;                                                 // steps/s²
+// 10000000; //
 
 class StepperWithLimits {
 private:
 	FastAccelStepper* _stepper;
-	uint8_t _pinMin,   _pinMax;      // pins that limit switches attach to
 	int32_t _endstopLimitMin, _endstopLimitMax;    // stepper position at limit switches
 	int32_t _posMin,   _posMax;      // stepper position at min/max of travel
 
@@ -53,10 +48,12 @@ private:
 
 	int32_t servoPos_local_corrected_i32 = 0;
 
+	uint32_t stepsPerMotorRev_u32 = 3200u;
+
 	
 
 public:
-	StepperWithLimits(uint8_t pinStep, uint8_t pinDirection, uint8_t pinMin, uint8_t pinMax, bool invertMotorDir_b);
+	StepperWithLimits(uint8_t pinStep, uint8_t pinDirection, bool invertMotorDir_b, uint32_t stepsPerMotorRev_arg_u32);
 	bool hasValidStepper() const { return NULL != _stepper; }
 
 	void checkLimitsAndResetIfNecessary();
@@ -64,15 +61,19 @@ public:
 	bool isAtMinPos();
 	void correctPos();
 	void findMinMaxSensorless(DAP_config_st dap_config_st);
+	void forceStop();
 	int8_t moveTo(int32_t position, bool blocking = false);
 	void moveSlowlyToPos(int32_t targetPos_ui32);
 
 	int32_t getCurrentPositionFromMin() const;
 	int32_t getMinPosition() const;
+	void setMinPosition();
 	int32_t getCurrentPosition() const;
 	float getCurrentPositionFraction() const;
 	float getCurrentPositionFractionFromExternalPos(int32_t extPos_i32) const;
 	int32_t getTargetPositionSteps() const;
+	int32_t getCurrentSpeedInMilliHz();
+	uint32_t getMaxSpeedInMilliHz();
 
 	int32_t getLimitMin() const { return _endstopLimitMin; }
 	int32_t getLimitMax() const { return _endstopLimitMax; }
@@ -96,4 +97,5 @@ public:
 
 
 	static void servoCommunicationTask( void * pvParameters );
+
 };

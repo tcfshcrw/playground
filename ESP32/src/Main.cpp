@@ -15,6 +15,7 @@
 #define DEBUG_INFO_0_LOG_ALL_SERVO_PARAMS 128
 
 
+#define SERVO_VOLTAGE_TO_STOP_MOVEMENT_IN_0p1V 400
 
 
 
@@ -178,6 +179,7 @@ static SemaphoreHandle_t semaphore_updatePedalStates=NULL;
 /**********************************************************************************************/
 
 #include "PedalGeometry.h"
+float motorRevolutionsPerSteps_fl32 = 1.0f / 3200.0f;
 
 
 /**********************************************************************************************/
@@ -193,7 +195,8 @@ KalmanFilter* kalman = NULL;
 #include "SignalFilter_2nd_order.h"
 KalmanFilter_2nd_order* kalman_2nd_order = NULL;
 
-
+#include "SignalFilter_0624.h"
+KalmanFilter_0624* kalman_0624 = NULL;
 
 
 /**********************************************************************************************/
@@ -250,7 +253,11 @@ char* APhost;
   #include "soc/soc_caps.h"
   #include <Adafruit_NeoPixel.h>
   #define LEDS_COUNT 1
-  Adafruit_NeoPixel pixels(LEDS_COUNT, LED_GPIO, NEO_GRB + NEO_KHZ800);
+  #ifdef LED_ENABLE_RGB
+    Adafruit_NeoPixel pixels(LEDS_COUNT, LED_GPIO, NEO_RGB + NEO_KHZ800);
+  #else
+    Adafruit_NeoPixel pixels(LEDS_COUNT, LED_GPIO, NEO_GRB + NEO_KHZ800);
+  #endif
   #define CHANNEL 0
   #define LED_BRIGHT 30
   /*
@@ -269,6 +276,8 @@ char* APhost;
   #include "Buzzer.h"
 #endif
 
+
+
 /**********************************************************************************************/
 /*                                                                                            */
 /*                         setup function                                                     */
@@ -276,6 +285,15 @@ char* APhost;
 /**********************************************************************************************/
 void setup()
 {
+
+// setup brake resistor pin
+#ifdef BRAKE_RESISTOR_PIN
+  pinMode(BRAKE_RESISTOR_PIN, OUTPUT);  // Set GPIO13 as an output
+  digitalWrite(BRAKE_RESISTOR_PIN, LOW);  // Turn the LED on
+#endif
+
+
+
   //Serial.begin(115200);
   //Serial.begin(921600);
   //Serial.begin(512000);
@@ -410,7 +428,11 @@ void setup()
 
 
   bool invMotorDir = dap_config_st.payLoadPedalConfig_.invertMotorDirection_u8 > 0;
-  stepper = new StepperWithLimits(stepPinStepper, dirPinStepper, minPin, maxPin, invMotorDir);
+  stepper = new StepperWithLimits(stepPinStepper, dirPinStepper, invMotorDir, dap_calculationVariables_st.stepsPerMotorRevolution); 
+
+  motorRevolutionsPerSteps_fl32 = 1.0f / ( (float)dap_calculationVariables_st.stepsPerMotorRevolution );
+  Serial.printf("Steps per motor revolution: %d\n", dap_calculationVariables_st.stepsPerMotorRevolution);
+
   loadcell = new LoadCell_ADS1256();
 
   loadcell->setLoadcellRating(dap_config_st.payLoadPedalConfig_.loadcell_rating);
@@ -429,27 +451,21 @@ void setup()
   Serial.print("Max Position is "); Serial.println(stepper->getLimitMax());
 
 
-  // setup Kalman filter
+  // setup Kalman filters
   Serial.print("Given loadcell variance: ");
   Serial.println(loadcell->getVarianceEstimate());
   kalman = new KalmanFilter(loadcell->getVarianceEstimate());
+  kalman_2nd_order = new KalmanFilter_2nd_order(loadcell->getVarianceEstimate());
+  kalman_0624 = new KalmanFilter_0624(loadcell->getVarianceEstimate());
 
-  kalman_2nd_order = new KalmanFilter_2nd_order(1);
+
+  // LED signal 
   #ifdef USING_LED
       //pixels.setBrightness(20);
       pixels.setPixelColor(0, 0x80, 0x00, 0x80);//purple
       pixels.show(); 
       //delay(3000);
   #endif
-
-
-
-
-
-
-
-
-  
 
   
 
@@ -489,7 +505,7 @@ void setup()
   xTaskCreatePinnedToCore(
                     pedalUpdateTask,   /* Task function. */
                     "pedalUpdateTask",     /* name of task. */
-                    5000,       /* Stack size of task */
+                    7000,       /* Stack size of task */
                     //STACK_SIZE_FOR_TASK_1,
                     NULL,        /* parameter of the task */
                     1,           /* priority of the task */
@@ -594,6 +610,7 @@ void setup()
   #ifdef PEDAL_ASSIGNMENT
     pinMode(CFG1, INPUT_PULLUP);
     pinMode(CFG2, INPUT_PULLUP);
+    delay(50); // give the pin time to settle
     if(dap_config_st.payLoadPedalConfig_.pedal_type==4)
     {
       Serial.println("Pedal type:4, Pedal not assignment, reading from CFG pins....");
@@ -640,10 +657,9 @@ void setup()
   //enable ESP-NOW
   #ifdef ESPNOW_Enable
   dap_calculationVariables_st.rudder_brake_status=false;
-  
-  Serial.println("Starting ESP now tasks");
   if(dap_config_st.payLoadPedalConfig_.pedal_type==0||dap_config_st.payLoadPedalConfig_.pedal_type==1||dap_config_st.payLoadPedalConfig_.pedal_type==2)
   {
+    Serial.println("Starting ESP now tasks");
     ESPNow_initialize();
     xTaskCreatePinnedToCore(
                         ESPNOW_SyncTask,   
@@ -655,6 +671,10 @@ void setup()
                         &Task6,    
                         0);     
     delay(500);
+  }
+  else
+  {
+    Serial.println("ESPNOW task did not started due to Assignment error, please usb connect to Simhub and finish Assignment.");
   }
   #endif
   #ifdef CONTROLLER_SPECIFIC_VIDPID
@@ -767,6 +787,8 @@ float Position_Next_Prev = 0.0f;
 //IRAM_ATTR DAP_config_st dap_config_pedalUpdateTask_st;
 DAP_config_st dap_config_pedalUpdateTask_st;
 //void loop()
+
+bool brakeResistorState = false;
 void pedalUpdateTask( void * pvParameters )
 {
 
@@ -873,8 +895,8 @@ void pedalUpdateTask( void * pvParameters )
 
 
     // compute pedal oscillation, when ABS is active
-    float absForceOffset = 0;
-    float absPosOffset = 0;
+    float absForceOffset = 0.0f;
+    float absPosOffset = 0.0f;
     dap_calculationVariables_st.Default_pos();
     #ifdef ABS_OSCILLATION
       absOscillation.forceOffset(&dap_calculationVariables_st, dap_config_pedalUpdateTask_st.payLoadPedalConfig_.absPattern, dap_config_pedalUpdateTask_st.payLoadPedalConfig_.absForceOrTarvelBit, &absForceOffset, &absPosOffset);
@@ -918,16 +940,20 @@ void pedalUpdateTask( void * pvParameters )
 
 
     // Convert loadcell reading to pedal force
-    float sledPosition = sledPositionInMM(stepper, &dap_config_pedalUpdateTask_st);
+    float sledPosition = sledPositionInMM(stepper, &dap_config_pedalUpdateTask_st, motorRevolutionsPerSteps_fl32);
     float pedalInclineAngleInDeg_fl32 = pedalInclineAngleDeg(sledPosition, &dap_config_pedalUpdateTask_st);
     float pedalForce_fl32 = convertToPedalForce(loadcellReading, sledPosition, &dap_config_pedalUpdateTask_st);
     float d_phi_d_x = convertToPedalForceGain(sledPosition, &dap_config_pedalUpdateTask_st);
+
+    // Serial.printf("SledPos:%f,    PedalAngle: %f\n", sledPosition, pedalInclineAngleInDeg_fl32);
+
+    // delay(10);
 
     // compute gain for horizontal foot model
     float b = dap_config_pedalUpdateTask_st.payLoadPedalConfig_.lengthPedal_b;
     float d = dap_config_pedalUpdateTask_st.payLoadPedalConfig_.lengthPedal_d;
     float d_x_hor_d_phi = -(b+d) * sinf(pedalInclineAngleInDeg_fl32 * DEG_TO_RAD_FL32);
-
+    d_x_hor_d_phi *= DEG_TO_RAD_FL32; // inner derivative
     
     // Do the loadcell signal filtering
     float filteredReading = 0.0f;
@@ -936,19 +962,19 @@ void pedalUpdateTask( void * pvParameters )
     // const velocity model denoising filter
     switch (dap_config_pedalUpdateTask_st.payLoadPedalConfig_.kf_modelOrder) {
       case 0:
-        filteredReading = kalman->filteredValue(pedalForce_fl32, 0, dap_config_pedalUpdateTask_st.payLoadPedalConfig_.kf_modelNoise);
-        changeVelocity = kalman->changeVelocity();
+        filteredReading = kalman_0624->filteredValue(pedalForce_fl32, 0.0f, dap_config_pedalUpdateTask_st.payLoadPedalConfig_.kf_modelNoise);
+        changeVelocity = kalman_0624->changeVelocity();
         break;
       case 1:
-        filteredReading = kalman_2nd_order->filteredValue(pedalForce_fl32, 0, dap_config_pedalUpdateTask_st.payLoadPedalConfig_.kf_modelNoise);
-        changeVelocity = kalman->changeVelocity();
+        filteredReading = kalman_2nd_order->filteredValue(pedalForce_fl32, 0.0f, dap_config_pedalUpdateTask_st.payLoadPedalConfig_.kf_modelNoise);
+        changeVelocity = kalman_2nd_order->changeVelocity();
         break;
       case 2:
-        filteredReading_exp_filter = filteredReading_exp_filter * alpha_exp_filter + pedalForce_fl32 * (1.0-alpha_exp_filter);
+        filteredReading_exp_filter = filteredReading_exp_filter * alpha_exp_filter + pedalForce_fl32 * (1.0f-alpha_exp_filter);
         filteredReading = filteredReading_exp_filter;
         break;
       default:
-        filteredReading_exp_filter = filteredReading_exp_filter * alpha_exp_filter + pedalForce_fl32 * (1.0-alpha_exp_filter);
+        filteredReading_exp_filter = filteredReading_exp_filter * alpha_exp_filter + pedalForce_fl32 * (1.0f-alpha_exp_filter);
         filteredReading = filteredReading_exp_filter;
         break;
     }
@@ -962,7 +988,7 @@ void pedalUpdateTask( void * pvParameters )
     if (dap_config_pedalUpdateTask_st.payLoadPedalConfig_.debug_flags_0 & DEBUG_INFO_0_LOADCELL_READING) 
     {
       static RTDebugOutput<float, 3> rtDebugFilter({ "rawReading_g", "pedalForce_fl32", "filtered_g"});
-      rtDebugFilter.offerData({ loadcellReading * 1000, pedalForce_fl32*1000, filteredReading * 1000});
+      rtDebugFilter.offerData({ loadcellReading * 1000.0f, pedalForce_fl32*1000.0f, filteredReading * 1000.0f});
     }
       
 
@@ -972,29 +998,31 @@ void pedalUpdateTask( void * pvParameters )
     float effect_force = absForceOffset + _BitePointOscillation.BitePoint_Force_offset + _WSOscillation.WS_Force_offset + CV1.CV_Force_offset + CV2.CV_Force_offset;
     float stepperPosFraction = stepper->getCurrentPositionFraction();
     int32_t Position_Next = 0;
-
-
     
     // select control loop algo
     switch (dap_config_pedalUpdateTask_st.payLoadPedalConfig_.control_strategy_b) {
       case 0:
-        Position_Next = MoveByPidStrategy(filteredReading, stepperPosFraction, stepper, &forceCurve, &dap_calculationVariables_st, &dap_config_pedalUpdateTask_st, 0/*effect_force*/, changeVelocity);
+        // static PID
+        Position_Next = MoveByPidStrategy(filteredReading, stepperPosFraction, stepper, &forceCurve, &dap_calculationVariables_st, &dap_config_pedalUpdateTask_st, 0.0f/*effect_force*/, changeVelocity);
         break;
       case 1:
-        Position_Next = MoveByForceTargetingStrategy(filteredReading, stepper, &forceCurve, &dap_calculationVariables_st, &dap_config_pedalUpdateTask_st, 0/*effect_force*/, changeVelocity, d_phi_d_x, d_x_hor_d_phi);
+        // dynamic PID
+        Position_Next = MoveByPidStrategy(filteredReading, stepperPosFraction, stepper, &forceCurve, &dap_calculationVariables_st, &dap_config_pedalUpdateTask_st, 0.0f/*effect_force*/, changeVelocity);
         break;
       default:
-        Position_Next = MoveByForceTargetingStrategy(filteredReading, stepper, &forceCurve, &dap_calculationVariables_st, &dap_config_pedalUpdateTask_st, 0/*effect_force*/, changeVelocity, d_phi_d_x, d_x_hor_d_phi);
+        // MPC
+        Position_Next = MoveByForceTargetingStrategy(filteredReading, stepper, &forceCurve, &dap_calculationVariables_st, &dap_config_pedalUpdateTask_st, 0.0f/*effect_force*/, changeVelocity, d_phi_d_x, d_x_hor_d_phi);
+        // Position_Next = MoveByForceTargetingStrategy_old(filteredReading, stepper, &forceCurve, &dap_calculationVariables_st, &dap_config_pedalUpdateTask_st, 0/*effect_force*/, changeVelocity, d_phi_d_x, d_x_hor_d_phi);
         break;
     }
 
 
-    float alphaPidOut = 0.9;
-    Position_Next = Position_Next*alphaPidOut + Position_Next_Prev * (1.0f - alphaPidOut);
-    Position_Next_Prev = Position_Next;
+    // float alphaPidOut = 0.9;
+    // Position_Next = Position_Next*alphaPidOut + Position_Next_Prev * (1.0f - alphaPidOut);
+    // Position_Next_Prev = Position_Next;
 
     // add dampening
-    if (dap_calculationVariables_st.dampingPress  > 0.0001)
+    if (dap_calculationVariables_st.dampingPress  > 0.0001f)
     {
       // dampening is proportional to velocity --> D-gain for stability
       Position_Next -= dap_calculationVariables_st.dampingPress * changeVelocity * dap_calculationVariables_st.springStiffnesssInv;
@@ -1006,9 +1034,9 @@ void pedalUpdateTask( void * pvParameters )
     Position_Next = (int32_t)constrain(Position_Next, dap_calculationVariables_st.stepperPosMin, dap_calculationVariables_st.stepperPosMax);
     
   
-    //Adding effects
+    // //Adding effects
     int32_t Position_effect= effect_force/dap_calculationVariables_st.Force_Range*dap_calculationVariables_st.stepperPosRange;
-    Position_Next +=_RPMOscillation.RPM_position_offset;
+    Position_Next -=_RPMOscillation.RPM_position_offset;
     Position_Next -= absPosOffset;
     Position_Next -= Position_effect;
     Position_Next = (int32_t)constrain(Position_Next, dap_calculationVariables_st.stepperPosMinEndstop, dap_calculationVariables_st.stepperPosMaxEndstop);
@@ -1073,21 +1101,36 @@ void pedalUpdateTask( void * pvParameters )
     // Serial.print("Position next: ");
     // Serial.println(Position_Next);
 
-
-
-    // Move to new position
-    if(OTA_status==false)
+    // Activate brake resistor once a certain voltage level is exceeded
+#ifdef BRAKE_RESISTOR_PIN
+    if ( stepper->getServosVoltage() > SERVO_VOLTAGE_TO_STOP_MOVEMENT_IN_0p1V)
     {
-      if (!moveSlowlyToPosition_b)
-      {
-        stepper->moveTo(Position_Next, false);
-      }
-      else
-      {
-        moveSlowlyToPosition_b = false;
-        stepper->moveSlowlyToPos(Position_Next);
-      }
+      digitalWrite(BRAKE_RESISTOR_PIN, HIGH);
     }
+    else
+    {
+      digitalWrite(BRAKE_RESISTOR_PIN, LOW);
+    }
+  #endif
+
+
+
+  // Move to new position
+  if(OTA_status==false)
+  {
+    if (!moveSlowlyToPosition_b)
+    {
+      stepper->moveTo(Position_Next, false);
+    }
+    else
+    {
+      moveSlowlyToPosition_b = false;
+      stepper->moveSlowlyToPos(Position_Next);
+    }
+  }
+
+
+    
      
     
 
@@ -1108,7 +1151,7 @@ void pedalUpdateTask( void * pvParameters )
         {
           if (1 == dap_config_pedalUpdateTask_st.payLoadPedalConfig_.travelAsJoystickOutput_u8)
           {
-            joystickNormalizedToInt32 = NormalizeControllerOutputValue((Position_Next-dap_calculationVariables_st.stepperPosRange/2), dap_calculationVariables_st.stepperPosMin, dap_calculationVariables_st.stepperPosMin+dap_calculationVariables_st.stepperPosRange/2, dap_config_st.payLoadPedalConfig_.maxGameOutput);
+            joystickNormalizedToInt32 = NormalizeControllerOutputValue((Position_Next-dap_calculationVariables_st.stepperPosRange/2), dap_calculationVariables_st.stepperPosMin, dap_calculationVariables_st.stepperPosMin+dap_calculationVariables_st.stepperPosRange/2.0f, dap_config_st.payLoadPedalConfig_.maxGameOutput);
             joystickNormalizedToInt32 = constrain(joystickNormalizedToInt32,0,JOYSTICK_MAX_VALUE);
           }
           else
@@ -1151,17 +1194,17 @@ void pedalUpdateTask( void * pvParameters )
     #endif
 
     
-    float normalizedPedalReading_fl32 = 0;
-    if ( fabs(dap_calculationVariables_st.Force_Range) > 0.01)
+    float normalizedPedalReading_fl32 = 0.0f;
+    if ( fabs(dap_calculationVariables_st.Force_Range) > 0.01f)
     {
-        normalizedPedalReading_fl32 = constrain((filteredReading - dap_calculationVariables_st.Force_Min) / dap_calculationVariables_st.Force_Range, 0, 1);
+        normalizedPedalReading_fl32 = constrain((filteredReading - dap_calculationVariables_st.Force_Min) / dap_calculationVariables_st.Force_Range, 0.0f, 1.0f);
     }
     
     // simulate ABS trigger 
     if(dap_config_pedalUpdateTask_st.payLoadPedalConfig_.Simulate_ABS_trigger==1)
     {
       int32_t ABS_trigger_value=dap_config_pedalUpdateTask_st.payLoadPedalConfig_.Simulate_ABS_value;
-      if( (normalizedPedalReading_fl32*100) > ABS_trigger_value)
+      if( (normalizedPedalReading_fl32*100.0f) > ABS_trigger_value)
       {
         absOscillation.trigger();
       }
@@ -1176,9 +1219,9 @@ void pedalUpdateTask( void * pvParameters )
       {
         
         // update basic pedal state struct
-        dap_state_basic_st.payloadPedalState_Basic_.pedalForce_u16 =  normalizedPedalReading_fl32 * 65535;
-        dap_state_basic_st.payloadPedalState_Basic_.pedalPosition_u16 = constrain(stepperPosFraction, 0, 1) * 65535;
-        dap_state_basic_st.payloadPedalState_Basic_.joystickOutput_u16 = (float)joystickNormalizedToInt32 / 10000. * 32767.0;//65535;
+        dap_state_basic_st.payloadPedalState_Basic_.pedalForce_u16 =  normalizedPedalReading_fl32 * 65535.0f;
+        dap_state_basic_st.payloadPedalState_Basic_.pedalPosition_u16 = constrain(stepperPosFraction, 0.0f, 1.0f) * 65535.0f;
+        dap_state_basic_st.payloadPedalState_Basic_.joystickOutput_u16 = (float)joystickNormalizedToInt32 / 10000.0f * 32767.0f;//65535;
 
         dap_state_basic_st.payLoadHeader_.payloadType = DAP_PAYLOAD_TYPE_STATE_BASIC;
         dap_state_basic_st.payLoadHeader_.version = DAP_VERSION_CONFIG;

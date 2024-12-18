@@ -288,6 +288,7 @@ struct DAP_calculationVariables_st
   long stepperPosMin_default;
   long stepperPosMax_default;
   float stepperPosRange_default;
+  uint32_t stepsPerMotorRevolution;
 
   void updateFromConfig(DAP_config_st& config_st);
   void updateEndstops(long newMinEndstop, long newMaxEndstop);

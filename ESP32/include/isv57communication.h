@@ -53,7 +53,7 @@ class isv57communication {
 	public:
     isv57communication();
     void setupServoStateReading();
-    void sendTunedServoParameters(bool commandRotationDirection);
+    void sendTunedServoParameters(bool commandRotationDirection, uint32_t stepsPerMotorRev_u32);
     void readAllServoParameters();
     void readServoStates();
     bool checkCommunication();

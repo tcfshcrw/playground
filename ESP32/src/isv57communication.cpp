@@ -15,6 +15,7 @@ isv57communication::isv57communication()
   #if PCB_VERSION != 10 && PCB_VERSION != 9
   Serial1.begin(38400, SERIAL_8N1, ISV57_RXPIN, ISV57_TXPIN, true); // Modbus serial
   #endif
+
   modbus.init(MODE);
 }
 
@@ -115,7 +116,7 @@ void  isv57communication::clearServoUnitPosition()
 }
 
 // send tuned servo parameters
-void isv57communication::sendTunedServoParameters(bool commandRotationDirection) {
+void isv57communication::sendTunedServoParameters(bool commandRotationDirection, uint32_t stepsPerMotorRev_u32) {
   
   bool retValue_b = false;
 
@@ -126,13 +127,13 @@ void isv57communication::sendTunedServoParameters(bool commandRotationDirection)
   retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+3, 10); // machine stiffness
   retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+4, 80); // ratio of inertia
   //retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+6, commandRotationDirection); // Command Pulse Rotational Direction
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+8, (long)STEPS_PER_MOTOR_REVOLUTION); // microsteps
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+8, (long)stepsPerMotorRev_u32); // microsteps
   retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+9, 1); // 1st numerator 
   retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+10, 1); // & denominator
   retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+13, 500); // 1st torque limit
   retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+14, 500); // position deviation setup
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+16, 50); // regenerative braking resitor
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+17, 50);
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+16, 500); // regenerative braking resitor
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+17, 500);
   retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+18, 0); // vibration suppression
   retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+19, 0);
 
@@ -150,7 +151,8 @@ void isv57communication::sendTunedServoParameters(bool commandRotationDirection)
   retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_1_00+33, 0); // speed given filter
   retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_1_00+35, 0); // position command filter
   retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_1_00+36, 0); // encoder feedback
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_1_00+37, 1052); // special function register
+  //retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_1_00+37, 1052); // special function register
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_1_00+37, 4); // special function register
   // see https://www.oyostepper.com/images/upload/File/ISV57T-180.pdf
   // 0x01 = 1: velocity feedforward disabled
   // 0x02 = 2: torque feedforward disabled
@@ -168,7 +170,7 @@ void isv57communication::sendTunedServoParameters(bool commandRotationDirection)
   retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_2_00+5, 20);
   retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_2_00+6, 99);
   retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_2_00+22, 0);
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_2_00+23, 80);// FIR based command smoothing time. Since the stpper task runs every 4ms, this time is selected to be larger than that. Unit is 0.1ms 
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_2_00+23, 0);// FIR based command smoothing time. Since the stpper task runs every 4ms, this time is selected to be larger than that. Unit is 0.1ms 
   
 
   // Pr3 register
@@ -179,6 +181,8 @@ void isv57communication::sendTunedServoParameters(bool commandRotationDirection)
   retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_5_00+20, 1); // encoder output resolution  {0: Encoder units; 1: Command units; 2: 10000pulse/rotation}
   
 
+  //retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_5_00+32, 300); // command pulse input maximum setup
+
 
   // Enable & tune reactive pumping. This will act like a braking resistor and reduce EMF voltage.
   // See https://en.wikipedia.org/wiki/Bleeder_resistor
@@ -187,6 +191,18 @@ void isv57communication::sendTunedServoParameters(bool commandRotationDirection)
   retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_7_00+32, 40); // bleeder braking voltage. Voltage when braking is activated
   retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_7_00+33, 1); // bleeder hysteresis voltage; Contrary to the manual this seems to be an offset voltage, thus Braking disabling voltage = Pr7.32 + Pr.33
   
+
+  // retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_7_00+28, 1000);
+  // retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_7_00+29, 100);
+  
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_7_00+28, 1000);
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_7_00+29, 10);
+
+
+  //retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_5_00+33, 0); // pulse regenerative output limit setup [0,1]
+  // retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_6_00+37, 0); // oscillation detection level [0, 1000] 0.1%
+
+
   // disable axis after servo startup --> ESP has to enable the axis first
   // Pr4.08
   // long servoEnableStatus = modbus.holdingRegisterRead(slaveId, 0x03, pr_4_00+8);

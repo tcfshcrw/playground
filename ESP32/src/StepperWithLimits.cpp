@@ -5,7 +5,7 @@
 
 
 #define STEPPER_WITH_LIMITS_SENSORLESS_CURRENT_THRESHOLD_IN_PERCENT 50
-#define MIN_POS_MAX_ENDSTOP STEPS_PER_MOTOR_REVOLUTION * 3 // servo has to drive minimum N steps before it allows the detection of the max endstop
+#define MIN_POS_MAX_ENDSTOP 10000 // servo has to drive minimum N steps before it allows the detection of the max endstop
 #define INCLUDE_vTaskDelete 1
 
 //uint32_t speed_in_hz = TICKS_PER_S / ticks;
@@ -14,7 +14,7 @@
 #define maxSpeedInTicks  (TICKS_PER_S / MAXIMUM_STEPPER_SPEED)
 
 static const uint8_t LIMIT_TRIGGER_VALUE = LOW;                                   // does endstop trigger high or low
-static const int32_t ENDSTOP_MOVEMENT = (float)STEPS_PER_MOTOR_REVOLUTION / 100.0f;         // how much to move between trigger checks
+static const int32_t ENDSTOP_MOVEMENT = (float)100; // how much to move between trigger checks
 static const int32_t ENDSTOP_MOVEMENT_SENSORLESS = ENDSTOP_MOVEMENT * 5;
 
 
@@ -34,6 +34,7 @@ static SemaphoreHandle_t semaphore_getSetCorrectedServoPos = xSemaphoreCreateMut
 
 
 
+
 FastAccelStepperEngine& stepperEngine() {
   static FastAccelStepperEngine myEngine = FastAccelStepperEngine();   // this is a factory and manager for all stepper instances
 
@@ -48,15 +49,17 @@ FastAccelStepperEngine& stepperEngine() {
 }
 
 
-StepperWithLimits::StepperWithLimits(uint8_t pinStep, uint8_t pinDirection, uint8_t pinMin, uint8_t pinMax, bool invertMotorDir_b)
-  : _pinMin(pinMin), _pinMax(pinMax)
-  , _endstopLimitMin(0),    _endstopLimitMax(0)
+StepperWithLimits::StepperWithLimits(uint8_t pinStep, uint8_t pinDirection, bool invertMotorDir_b, uint32_t stepsPerMotorRev_arg_u32)
+  :  _endstopLimitMin(0),    _endstopLimitMax(0)
   , _posMin(0),      _posMax(0)
+  , stepsPerMotorRev_u32(stepsPerMotorRev_arg_u32)
+
+
 {
 
   
-	pinMode(pinMin, INPUT);
-	pinMode(pinMax, INPUT);
+	// pinMode(pinMin, INPUT);
+	// pinMode(pinMax, INPUT);
 
 	Serial.printf("InvertStepperDir: %d\n", invertMotorDir_b);
 	_stepper = stepperEngine().stepperConnectToPin(pinStep);	
@@ -68,7 +71,6 @@ StepperWithLimits::StepperWithLimits(uint8_t pinStep, uint8_t pinDirection, uint
     _stepper->setAcceleration(MAXIMUM_STEPPER_ACCELERATION);  // steps/s²
 	_stepper->setLinearAcceleration(0);
     _stepper->setForwardPlanningTimeInMs(8);
-	//_stepper->setForwardPlanningTimeInMs(4);
 
 	
 	/************************************************************/
@@ -111,7 +113,7 @@ StepperWithLimits::StepperWithLimits(uint8_t pinStep, uint8_t pinDirection, uint
 		// flash iSV57 registers
 		isv57.setupServoStateReading();
 		invertMotorDir_global_b = invertMotorDir_b;
-		isv57.sendTunedServoParameters(invertMotorDir_global_b);
+		isv57.sendTunedServoParameters(invertMotorDir_global_b, stepsPerMotorRev_u32);
 
 
 		delay(30);
@@ -180,7 +182,7 @@ void StepperWithLimits::findMinMaxSensorless(DAP_config_st dap_config_st)
 			// voltage return is given in 0.1V units --> 10V range --> threshold 100
 			// at beginning the values typically are initialized with -1
 			float servosBusVoltageInVolt_fl32 = ( (float)getServosVoltage() ) / 10.0f;
-			servoRadingsTrustworthy_b = ( servosBusVoltageInVolt_fl32 >= 16) && ( servosBusVoltageInVolt_fl32 < 39);
+			servoRadingsTrustworthy_b = ( servosBusVoltageInVolt_fl32 >= 16.0f) && ( servosBusVoltageInVolt_fl32 < 39.0f);
 
 			if (true == servoRadingsTrustworthy_b)
 			{
@@ -232,13 +234,13 @@ void StepperWithLimits::findMinMaxSensorless(DAP_config_st dap_config_st)
 		_stepper->move(INT32_MIN, false);
 		
 		while( (!endPosDetected) && (getLifelineSignal()) ){
-			delay(2);
+			delay(1);
 			endPosDetected = abs( getServosCurrent() ) > STEPPER_WITH_LIMITS_SENSORLESS_CURRENT_THRESHOLD_IN_PERCENT;
 		}
 		setPosition = - 5 * ENDSTOP_MOVEMENT_SENSORLESS;
 		delay(20);
 		_stepper->forceStopAndNewPosition(setPosition);
-
+		delay(100);
 		
 		Serial.println("Min endstop reached.");
 		Serial.printf("Current pos: %d\n", _stepper->getCurrentPosition() );
@@ -299,6 +301,7 @@ void StepperWithLimits::findMinMaxSensorless(DAP_config_st dap_config_st)
 		
 		delay(200);
 		isv57.setZeroPos();
+		// setMinPosition();
 
 		
 		/************************************************************/
@@ -307,7 +310,7 @@ void StepperWithLimits::findMinMaxSensorless(DAP_config_st dap_config_st)
 		// calculate max steps for endstop limit
 		float spindlePitch = max( dap_config_st.payLoadPedalConfig_.spindlePitch_mmPerRev_u8, (uint8_t)1 );
 		float maxRevToReachEndPos = (float)dap_config_st.payLoadPedalConfig_.lengthPedal_travel / spindlePitch;
-		float maxStepsToReachEndPos = maxRevToReachEndPos * (float)STEPS_PER_MOTOR_REVOLUTION;
+		float maxStepsToReachEndPos = maxRevToReachEndPos * (float)stepsPerMotorRev_u32;
   
 		endPosDetected = false; //abs( isv57.servo_current_percent) > STEPPER_WITH_LIMITS_SENSORLESS_CURRENT_THRESHOLD_IN_PERCENT;
 		
@@ -329,13 +332,15 @@ void StepperWithLimits::findMinMaxSensorless(DAP_config_st dap_config_st)
 			//Serial.printf("Pos: %d\n", _stepper->getCurrentPosition());
 		}
 		_stepper->forceStop();
-		_endstopLimitMax = _stepper->getCurrentPosition();
+		delay(100);
+		_endstopLimitMax = _stepper->getCurrentPosition() - 5 * ENDSTOP_MOVEMENT_SENSORLESS;
 
 		Serial.printf("Max endstop reached: %d\n", _endstopLimitMax);
 		
 		// move slowly to min position
 		//moveSlowlyToPos(_posMin);
-		moveSlowlyToPos(5*ENDSTOP_MOVEMENT_SENSORLESS);
+		//moveSlowlyToPos(5*ENDSTOP_MOVEMENT_SENSORLESS);
+		moveSlowlyToPos(0);
 		
 		
 		// increase speed and accelerartion back to normal
@@ -367,8 +372,20 @@ void StepperWithLimits::moveSlowlyToPos(int32_t targetPos_ui32) {
 
 void StepperWithLimits::updatePedalMinMaxPos(uint8_t pedalStartPosPct, uint8_t pedalEndPosPct) {
   int32_t limitRange = _endstopLimitMax - _endstopLimitMin;
-  _posMin = _endstopLimitMin + ((limitRange * pedalStartPosPct) / 100);
-  _posMax = _endstopLimitMin + ((limitRange * pedalEndPosPct) / 100);
+
+//   Serial.printf("PedalStart: %d,    PedalEnd:%d\n", pedalStartPosPct, pedalEndPosPct);
+
+  float helper;
+  helper = _endstopLimitMin + (((float)limitRange * (float)pedalStartPosPct) * 0.01f);
+  _posMin = (int32_t)helper;
+
+  helper = _endstopLimitMin + (((float)limitRange * (float)pedalEndPosPct) * 0.01f);
+  _posMax = (int32_t)helper;
+}
+
+
+void StepperWithLimits::forceStop() {
+  _stepper->forceStop();
 }
 
 int8_t StepperWithLimits::moveTo(int32_t position, bool blocking) {
@@ -385,6 +402,10 @@ int32_t StepperWithLimits::getMinPosition() const {
   return _posMin;
 }
 
+// void StepperWithLimits::setMinPosition() {
+//   _posMin = getCurrentPosition();
+// }
+
 int32_t StepperWithLimits::getCurrentPosition() const {
   return _stepper->getCurrentPosition();
 }
@@ -394,7 +415,7 @@ float StepperWithLimits::getCurrentPositionFraction() const {
 }
 
 float StepperWithLimits::getCurrentPositionFractionFromExternalPos(int32_t extPos_i32) const {
-  return ( (float)(extPos_i32 - _posMin))/ getTravelSteps();
+  return ( (float)(extPos_i32))/ getTravelSteps();
 }
 
 int32_t StepperWithLimits::getTargetPositionSteps() const {
@@ -418,6 +439,15 @@ bool StepperWithLimits::isAtMinPos()
   return isAtMinPos && isNotRunning;
 }
 
+int32_t StepperWithLimits::getCurrentSpeedInMilliHz()
+{
+	return _stepper->getCurrentSpeedInMilliHz();
+}
+
+uint32_t StepperWithLimits::getMaxSpeedInMilliHz()
+{
+	return _stepper->getMaxSpeedInMilliHz();
+}
 
 
 
@@ -943,6 +973,8 @@ void StepperWithLimits::servoCommunicationTask(void *pvParameters)
 }
 
 
+
+
 /*int32_t StepperWithLimits::getStepLossCompensation()
 {
 	if(semaphore_resetServoPos!=NULL)
@@ -964,7 +996,6 @@ void StepperWithLimits::servoCommunicationTask(void *pvParameters)
 
 	return servo_offset_compensation_steps_i32;
 }*/
-
 
 
 

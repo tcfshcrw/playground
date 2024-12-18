@@ -71,15 +71,15 @@ void DAP_config_st::initialiseDefaults() {
   payLoadPedalConfig_.cubic_spline_param_b_array[3] = 0;
   payLoadPedalConfig_.cubic_spline_param_b_array[4] = 0;
 
-  payLoadPedalConfig_.PID_p_gain = 0.3;
-  payLoadPedalConfig_.PID_i_gain = 50.0;
-  payLoadPedalConfig_.PID_d_gain = 0.0;
-  payLoadPedalConfig_.PID_velocity_feedforward_gain = 0.0;
+  payLoadPedalConfig_.PID_p_gain = 0.3f;
+  payLoadPedalConfig_.PID_i_gain = 50.0f;
+  payLoadPedalConfig_.PID_d_gain = 0.0f;
+  payLoadPedalConfig_.PID_velocity_feedforward_gain = 0.0f;
 
 
-  payLoadPedalConfig_.MPC_0th_order_gain = 1.0;
-  payLoadPedalConfig_.MPC_1st_order_gain = 0.0;
-  payLoadPedalConfig_.MPC_2nd_order_gain = 0.0;
+  payLoadPedalConfig_.MPC_0th_order_gain = 10.0f;
+  payLoadPedalConfig_.MPC_1st_order_gain = 0.0f;
+  payLoadPedalConfig_.MPC_2nd_order_gain = 0.0f;
 
   payLoadPedalConfig_.control_strategy_b = 0;
 
@@ -183,6 +183,17 @@ void DAP_calculationVariables_st::updateFromConfig(DAP_config_st& config_st) {
   Force_Range = Force_Max - Force_Min;
   Force_Max_default=((float)config_st.payLoadPedalConfig_.maxForce); 
   pedal_type=config_st.payLoadPedalConfig_.pedal_type;
+
+  // calculate steps per motor revolution
+  // float helper = MAXIMUM_STEPPER_SPEED / (MAXIMUM_STEPPER_RPM / SECONDS_PER_MINUTE);
+  // helper = floor(helper / 10) * 10;
+  // helper = constrain(helper, 2000, 10000);
+  // stepsPerMotorRevolution = helper;
+
+  // when spindle pitch is smaller than 8, choose coarse microstepping
+  if ( 8 > config_st.payLoadPedalConfig_.spindlePitch_mmPerRev_u8)
+  {stepsPerMotorRevolution = 3200;}
+  else{stepsPerMotorRevolution = 6400;}
   
 }
 
