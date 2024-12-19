@@ -10,7 +10,7 @@
 // a = 300 / delta_t^2
 // adjust model noise here s = 0.5 * a * delta_t^2 --> a = 2 * s / delta_t^2
 //static const float KF_MODEL_NOISE_FORCE_ACCELERATION = ( 2.0f * 1000.0f / 0.05f/ 0.05f );
-static const double KF_MODEL_NOISE_FORCE_ACCELERATION = ( 8.0f * 4.0f / 0.1f/ 0.1f );
+static const double KF_MODEL_NOISE_FORCE_ACCELERATION_0624 = ( 8.0f * 4.0f / 0.1f/ 0.1f );
 
 
 KalmanFilter_0624::KalmanFilter_0624(float varianceEstimate)
@@ -61,9 +61,9 @@ float KalmanFilter_0624::filteredValue(float observation, float command, uint8_t
   _K.B = {1.0, 
           0.0};
 
-  double K_Q_11 = modelNoiseScaling_fl32 * KF_MODEL_NOISE_FORCE_ACCELERATION * (double)0.5f * delta_t_pow3;
-  _K.Q = {modelNoiseScaling_fl32 * KF_MODEL_NOISE_FORCE_ACCELERATION * (double)0.25f * delta_t_pow4,   K_Q_11,
-        K_Q_11, modelNoiseScaling_fl32 * KF_MODEL_NOISE_FORCE_ACCELERATION * delta_t_pow2};
+  double K_Q_11 = modelNoiseScaling_fl32 * KF_MODEL_NOISE_FORCE_ACCELERATION_0624 * (double)0.5f * delta_t_pow3;
+  _K.Q = {modelNoiseScaling_fl32 * KF_MODEL_NOISE_FORCE_ACCELERATION_0624 * (double)0.25f * delta_t_pow4,   K_Q_11,
+        K_Q_11, modelNoiseScaling_fl32 * KF_MODEL_NOISE_FORCE_ACCELERATION_0624 * delta_t_pow2};
         
 
   // APPLY KALMAN FILTER
