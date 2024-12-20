@@ -195,8 +195,7 @@ KalmanFilter* kalman = NULL;
 #include "SignalFilter_2nd_order.h"
 KalmanFilter_2nd_order* kalman_2nd_order = NULL;
 
-#include "SignalFilter_0624.h"
-KalmanFilter_0624* kalman_0624 = NULL;
+
 
 
 /**********************************************************************************************/
@@ -456,7 +455,6 @@ void setup()
   Serial.println(loadcell->getVarianceEstimate());
   kalman = new KalmanFilter(loadcell->getVarianceEstimate());
   kalman_2nd_order = new KalmanFilter_2nd_order(loadcell->getVarianceEstimate());
-  kalman_0624 = new KalmanFilter_0624(loadcell->getVarianceEstimate());
 
 
   // LED signal 
@@ -962,8 +960,8 @@ void pedalUpdateTask( void * pvParameters )
     // const velocity model denoising filter
     switch (dap_config_pedalUpdateTask_st.payLoadPedalConfig_.kf_modelOrder) {
       case 0:
-        filteredReading = kalman_0624->filteredValue(pedalForce_fl32, 0.0f, dap_config_pedalUpdateTask_st.payLoadPedalConfig_.kf_modelNoise);
-        changeVelocity = kalman_0624->changeVelocity();
+        filteredReading = kalman->filteredValue(pedalForce_fl32, 0.0f, dap_config_pedalUpdateTask_st.payLoadPedalConfig_.kf_modelNoise);
+        changeVelocity = kalman->changeVelocity();
         break;
       case 1:
         filteredReading = kalman_2nd_order->filteredValue(pedalForce_fl32, 0.0f, dap_config_pedalUpdateTask_st.payLoadPedalConfig_.kf_modelNoise);
