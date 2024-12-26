@@ -195,8 +195,7 @@ KalmanFilter* kalman = NULL;
 #include "SignalFilter_2nd_order.h"
 KalmanFilter_2nd_order* kalman_2nd_order = NULL;
 
-#include "SignalFilter_0624.h"
-KalmanFilter_0624* kalman_0624 = NULL;
+
 
 
 /**********************************************************************************************/
@@ -310,11 +309,11 @@ void setup()
     Buzzer.single_beep_tone(770,100);
   #endif
 
-  #if PCB_VERSION == 6 || PCB_VERSION == 7
+  #if PCB_VERSION == 7
     Serial.setTxTimeoutMs(0);
     Serial.begin(921600);
   #else
-    Serial.begin(921600);
+    Serial.begin(921600, SERIAL_8N1);
     Serial.setTimeout(5);
   #endif
   Serial.println(" ");
@@ -456,7 +455,6 @@ void setup()
   Serial.println(loadcell->getVarianceEstimate());
   kalman = new KalmanFilter(loadcell->getVarianceEstimate());
   kalman_2nd_order = new KalmanFilter_2nd_order(loadcell->getVarianceEstimate());
-  kalman_0624 = new KalmanFilter_0624(loadcell->getVarianceEstimate());
 
 
   // LED signal 
@@ -607,10 +605,59 @@ void setup()
       //delay(3000);
   #endif
 
-  #ifdef PEDAL_ASSIGNMENT
+  //print pedal role assignment
+  if(dap_config_st.payLoadPedalConfig_.pedal_type!=4)
+  {
+    Serial.print("Pedal Assignment:");
+    Serial.println(dap_config_st.payLoadPedalConfig_.pedal_type);
+  }
+  else
+  {
+    #ifdef PEDAL_HARDWARE_ASSIGNMENT
+      Serial.println("Pedal Role Assignment:4, reading from CFG pins....");
+    #else
+      Serial.println("Pedal Role Assignment:4, Role assignment Error, Please send the ocnfig in to finish role assignment");
+    #endif
+  }
+  
+  #ifdef PEDAL_HARDWARE_ASSIGNMENT
     pinMode(CFG1, INPUT_PULLUP);
     pinMode(CFG2, INPUT_PULLUP);
     delay(50); // give the pin time to settle
+    Serial.println("Overriding Pedal Role Assignment from Hareware switch......");
+    uint8_t CFG1_reading=digitalRead(CFG1);
+    uint8_t CFG2_reading=digitalRead(CFG2);
+    uint8_t Pedal_assignment=CFG1_reading*2+CFG2_reading*1;//00=clutch 01=brk  02=gas
+    if(Pedal_assignment==3)
+    {
+      Serial.println("Pedal Type:3, assignment error, please adjust dip switch on control board to finish role assignment.");
+    }
+    else
+    {
+      if(Pedal_assignment!=4)
+        {
+          //Serial.print("Pedal Type");
+          //Serial.println(Pedal_assignment);
+          if(Pedal_assignment==0)
+          {
+            Serial.println("Overriding Pedal as Clutch.");
+          }
+          if(Pedal_assignment==1)
+          {
+            Serial.println("Overriding Pedal as Brake.");
+          }
+          if(Pedal_assignment==2)
+          {
+            Serial.println("Overriding Pedal as Throttle.");
+          }
+          dap_config_st.payLoadPedalConfig_.pedal_type=Pedal_assignment;
+        }
+        else
+        {
+          Serial.println("Asssignment error, defective pin connection, pelase connect USB and send a config to finish assignment");
+        }
+    }
+    /*
     if(dap_config_st.payLoadPedalConfig_.pedal_type==4)
     {
       Serial.println("Pedal type:4, Pedal not assignment, reading from CFG pins....");
@@ -652,6 +699,7 @@ void setup()
       }
 
     }
+    */
   #endif
 
   //enable ESP-NOW
@@ -962,8 +1010,8 @@ void pedalUpdateTask( void * pvParameters )
     // const velocity model denoising filter
     switch (dap_config_pedalUpdateTask_st.payLoadPedalConfig_.kf_modelOrder) {
       case 0:
-        filteredReading = kalman_0624->filteredValue(pedalForce_fl32, 0.0f, dap_config_pedalUpdateTask_st.payLoadPedalConfig_.kf_modelNoise);
-        changeVelocity = kalman_0624->changeVelocity();
+        filteredReading = kalman->filteredValue(pedalForce_fl32, 0.0f, dap_config_pedalUpdateTask_st.payLoadPedalConfig_.kf_modelNoise);
+        changeVelocity = kalman->changeVelocity();
         break;
       case 1:
         filteredReading = kalman_2nd_order->filteredValue(pedalForce_fl32, 0.0f, dap_config_pedalUpdateTask_st.payLoadPedalConfig_.kf_modelNoise);
@@ -1230,11 +1278,13 @@ void pedalUpdateTask( void * pvParameters )
         
         //error code
         dap_state_basic_st.payloadPedalState_Basic_.erroe_code_u8=0;
+        #ifdef ESPNOW_Enable
         if(ESPNow_error_code!=0)
         {
           dap_state_basic_st.payloadPedalState_Basic_.erroe_code_u8=ESPNow_error_code;
           ESPNow_error_code=0;
         }
+        #endif
         //dap_state_basic_st.payloadPedalState_Basic_.erroe_code_u8=200;
         /*if(isv57.isv57_update_parameter_b)
         {
@@ -1445,6 +1495,7 @@ void serialCommunicationTask( void * pvParameters )
                 ESP.restart();
               }
               //3= Wifi OTA
+              #ifdef ESPNOW_Enable
               if (dap_actions_st.payloadPedalAction_.system_action_u8==3)
               {
                 Serial.println("Get OTA command");
@@ -1452,6 +1503,7 @@ void serialCommunicationTask( void * pvParameters )
                 //OTA_enable_start=true;
                 ESPNow_OTA_enable=false;
               }
+              #endif
               //4 Enable pairing
               if (dap_actions_st.payloadPedalAction_.system_action_u8==4)
               {
@@ -1745,9 +1797,13 @@ void OTATask( void * pvParameters )
       {
         Serial.println("de-initialize espnow");
         Serial.println("wait...");
-        esp_err_t result= esp_now_deinit();
-        ESPNow_initial_status=false;
-        ESPNOW_status=false;
+        #ifdef ESPNOW_Enable
+          esp_err_t result= esp_now_deinit();
+          ESPNow_initial_status=false;
+          ESPNOW_status=false;
+        #else
+          esp_err_t result = ESP_OK;
+        #endif
         delay(3000);
         if(result==ESP_OK)
         {

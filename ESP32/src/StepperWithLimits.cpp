@@ -182,7 +182,7 @@ void StepperWithLimits::findMinMaxSensorless(DAP_config_st dap_config_st)
 			// voltage return is given in 0.1V units --> 10V range --> threshold 100
 			// at beginning the values typically are initialized with -1
 			float servosBusVoltageInVolt_fl32 = ( (float)getServosVoltage() ) / 10.0f;
-			servoRadingsTrustworthy_b = ( servosBusVoltageInVolt_fl32 >= 16.0f) && ( servosBusVoltageInVolt_fl32 < 39.0f);
+			servoRadingsTrustworthy_b = ( servosBusVoltageInVolt_fl32 >= 16.0f) && ( servosBusVoltageInVolt_fl32 < 38.0f);
 
 			if (true == servoRadingsTrustworthy_b)
 			{

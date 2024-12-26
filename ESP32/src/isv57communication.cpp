@@ -188,7 +188,7 @@ void isv57communication::sendTunedServoParameters(bool commandRotationDirection,
   // See https://en.wikipedia.org/wiki/Bleeder_resistor
   // Info from iSV2 manual: The external resistance is activated when the actual bus voltage is higher than Pr7.32 plus Pr7.33 and is deactivated when the actual bus voltage is lower than Pr7.32 minus Pr7.33
   retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_7_00+31, 0); // bleeder control mode; 0: is default and seems to enable braking mode, contrary to manual
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_7_00+32, 40); // bleeder braking voltage. Voltage when braking is activated
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_7_00+32, 42); // bleeder braking voltage. Voltage when braking is activated
   retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_7_00+33, 1); // bleeder hysteresis voltage; Contrary to the manual this seems to be an offset voltage, thus Braking disabling voltage = Pr7.32 + Pr.33
   
 
