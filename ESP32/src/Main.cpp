@@ -624,7 +624,7 @@ void setup()
     pinMode(CFG1, INPUT_PULLUP);
     pinMode(CFG2, INPUT_PULLUP);
     delay(50); // give the pin time to settle
-    Serial.println("Overriding Pedal Role Assignment from Hareware switch......");
+    Serial.println("Overriding Pedal Role Assignment from Hardware switch......");
     uint8_t CFG1_reading=digitalRead(CFG1);
     uint8_t CFG2_reading=digitalRead(CFG2);
     uint8_t Pedal_assignment=CFG1_reading*2+CFG2_reading*1;//00=clutch 01=brk  02=gas
