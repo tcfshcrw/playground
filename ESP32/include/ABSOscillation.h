@@ -10,6 +10,16 @@ static const long WS_ACTIVE_TIME_PER_TRIGGER_MILLIS = 100;
 static const long CV_ACTIVE_TIME_PER_TRIGGER_MILLIS = 100;
 static int RPM_VALUE_LAST = 0;
 
+enum class TrackCondition
+{
+  Dry,
+  MostlyDry,
+  VeryLightWet,
+  LightWet,
+  ModeratelyWet,
+  VeryWet,
+  ExtremelyWet
+};
 class ABSOscillation {
 private:
   long _timeLastTriggerMillis;
@@ -32,6 +42,10 @@ public:
     long timeNowMillis = millis();
     float timeSinceTrigger = (timeNowMillis - _timeLastTriggerMillis);
     float absForceOffset_local = 0.00f;
+    float absFreq=calcVars_st->absFrequency;
+    //frequency depend on road condition
+    absFreq=absFreq*(1+((float)calcVars_st->TrackCondition)/10.0f);
+    absFreq=constrain(absFreq,0,50.0f);
 
     if (timeSinceTrigger > ABS_ACTIVE_TIME_PER_TRIGGER_MILLIS)
     {
@@ -61,13 +75,13 @@ public:
       switch (absPattern) {
         case 0:
           // sine wave pattern
-          absForceOffset_local =  absAmp_fl32 * sin(2.0f * PI * calcVars_st->absFrequency * absTimeSeconds);
+          absForceOffset_local =  absAmp_fl32 * sin(2.0f * PI * absFreq * absTimeSeconds);
           break;
         case 1:
           // sawtooth pattern
           if (calcVars_st->absFrequency > 0.0f)
           {
-            absForceOffset_local = absAmp_fl32 * fmod(absTimeSeconds, 1.0f / (float)calcVars_st->absFrequency) * (float)calcVars_st->absFrequency;
+            absForceOffset_local = absAmp_fl32 * fmod(absTimeSeconds, 1.0f / (float)absFreq) * (float)absFreq;
             absForceOffset_local -= absAmp_fl32 * 0.5f; // make it symmetrical around 0
           }
           break;

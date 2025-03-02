@@ -3,7 +3,7 @@
 #include <stdint.h>
 
 // define the payload revision
-#define DAP_VERSION_CONFIG 142
+#define DAP_VERSION_CONFIG 144
 
 // define the payload types
 #define DAP_PAYLOAD_TYPE_CONFIG 100
@@ -51,6 +51,7 @@ struct payloadPedalState_Basic {
   uint16_t pedalForce_u16;
   uint16_t joystickOutput_u16;
   uint8_t erroe_code_u8;
+  uint8_t pedalFirmwareVersion_u8[3];
 };
 
 struct payloadPedalState_Extended {
@@ -63,6 +64,7 @@ struct payloadPedalState_Extended {
   // register values from servo
   int16_t servoPosition_i16;
   int16_t servoPositionTarget_i16;
+  uint16_t angleSensorOutput_ui16;
   int16_t servo_voltage_0p1V;
   int16_t servo_current_percent_i16;
 };
@@ -289,6 +291,7 @@ struct DAP_calculationVariables_st
   long stepperPosMax_default;
   float stepperPosRange_default;
   uint32_t stepsPerMotorRevolution;
+  uint8_t TrackCondition;
 
   void updateFromConfig(DAP_config_st& config_st);
   void updateEndstops(long newMinEndstop, long newMaxEndstop);
@@ -299,4 +302,14 @@ struct DAP_calculationVariables_st
   void Default_pos();
   void update_stepperMinpos(long newMinstop);
   void update_stepperMaxpos(long newMaxstop);
+};
+
+enum class PedalSystemAction
+{
+  NONE,
+  RESET_PEDAL_POSITION,//not in use
+  PEDAL_RESTART,
+  ENABLE_OTA,//not in use
+  ENABLE_PAIRING,//not in use
+  ESP_BOOT_INTO_DOWNLOAD_MODE
 };

@@ -147,7 +147,7 @@ void onRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len)
     if(data_len==sizeof(myData))
     {
       memcpy(&myData, data, sizeof(myData));
-      pedal_status=myData.pedal_status;
+      
       //#ifdef ACTIVATE_JOYSTICK_OUTPUT
       // normalize controller output
       int32_t joystickNormalizedToInt32 = NormalizeControllerOutputValue(myData.controllerValue_i32, 0, 10000, 100); 
@@ -162,6 +162,7 @@ void onRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len)
       {
         pedal_brake_value=joystickNormalizedToInt32;
         Joystick_value[1]=myData.controllerValue_i32;
+        pedal_status=myData.pedal_status;//control pedal status only by brake
         //joystick_update=true;
       }
       if(mac_addr[5]==Gas_mac[5])
@@ -330,7 +331,7 @@ void ESPNow_initialize()
     }
     #endif
     
-    Serial.printf("BRK Mac: %02X:%02X:%02X:%02X:%02X:%02X\n", Brk_mac[0], Brk_mac[1], Brk_mac[2], Brk_mac[3], Brk_mac[4], Brk_mac[5]);
+    Serial.printf("[L]BRK Mac: %02X:%02X:%02X:%02X:%02X:%02X\n", Brk_mac[0], Brk_mac[1], Brk_mac[2], Brk_mac[3], Brk_mac[4], Brk_mac[5]);
     if(ESPNow.add_peer(Brk_mac)== ESP_OK)
     {
       ESPNOW_status=true;

@@ -46,6 +46,8 @@
 //#define PUT_TARGET_CYCLE_TIME_IN_US DAP_MICROSECONDS_PER_SECOND / 1000
 
 
+#define SERVO_MAX_VOLTAGE_IN_V_36V 38.0f
+#define SERVO_MAX_VOLTAGE_IN_V_48V 50.0f
 
 /********************************************************************/
 /*                      Loadcell defines                            */
@@ -147,7 +149,7 @@ static const uint32_t SECONDS_PER_MINUTE = 60;
   //#define Using_I2C_Sync
   #define ESPNOW_Enable
   #define ESPNow_ESP32
-  #define I2C_slave_address 0x15
+  //#define I2C_slave_address 0x15
   #define BLUETOOTH_GAMEPAD
   //#define USB_JOYSTICK
   #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 1
@@ -257,7 +259,7 @@ static const uint32_t SECONDS_PER_MINUTE = 60;
   #define USB_JOYSTICK
   #define ESPNOW_Enable
   #define ESPNow_S3
-  #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 5
+  #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 0
   //#define ESPNow_Pairing_function
   #define Pairing_GPIO 0
   #define OTA_update
@@ -417,4 +419,44 @@ static const uint32_t SECONDS_PER_MINUTE = 60;
   #define LED_ENABLE_RGB
   #define OTA_update
   #define USING_BUZZER
+#endif
+
+
+
+
+// V5 version of dev PCB for ESP32 S3
+// flash instructions, see https://hutscape.com/tutorials/hello-arduino-esp32s3
+// 1. ESP32S3 Dev Module
+// 2. USB CDC On Boot Enabled
+#if PCB_VERSION == 12
+  // ADC defines
+  #define PIN_DRDY 16 //--> DRDY
+  #define PIN_RST  18 // X --> X
+  #define PIN_SCK 6 //-->SCLK
+  #define PIN_MISO 15 //--> DOUT
+  #define PIN_MOSI 7 //--> DIN
+  #define PIN_CS 17 //--> CS
+
+  // stepper pins
+  #define dirPinStepper    36
+  #define stepPinStepper   37
+
+  // level shifter is present on this PCB design
+  #define SENSORLESS_HOMING true
+  #define ISV57_TXPIN 2
+  #define ISV57_RXPIN 1
+
+  #define BRAKE_RESISTOR_PIN 35
+
+  //#define BLUETOOTH_GAMEPAD
+  #define USB_JOYSTICK
+  #define ESPNOW_Enable
+  #define ESPNow_S3
+  #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 0
+  //#define ESPNow_Pairing_function
+  #define Pairing_GPIO 0
+  #define OTA_update
+  #define CONTROLLER_SPECIFIC_VIDPID
+
+  // #define ANGLE_SENSOR_GPIO 11 // disabled by default, since to much runtime impact of ADC
 #endif

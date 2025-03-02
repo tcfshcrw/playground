@@ -15,8 +15,6 @@
 #define DEBUG_INFO_0_LOG_ALL_SERVO_PARAMS 128
 
 
-#define SERVO_VOLTAGE_TO_STOP_MOVEMENT_IN_0p1V 400
-
 
 
 //#define PI 3.14159267
@@ -66,6 +64,35 @@ uint16_t checksumCalculator(uint8_t * data, uint16_t length)
    return (sum2 << 8) | sum1;
 }
 
+// uint16_t checksumCalculator_withLog(uint8_t * data, uint16_t length)
+// {
+//    uint16_t curr_crc = 0x0000;
+//    uint8_t sum1 = (uint8_t) curr_crc;
+//    uint8_t sum2 = (uint8_t) (curr_crc >> 8);
+//    int index;
+//    for(index = 0; index < length; index = index+1)
+//    {
+//       sum1 = (sum1 + data[index]) % 255;
+//       sum2 = (sum2 + sum1) % 255;
+
+//       Serial.print("index: ");
+//       Serial.print(index);
+
+//       Serial.print(",    data: ");
+//       Serial.print(data[index]);
+
+//       Serial.print(",    Sum1: ");
+//       Serial.print(sum1);
+
+//       Serial.print(",    sum2: ");
+//       Serial.println(sum2);
+
+
+//    }
+//    return (sum2 << 8) | sum1;
+// }
+
+
 
 bool systemIdentificationMode_b = false;
 
@@ -91,6 +118,7 @@ Custom_vibration CV1;
 Custom_vibration CV2;
 Rudder _rudder;
 Rudder_G_Force _rudder_g_force;
+MovingAverageFilter averagefilter_joystick(40);
 #define ABS_OSCILLATION
 
 
@@ -190,7 +218,7 @@ float motorRevolutionsPerSteps_fl32 = 1.0f / 3200.0f;
 
 #include "SignalFilter.h"
 KalmanFilter* kalman = NULL;
-
+KalmanFilter* kalman_joystick = NULL;
 
 #include "SignalFilter_2nd_order.h"
 KalmanFilter_2nd_order* kalman_2nd_order = NULL;
@@ -239,6 +267,10 @@ char* APhost;
   //#include "OTA_Pull.h"
   TaskHandle_t Task4;
   char* APhost;
+#endif
+
+#ifndef OTA_update || OTA_update_ESP32
+  #include "ota.h"
 #endif
 
 
@@ -291,6 +323,12 @@ void setup()
   digitalWrite(BRAKE_RESISTOR_PIN, LOW);  // Turn the LED on
 #endif
 
+#ifdef ANGLE_SENSOR_GPIO
+
+  pinMode(ANGLE_SENSOR_GPIO, INPUT);
+  pinMode(ANGLE_SENSOR_GPIO_2, INPUT);
+#endif
+
 
 
   //Serial.begin(115200);
@@ -321,7 +359,9 @@ void setup()
   Serial.println(" ");
   #ifndef CONTROLLER_SPECIFIC_VIDPID
     // init controller
+    #if defined(BLUETOOTH_GAMEPAD) || defined(USB_JOYSTICK)
     SetupController();
+    #endif
     //delay(3000);
   #endif
   //delay(3000);
@@ -454,6 +494,7 @@ void setup()
   Serial.print("Given loadcell variance: ");
   Serial.println(loadcell->getVarianceEstimate());
   kalman = new KalmanFilter(loadcell->getVarianceEstimate());
+  kalman_joystick =new KalmanFilter(0.1f);
   kalman_2nd_order = new KalmanFilter_2nd_order(loadcell->getVarianceEstimate());
 
 
@@ -616,7 +657,7 @@ void setup()
     #ifdef PEDAL_HARDWARE_ASSIGNMENT
       Serial.println("Pedal Role Assignment:4, reading from CFG pins....");
     #else
-      Serial.println("Pedal Role Assignment:4, Role assignment Error, Please send the ocnfig in to finish role assignment");
+      Serial.println("Pedal Role Assignment:4, Role assignment Error, Please send the config in to finish role assignment.");
     #endif
   }
   
@@ -980,6 +1021,29 @@ void pedalUpdateTask( void * pvParameters )
     // Get the loadcell reading
     float loadcellReading = loadcell->getReadingKg();
 
+    uint16_t angleReading_ui16 = 0;
+    #ifdef ANGLE_SENSOR_GPIO
+      angleReading_ui16 = analogRead(ANGLE_SENSOR_GPIO);
+      // if (pos_printCount >= 100)
+      // {
+      //   Serial.printf("Ang.: %f\n", angleReading_ui16);
+      //   pos_printCount = 0;
+      // }
+      // pos_printCount++;
+    #endif
+
+    // Get the angle measurement reading
+    // float angleReading = loadcell->getAngleMeasurement();
+
+    
+    // if (pos_printCount >= 100)
+    // {
+    //   Serial.printf("Ang.: %f\n", angleReading);
+    //   pos_printCount = 0;
+    // }
+    // pos_printCount++;
+  
+
     // Invert the loadcell reading digitally if desired
     if (dap_config_pedalUpdateTask_st.payLoadPedalConfig_.invertLoadcellReading_u8 == 1)
     {
@@ -1040,10 +1104,9 @@ void pedalUpdateTask( void * pvParameters )
     }
       
 
+    float FilterReadingJoystick=kalman_joystick->filteredValue(filteredReading,0.0f,1);
+    //float FilterReadingJoystick=averagefilter_joystick.process(filteredReading);
 
-
-    //Add effect by force
-    float effect_force = absForceOffset + _BitePointOscillation.BitePoint_Force_offset + _WSOscillation.WS_Force_offset + CV1.CV_Force_offset + CV2.CV_Force_offset;
     float stepperPosFraction = stepper->getCurrentPositionFraction();
     int32_t Position_Next = 0;
     
@@ -1083,9 +1146,17 @@ void pedalUpdateTask( void * pvParameters )
     
   
     // //Adding effects
+    //Add effect by force
+    float effect_force = _BitePointOscillation.BitePoint_Force_offset + _WSOscillation.WS_Force_offset + CV1.CV_Force_offset + CV2.CV_Force_offset;
+
+    if(filteredReading>=dap_calculationVariables_st.Force_Min)
+    {
+      Position_Next -= absPosOffset;
+      effect_force += absForceOffset;
+    }
     int32_t Position_effect= effect_force/dap_calculationVariables_st.Force_Range*dap_calculationVariables_st.stepperPosRange;
     Position_Next -=_RPMOscillation.RPM_position_offset;
-    Position_Next -= absPosOffset;
+
     Position_Next -= Position_effect;
     Position_Next = (int32_t)constrain(Position_Next, dap_calculationVariables_st.stepperPosMinEndstop, dap_calculationVariables_st.stepperPosMaxEndstop);
     
@@ -1094,10 +1165,38 @@ void pedalUpdateTask( void * pvParameters )
     int32_t BP_trigger_min = (BP_trigger_value-4);
     int32_t BP_trigger_max = (BP_trigger_value+4);
     int32_t Position_check = 100*((Position_Next-dap_calculationVariables_st.stepperPosMin) / dap_calculationVariables_st.stepperPosRange);
-
+    int32_t Rudder_real_poisiton= 100*((Position_Next-dap_calculationVariables_st.stepperPosMin_default) / dap_calculationVariables_st.stepperPosRange_default);
 
     dap_calculationVariables_st.current_pedal_position = Position_Next;
 
+    //Rudder initialzing and de initializing
+    #ifdef ESPNOW_Enable
+    if(dap_calculationVariables_st.Rudder_status)
+    {
+      if(Rudder_initializing)
+      {
+        moveSlowlyToPosition_b=true;
+        //Serial.println("moving to center");
+      }
+      if(Rudder_initializing && (Rudder_real_poisiton<51 && Rudder_real_poisiton>49))
+      {
+        Rudder_initializing=false;
+        moveSlowlyToPosition_b=false;
+        Serial.println("initialized disable move slow");
+      }
+    }
+    if(Rudder_deinitializing)
+    {
+      moveSlowlyToPosition_b=true;
+        //Serial.println("moving to min end stop");
+    }
+    if(Rudder_deinitializing && (Rudder_real_poisiton< 2 ))
+    {
+      Rudder_deinitializing=false;
+      moveSlowlyToPosition_b=false;
+      Serial.println("deinitialized disable move slow");
+    }
+    #endif
 
     //Serial.println(Position_check);
     if(dap_config_pedalUpdateTask_st.payLoadPedalConfig_.BP_trigger==1)
@@ -1114,9 +1213,17 @@ void pedalUpdateTask( void * pvParameters )
     // if pedal in min position, recalibrate position --> automatic step loss compensation
 
     stepper->configSteplossRecovAndCrashDetection(dap_config_pedalUpdateTask_st.payLoadPedalConfig_.stepLossFunctionFlags_u8);
-    if (stepper->isAtMinPos() && OTA_status==false)
+    if (stepper->isAtMinPos())
     {
-      stepper->correctPos();
+      #if defined(OTA_update_ESP32) || defined(OTA_update)
+        if(OTA_status==false)
+        {
+          stepper->correctPos();
+        }    
+      #else
+        stepper->correctPos();
+      #endif
+
     }
 
 
@@ -1149,33 +1256,39 @@ void pedalUpdateTask( void * pvParameters )
     // Serial.print("Position next: ");
     // Serial.println(Position_Next);
 
-    // Activate brake resistor once a certain voltage level is exceeded
-#ifdef BRAKE_RESISTOR_PIN
-    if ( stepper->getServosVoltage() > SERVO_VOLTAGE_TO_STOP_MOVEMENT_IN_0p1V)
-    {
-      digitalWrite(BRAKE_RESISTOR_PIN, HIGH);
-    }
-    else
-    {
-      digitalWrite(BRAKE_RESISTOR_PIN, LOW);
-    }
-  #endif
+
 
 
 
   // Move to new position
-  if(OTA_status==false)
+  
+  
+  if (!moveSlowlyToPosition_b)
   {
-    if (!moveSlowlyToPosition_b)
-    {
+    #if defined(OTA_update_ESP32) || defined(OTA_update)
+      if(OTA_status==false)
+      {
+        stepper->moveTo(Position_Next, false);
+      }
+    #else
       stepper->moveTo(Position_Next, false);
-    }
-    else
-    {
+    #endif
+  }
+  else
+  {
+    #if defined(OTA_update_ESP32) || defined(OTA_update)
+      if(OTA_status==false)
+      {
+        moveSlowlyToPosition_b = false;
+        stepper->moveSlowlyToPos(Position_Next);
+      }
+    #else
       moveSlowlyToPosition_b = false;
       stepper->moveSlowlyToPos(Position_Next);
-    }
+    #endif
+
   }
+  
 
 
     
@@ -1204,7 +1317,7 @@ void pedalUpdateTask( void * pvParameters )
           }
           else
           {
-            joystickNormalizedToInt32 = NormalizeControllerOutputValue((filteredReading), dap_calculationVariables_st.Force_Min, dap_calculationVariables_st.Force_Max, dap_config_pedalUpdateTask_st.payLoadPedalConfig_.maxGameOutput);
+            joystickNormalizedToInt32 = NormalizeControllerOutputValue((FilterReadingJoystick/*filteredReading*/), dap_calculationVariables_st.Force_Min, dap_calculationVariables_st.Force_Max, dap_config_pedalUpdateTask_st.payLoadPedalConfig_.maxGameOutput);
           }
         }
         else
@@ -1215,7 +1328,7 @@ void pedalUpdateTask( void * pvParameters )
           }
           else
           {            
-            joystickNormalizedToInt32 = NormalizeControllerOutputValue(filteredReading, dap_calculationVariables_st.Force_Min, dap_calculationVariables_st.Force_Max, dap_config_pedalUpdateTask_st.payLoadPedalConfig_.maxGameOutput);
+            joystickNormalizedToInt32 = NormalizeControllerOutputValue(FilterReadingJoystick/*filteredReading*/, dap_calculationVariables_st.Force_Min, dap_calculationVariables_st.Force_Max, dap_config_pedalUpdateTask_st.payLoadPedalConfig_.maxGameOutput);
           }
         }
         
@@ -1266,16 +1379,12 @@ void pedalUpdateTask( void * pvParameters )
       if(xSemaphoreTake(semaphore_updatePedalStates, (TickType_t)1)==pdTRUE) 
       {
         
+        
         // update basic pedal state struct
         dap_state_basic_st.payloadPedalState_Basic_.pedalForce_u16 =  normalizedPedalReading_fl32 * 65535.0f;
         dap_state_basic_st.payloadPedalState_Basic_.pedalPosition_u16 = constrain(stepperPosFraction, 0.0f, 1.0f) * 65535.0f;
         dap_state_basic_st.payloadPedalState_Basic_.joystickOutput_u16 = (float)joystickNormalizedToInt32 / 10000.0f * 32767.0f;//65535;
-
-        dap_state_basic_st.payLoadHeader_.payloadType = DAP_PAYLOAD_TYPE_STATE_BASIC;
-        dap_state_basic_st.payLoadHeader_.version = DAP_VERSION_CONFIG;
-        dap_state_basic_st.payloadFooter_.checkSum = checksumCalculator((uint8_t*)(&(dap_state_basic_st.payLoadHeader_)), sizeof(dap_state_basic_st.payLoadHeader_) + sizeof(dap_state_basic_st.payloadPedalState_Basic_));
-        dap_state_basic_st.payLoadHeader_.PedalTag=dap_config_pedalUpdateTask_st.payLoadPedalConfig_.pedal_type;
-        
+        parse_version(DAP_FIRMWARE_VERSION, &dap_state_basic_st.payloadPedalState_Basic_.pedalFirmwareVersion_u8[0], &dap_state_basic_st.payloadPedalState_Basic_.pedalFirmwareVersion_u8[1], &dap_state_basic_st.payloadPedalState_Basic_.pedalFirmwareVersion_u8[2]);
         //error code
         dap_state_basic_st.payloadPedalState_Basic_.erroe_code_u8=0;
         #ifdef ESPNOW_Enable
@@ -1295,6 +1404,13 @@ void pedalUpdateTask( void * pvParameters )
         {
           dap_state_basic_st.payloadPedalState_Basic_.erroe_code_u8=12;
         }
+        //fill the header
+        dap_state_basic_st.payLoadHeader_.payloadType = DAP_PAYLOAD_TYPE_STATE_BASIC;
+        dap_state_basic_st.payLoadHeader_.version = DAP_VERSION_CONFIG;
+        dap_state_basic_st.payloadFooter_.checkSum = checksumCalculator((uint8_t*)(&(dap_state_basic_st.payLoadHeader_)), sizeof(dap_state_basic_st.payLoadHeader_) + sizeof(dap_state_basic_st.payloadPedalState_Basic_));
+        dap_state_basic_st.payLoadHeader_.PedalTag=dap_config_pedalUpdateTask_st.payLoadPedalConfig_.pedal_type;        
+        
+        
         // update extended struct 
         dap_state_extended_st.payloadPedalState_Extended_.timeInMs_u32 = millis();
         dap_state_extended_st.payloadPedalState_Extended_.pedalForce_raw_fl32 =  loadcellReading;
@@ -1310,6 +1426,7 @@ void pedalUpdateTask( void * pvParameters )
 
         //dap_state_extended_st.payloadPedalState_Extended_.servoPositionTarget_i16 = stepper->getCurrentPositionFromMin();
         dap_state_extended_st.payloadPedalState_Extended_.servoPositionTarget_i16 = stepper->getCurrentPosition() - stepper->getMinPosition();
+        dap_state_extended_st.payloadPedalState_Extended_.angleSensorOutput_ui16 = angleReading_ui16;
         dap_state_extended_st.payLoadHeader_.PedalTag=dap_config_pedalUpdateTask_st.payLoadPedalConfig_.pedal_type;
         dap_state_extended_st.payLoadHeader_.payloadType = DAP_PAYLOAD_TYPE_STATE_EXTENDED;
         dap_state_extended_st.payLoadHeader_.version = DAP_VERSION_CONFIG;
@@ -1422,6 +1539,7 @@ void serialCommunicationTask( void * pvParameters )
                     Serial.print(",   Payload type received: ");
                     Serial.println(dap_config_st_local.payLoadHeader_.payloadType);
                   }
+
                   if ( dap_config_st_local.payLoadHeader_.version != DAP_VERSION_CONFIG ){ 
                     structChecker = false;
                     Serial.print("Config version expected: ");
@@ -1437,6 +1555,30 @@ void serialCommunicationTask( void * pvParameters )
                     Serial.print(crc);
                     Serial.print(",   CRC received: ");
                     Serial.println(dap_config_st_local.payloadFooter_.checkSum);
+
+                    Serial.print("Headersize: ");
+                    Serial.print(sizeof(dap_config_st_local.payLoadHeader_));
+                    Serial.print(",    Configsize: ");
+                    Serial.println(sizeof(dap_config_st_local.payLoadPedalConfig_));
+
+                    // uint8_t * testOut = (uint8_t*)dap_config_st_local_ptr;
+                    // for (uint16_t byteIdx = 0; byteIdx < sizeof(DAP_config_st); byteIdx++ )
+                    // {
+
+                    //   if(byteIdx % 10== 0)
+                    //   {
+                    //     Serial.println("");
+                    //   }
+
+                    //   Serial.print(*(testOut+byteIdx));
+                    //   Serial.print(", ");
+
+                    // }
+                    // Serial.println("");
+                    // Serial.println("");
+
+                    // crc = checksumCalculator_withLog((uint8_t*)(&(dap_config_st_local.payLoadHeader_)), sizeof(dap_config_st_local.payLoadHeader_) + sizeof(dap_config_st_local.payLoadPedalConfig_));
+
                   }
 
 
@@ -1445,8 +1587,12 @@ void serialCommunicationTask( void * pvParameters )
                   {
                     Serial.println("Updating pedal config");
                     configUpdateAvailable = true;  
+                    
                     #ifdef USING_BUZZER
-                      Buzzer.single_beep_tone(700,100);
+                      if(dap_config_st_local.payLoadHeader_.storeToEeprom==1)
+                      {
+                        Buzzer.single_beep_tone(700,100);
+                      }     
                     #endif        
                   }
                   xSemaphoreGive(semaphore_updateConfig);
@@ -1515,11 +1661,34 @@ void serialCommunicationTask( void * pvParameters )
                   Serial.println("no supporting command");
                 #endif
               }
+              
+              if (dap_actions_st.payloadPedalAction_.system_action_u8==(uint8_t)PedalSystemAction::ESP_BOOT_INTO_DOWNLOAD_MODE)
+              {
+                #ifdef ESPNow_S3
+                  Serial.println("Restart into Download mode");
+                  delay(1000);
+                  REG_WRITE(RTC_CNTL_OPTION1_REG, RTC_CNTL_FORCE_DOWNLOAD_BOOT);
+                  ESP.restart();
+                #else
+                  Serial.println("Command not supported");
+                  delay(1000);
+                #endif
+                //ESPNOW_BootIntoDownloadMode = false;
+              }
+              
 
               // trigger ABS effect
-              if (dap_actions_st.payloadPedalAction_.triggerAbs_u8)
+              if (dap_actions_st.payloadPedalAction_.triggerAbs_u8>0)
               {
                 absOscillation.trigger();
+                if(dap_actions_st.payloadPedalAction_.triggerAbs_u8>1)
+                {
+                  dap_calculationVariables_st.TrackCondition=dap_actions_st.payloadPedalAction_.triggerAbs_u8-1;
+                }
+                else
+                {
+                  dap_calculationVariables_st.TrackCondition=dap_actions_st.payloadPedalAction_.triggerAbs_u8=0;
+                }
               }
               //RPM effect
               _RPMOscillation.RPM_value=dap_actions_st.payloadPedalAction_.RPM_u8;
@@ -1566,42 +1735,57 @@ void serialCommunicationTask( void * pvParameters )
                 Serial.write((char*)dap_config_st_local_ptr, sizeof(DAP_config_st));
                 Serial.print("\r\n");
               }
-              if(dap_actions_st.payloadPedalAction_.Rudder_action==1)
-              {
-                if(dap_calculationVariables_st.Rudder_status==false)
+              #ifdef ESPNOW_Enable
+                if(dap_actions_st.payloadPedalAction_.Rudder_action==1)//Enable Rudder
                 {
-                  dap_calculationVariables_st.Rudder_status=true;
-                  Serial.println("Rudder on");
-                  moveSlowlyToPosition_b=true;
-                  //Serial.print("status:");
-                  //Serial.println(dap_calculationVariables_st.Rudder_status);
+                  if(dap_calculationVariables_st.Rudder_status==false)
+                  {
+                    dap_calculationVariables_st.Rudder_status=true;
+                    Serial.println("Rudder on");
+                    Rudder_initializing=true;
+                    moveSlowlyToPosition_b=true;
+                    //Serial.print("status:");
+                    //Serial.println(dap_calculationVariables_st.Rudder_status);
+                  }
+                  else
+                  {
+                    dap_calculationVariables_st.Rudder_status=false;
+                    Serial.println("Rudder off");
+                    Rudder_deinitializing=true;
+                    moveSlowlyToPosition_b=true; 
+
+                    //Serial.print("status:");
+                    //Serial.println(dap_calculationVariables_st.Rudder_status);
+                  }
                 }
-                else
+                if(dap_actions_st.payloadPedalAction_.Rudder_brake_action==1)
+                {
+                  if(dap_calculationVariables_st.rudder_brake_status==false&&dap_calculationVariables_st.Rudder_status==true)
+                  {
+                    dap_calculationVariables_st.rudder_brake_status=true;
+                    Serial.println("Rudder brake on");
+                    //Serial.print("status:");
+                    //Serial.println(dap_calculationVariables_st.Rudder_status);
+                  }
+                  else
+                  {
+                    dap_calculationVariables_st.rudder_brake_status=false;
+                    Serial.println("Rudder brake off");
+                    //Serial.print("status:");
+                    //Serial.println(dap_calculationVariables_st.Rudder_status);
+                  }
+                }
+                //clear rudder status
+                if(dap_actions_st.payloadPedalAction_.Rudder_action==2)
                 {
                   dap_calculationVariables_st.Rudder_status=false;
-                  Serial.println("Rudder off");
-                  moveSlowlyToPosition_b=true;
-                  //Serial.print("status:");
-                  //Serial.println(dap_calculationVariables_st.Rudder_status);
-                }
-              }
-              if(dap_actions_st.payloadPedalAction_.Rudder_brake_action==1)
-              {
-                if(dap_calculationVariables_st.rudder_brake_status==false&&dap_calculationVariables_st.Rudder_status==true)
-                {
-                  dap_calculationVariables_st.rudder_brake_status=true;
-                  Serial.println("Rudder brake on");
-                  //Serial.print("status:");
-                  //Serial.println(dap_calculationVariables_st.Rudder_status);
-                }
-                else
-                {
                   dap_calculationVariables_st.rudder_brake_status=false;
-                  Serial.println("Rudder brake off");
-                  //Serial.print("status:");
-                  //Serial.println(dap_calculationVariables_st.Rudder_status);
+                  Serial.println("Rudder Status Clear");
+                  Rudder_deinitializing=true;
+                  moveSlowlyToPosition_b=true;
+
                 }
-              }
+              #endif
 
 
             }
@@ -1706,14 +1890,16 @@ void serialCommunicationTask( void * pvParameters )
         xSemaphoreGive(semaphore_updateJoystick);
       }
     }
-    if (IsControllerReady()) 
-    {
-      if(dap_calculationVariables_st.Rudder_status==false)
+    #if defined(USB_JOYSTICK) || defined(BLUETOOTH_GAMEPAD)
+      if (IsControllerReady()) 
       {
-        //general output
-        SetControllerOutputValue(joystickNormalizedToInt32_local);
+        if(dap_calculationVariables_st.Rudder_status==false)
+        {
+          //general output
+          SetControllerOutputValue(joystickNormalizedToInt32_local);
+        }
       }
-    }
+    #endif
 
     #ifdef PRINT_TASK_FREE_STACKSIZE_IN_WORDS
       if( communicationTask_stackSizeIdx_u32 == 1000)
@@ -2095,7 +2281,10 @@ void ESPNOW_SyncTask( void * pvParameters )
       {
         Config_update_b=false;
         #ifdef USING_BUZZER
-          Buzzer.single_beep_tone(700,100);
+          if(dap_config_st_local.payLoadHeader_.storeToEeprom==1)
+          {
+            Buzzer.single_beep_tone(700,100);
+          }          
         #endif 
       }
       if(ESPNow_OTA_enable)
@@ -2126,7 +2315,28 @@ void ESPNOW_SyncTask( void * pvParameters )
           }
           #endif
 
-      } 
+      }
+      if(Get_Rudder_action_b)
+      {
+        Get_Rudder_action_b=false;
+        #ifdef USING_BUZZER
+        Buzzer.single_beep_tone(700,100);
+        #endif
+      }
+
+      if(ESPNOW_BootIntoDownloadMode)
+      {
+        #ifdef ESPNow_S3
+          Serial.println("Restart into Download mode");
+          delay(1000);
+          REG_WRITE(RTC_CNTL_OPTION1_REG, RTC_CNTL_FORCE_DOWNLOAD_BOOT);
+          ESP.restart();
+        #else
+          Serial.println("Command not supported");
+          delay(1000);
+        #endif
+        ESPNOW_BootIntoDownloadMode = false;
+      }
       //rudder sync
       if(dap_calculationVariables_st.Rudder_status)
       {              
