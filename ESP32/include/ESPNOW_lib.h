@@ -46,13 +46,13 @@ struct ESPNow_Send_Struct
 };
 */
 
-typedef struct struct_message {
+typedef struct DAP_Joystick_Message {
   uint8_t payloadtype;
   uint64_t cycleCnt_u64;
   int64_t timeSinceBoot_i64;
 	int32_t controllerValue_i32;
   int8_t pedal_status; //0=default, 1=rudder, 2=rudder brake
-} struct_message;
+} DAP_Joystick_Message;
 
 typedef struct ESP_pairing_reg
 {
@@ -60,7 +60,7 @@ typedef struct ESP_pairing_reg
   uint8_t Pair_mac[4][6];
 } ESP_pairing_reg;
 // Create a struct_message called myData
-struct_message myData;
+DAP_Joystick_Message _dap_joystick_message;
 
 //ESPNow_Send_Struct _ESPNow_Recv;
 //ESPNow_Send_Struct _ESPNow_Send;
@@ -87,28 +87,28 @@ bool MacCheck(uint8_t* Mac_A, uint8_t*  Mac_B)
 }
 
 
-void sendMessageToMaster(int32_t controllerValue)
+void ESPNow_Joystick_Broadcast(int32_t controllerValue)
 {
-  myData.payloadtype=DAP_PAYLOAD_TYPE_ESPNOW_JOYSTICK;
-  myData.cycleCnt_u64++;
-  myData.timeSinceBoot_i64 = esp_timer_get_time() / 1000;
-  myData.controllerValue_i32 = controllerValue;
+  _dap_joystick_message.payloadtype=DAP_PAYLOAD_TYPE_ESPNOW_JOYSTICK;
+  _dap_joystick_message.cycleCnt_u64++;
+  _dap_joystick_message.timeSinceBoot_i64 = esp_timer_get_time() / 1000;
+  _dap_joystick_message.controllerValue_i32 = controllerValue;
   if(dap_calculationVariables_st.Rudder_status)
   {
     if(dap_calculationVariables_st.rudder_brake_status)
     {
-      myData.pedal_status=2;
+      _dap_joystick_message.pedal_status=2;
     }
     else
     {
-      myData.pedal_status=1;
+      _dap_joystick_message.pedal_status=1;
     }
   }
   else
   {
-    myData.pedal_status=0;
+    _dap_joystick_message.pedal_status=0;
   }
-  esp_now_send(broadcast_mac, (uint8_t *) &myData, sizeof(myData));
+  esp_now_send(broadcast_mac, (uint8_t *) &_dap_joystick_message, sizeof(_dap_joystick_message));
 
   
   

@@ -2259,8 +2259,8 @@ void ESPNOW_SyncTask( void * pvParameters )
           }
         }
       #endif
-      //joystick sync
-      sendMessageToMaster(joystickNormalizedToInt32);
+      //joystick value broadcast
+      ESPNow_Joystick_Broadcast(joystickNormalizedToInt32);
 
       if(basic_state_send_b)
       {
