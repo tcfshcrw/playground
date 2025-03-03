@@ -47,6 +47,7 @@ struct ESPNow_Send_Struct
 */
 
 typedef struct struct_message {
+  uint8_t payloadtype;
   uint64_t cycleCnt_u64;
   int64_t timeSinceBoot_i64;
 	int32_t controllerValue_i32;
@@ -88,7 +89,7 @@ bool MacCheck(uint8_t* Mac_A, uint8_t*  Mac_B)
 
 void sendMessageToMaster(int32_t controllerValue)
 {
-
+  myData.payloadtype=DAP_PAYLOAD_TYPE_ESPNOW_JOYSTICK;
   myData.cycleCnt_u64++;
   myData.timeSinceBoot_i64 = esp_timer_get_time() / 1000;
   myData.controllerValue_i32 = controllerValue;
