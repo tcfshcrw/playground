@@ -357,13 +357,6 @@ void setup()
   Serial.println(" ");
   Serial.println(" ");
   Serial.println(" ");
-  #ifndef CONTROLLER_SPECIFIC_VIDPID
-    // init controller
-    #if defined(BLUETOOTH_GAMEPAD) || defined(USB_JOYSTICK)
-    SetupController();
-    #endif
-    //delay(3000);
-  #endif
   //delay(3000);
   Serial.println("This work is licensed under a Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.");
   Serial.println("Please check github repo for more detail: https://github.com/ChrGri/DIY-Sim-Racing-FFB-Pedal");
@@ -753,7 +746,7 @@ void setup()
     xTaskCreatePinnedToCore(
                         ESPNOW_SyncTask,   
                         "ESPNOW_update_Task", 
-                        5000,  
+                        10000,  
                         //STACK_SIZE_FOR_TASK_2,    
                         NULL,      
                         1,         
@@ -766,10 +759,19 @@ void setup()
     Serial.println("ESPNOW task did not started due to Assignment error, please usb connect to Simhub and finish Assignment.");
   }
   #endif
+  Serial.println("Setup Controller");
   #ifdef CONTROLLER_SPECIFIC_VIDPID
     SetupController_USB(dap_config_st.payLoadPedalConfig_.pedal_type);
     delay(500);
+  #endif  
+  #ifndef CONTROLLER_SPECIFIC_VIDPID
+  // init controller
+  #if defined(BLUETOOTH_GAMEPAD) || defined(USB_JOYSTICK)
+  SetupController();
   #endif
+  //delay(3000);
+  #endif
+
 
   Serial.println("Setup end");
   #ifdef USING_LED

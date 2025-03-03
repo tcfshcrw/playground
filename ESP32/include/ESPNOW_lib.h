@@ -181,7 +181,7 @@ void onRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len)
         bool structChecker = true;
         uint16_t crc;
         DAP_Rudder_st dap_rudder_st_local;
-        memcpy(&dap_rudder_st_local, data, sizeof(DAP_config_st));
+        memcpy(&dap_rudder_st_local, data, sizeof(DAP_Rudder_st));
         // check if data is plausible  
         if ( dap_rudder_st_local.payLoadHeader_.payloadType != DAP_PAYLOAD_TYPE_ESPNOW_RUDDER )
         {
