@@ -562,7 +562,8 @@ void ESPNow_initialize()
     if(dap_config_st.payLoadPedalConfig_.pedal_type==2)
     {
       Recv_mac=Brk_mac;
-      ESPNow.add_peer(Recv_mac);
+      ESPNow.add_peer(Brk_mac);
+      ESPNow.add_peer(Clu_mac);
     }
     if(dap_config_st.payLoadPedalConfig_.pedal_type==0)
     {

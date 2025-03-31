@@ -9,6 +9,8 @@
 #define MIN_POS_MAX_ENDSTOP 10000 // servo has to drive minimum N steps before it allows the detection of the max endstop
 #define INCLUDE_vTaskDelete 1
 
+#define BRAKE_RESISTOR_DEACTIVATION_TIME_IN_MS 1000
+
 //uint32_t speed_in_hz = TICKS_PER_S / ticks;
 // TICKS_PER_S = 16000000L
 // ticks = TICKS_PER_S / speed_in_hz
@@ -78,6 +80,13 @@ StepperWithLimits::StepperWithLimits(uint8_t pinStep, uint8_t pinDirection, bool
 	/************************************************************/
 	/* 					iSV57 initialization					*/
 	/************************************************************/
+	#ifdef SERVO_POWER_PIN
+        //turn on the servo's power
+        gpio_set_direction((gpio_num_t)SERVO_POWER_PIN, GPIO_MODE_OUTPUT);
+        gpio_set_level((gpio_num_t)SERVO_POWER_PIN, 1);
+        //wait for the servo to initialize
+        delay(500);
+    #endif
 	//delay(3000);
 	// find iSV57 servo ID
 	bool isv57slaveIdFound_b = isv57.findServosSlaveId();
@@ -659,6 +668,10 @@ int64_t timeNow_isv57SerialCommunicationTask_l = 0;
 int64_t timePrevious_isv57SerialCommunicationTask_l = 0;
 #define REPETITION_INTERVAL_ISV57_SERIALCOMMUNICATION_TASK (int64_t)10
 
+#ifdef BRAKE_RESISTOR_PIN
+int64_t time_brakeResistorLastPassive = 0;
+#endif
+
 void StepperWithLimits::servoCommunicationTask(void *pvParameters)
 {
   
@@ -683,11 +696,10 @@ void StepperWithLimits::servoCommunicationTask(void *pvParameters)
 		/* 					recheck lifeline						*/
 		/************************************************************/
 		// check if servo communication is still there every N milliseconds
-		unsigned long now = millis();
-		if ( (now - cycleTimeLastCall_lifelineCheck) > 500) 
+		if ( (timeNow_isv57SerialCommunicationTask_l - cycleTimeLastCall_lifelineCheck) > 500) 
 		{
 			// if target cycle time is reached, update last time
-			cycleTimeLastCall_lifelineCheck = now;
+			cycleTimeLastCall_lifelineCheck = timeNow_isv57SerialCommunicationTask_l;
 			stepper_cl->setLifelineSignal();
 		}
 
@@ -751,15 +763,18 @@ void StepperWithLimits::servoCommunicationTask(void *pvParameters)
 			stepper_cl->isv57.readServoStates();
 
 
-			// Activate brake resistor once a certain voltage level is exceeded
+			// Activate brake resistor once a certain voltage level is exceeded, 
+			// but deactivate brake resistor once certain activation time is exceeded to prevent damage due to overheating
 			#ifdef BRAKE_RESISTOR_PIN
-				if ( stepper_cl->getServosVoltage() > ((servoBusVoltageParameterized_fl32 + 5.0f)*10.0f) )
+				int64_t brakeResistorUpTime_i64 = timeNow_isv57SerialCommunicationTask_l - time_brakeResistorLastPassive;
+				if ( ( stepper_cl->getServosVoltage() > ((servoBusVoltageParameterized_fl32 + 4.0f)*10.0f) ) && (brakeResistorUpTime_i64 < BRAKE_RESISTOR_DEACTIVATION_TIME_IN_MS) )
 				{
-				digitalWrite(BRAKE_RESISTOR_PIN, HIGH);
+					digitalWrite(BRAKE_RESISTOR_PIN, HIGH);
 				}
 				else
 				{
-				digitalWrite(BRAKE_RESISTOR_PIN, LOW);
+					digitalWrite(BRAKE_RESISTOR_PIN, LOW);
+					time_brakeResistorLastPassive = timeNow_isv57SerialCommunicationTask_l;
 				}
 			#endif
 

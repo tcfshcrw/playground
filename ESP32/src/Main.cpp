@@ -344,7 +344,7 @@ void setup()
   #endif
   
   #ifdef USING_BUZZER
-    Buzzer.initialized(ShutdownPin,1);
+    Buzzer.initialized(BuzzerPin,1);
     Buzzer.single_beep_tone(770,100);
   #endif
 
@@ -1113,9 +1113,19 @@ void pedalUpdateTask( void * pvParameters )
       static RTDebugOutput<float, 3> rtDebugFilter({ "rawReading_g", "pedalForce_fl32", "filtered_g"});
       rtDebugFilter.offerData({ loadcellReading * 1000.0f, pedalForce_fl32*1000.0f, filteredReading * 1000.0f});
     }
-      
 
-    float FilterReadingJoystick=kalman_joystick->filteredValue(filteredReading,0.0f,1);
+    
+    float FilterReadingJoystick=0.0f;
+    if(dap_config_pedalUpdateTask_st.payLoadPedalConfig_.kf_Joystick_u8==1)
+    {
+      FilterReadingJoystick=kalman_joystick->filteredValue(filteredReading,0.0f,dap_config_pedalUpdateTask_st.payLoadPedalConfig_.kf_modelNoise_joystick);
+
+    }
+    else
+    {
+      FilterReadingJoystick=filteredReading;
+
+    }
     //float FilterReadingJoystick=averagefilter_joystick.process(filteredReading);
 
     float stepperPosFraction = stepper->getCurrentPositionFraction();
@@ -1816,6 +1826,14 @@ void serialCommunicationTask( void * pvParameters )
               PASS[_basic_wifi_info.PASS_Length]=0;
               OTA_enable_b=true;
             }
+          #endif
+          #ifdef OTA_update_ESP32
+            Serial.println("Get OTA command");
+            OTA_enable_b=true;
+            //OTA_enable_start=true;
+            ESPNow_OTA_enable=false;
+            //Serial.println("get basic wifi info");
+            //Serial.readBytes((char*)&_basic_wifi_info, sizeof(Basic_WIfi_info));
           #endif
           
           break;
