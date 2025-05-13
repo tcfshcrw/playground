@@ -39,6 +39,9 @@ static SemaphoreHandle_t semaphore_getSetCorrectedServoPos = xSemaphoreCreateMut
 static float servoBusVoltageParameterized_fl32 = SERVO_MAX_VOLTAGE_IN_V_36V;
 static bool servoBusVoltageParameterized_b = true;
 
+
+
+
 FastAccelStepperEngine& stepperEngine() {
   static FastAccelStepperEngine myEngine = FastAccelStepperEngine();   // this is a factory and manager for all stepper instances
 
@@ -589,6 +592,12 @@ int32_t StepperWithLimits::getServosPos()
 	return isv57.getPosFromMin();
 }
 
+int32_t StepperWithLimits::getServosPosError()
+{
+	//return isv57.servo_pos_given_p;
+	return isv57.servo_pos_error_p;
+}
+
 
 
 void StepperWithLimits::setServosInternalPositionCorrected(int32_t posCorrected_i32)
@@ -721,7 +730,10 @@ void StepperWithLimits::servoCommunicationTask(void *pvParameters)
 		/************************************************************/
 		if ( stepper_cl->getLifelineSignal() )
 		{
-
+			if(stepper_cl->servoStatus!=SERVO_IDLE_NOT_CONNECTED)
+			{
+				stepper_cl->servoStatus=SERVO_CONNECTED;
+			}
 			// restarting servo axis
 			if(true == stepper_cl->restartServo)
 			{
@@ -770,10 +782,12 @@ void StepperWithLimits::servoCommunicationTask(void *pvParameters)
 				if ( ( stepper_cl->getServosVoltage() > ((servoBusVoltageParameterized_fl32 + 4.0f)*10.0f) ) && (brakeResistorUpTime_i64 < BRAKE_RESISTOR_DEACTIVATION_TIME_IN_MS) )
 				{
 					digitalWrite(BRAKE_RESISTOR_PIN, HIGH);
+					stepper_cl->brakeResistorState_b = true;
 				}
 				else
 				{
 					digitalWrite(BRAKE_RESISTOR_PIN, LOW);
+					stepper_cl->brakeResistorState_b = false;
 					time_brakeResistorLastPassive = timeNow_isv57SerialCommunicationTask_l;
 				}
 			#endif
@@ -1014,24 +1028,46 @@ void StepperWithLimits::servoCommunicationTask(void *pvParameters)
 				}
 				stackSizeIdx_u32++;
 			#endif
-
+			
 			
 		}
 		else
 		{
-			Serial.println("Servo communication lost!");
-			delay(100);
-			previousIsv57LifeSignal_b = false;
-
-
-			// De-activate brake resistor once servo communication is lost to prevent resistor damage
-			#ifdef BRAKE_RESISTOR_PIN
-				digitalWrite(BRAKE_RESISTOR_PIN, LOW);
-			#endif
+			if(stepper_cl->servoStatus!=SERVO_IDLE_NOT_CONNECTED)
+			{
+				Serial.println("Servo communication lost!");
+				delay(100);
+				previousIsv57LifeSignal_b = false;
+				stepper_cl->servoStatus=SERVO_NOT_CONNECTED;
+				// De-activate brake resistor once servo communication is lost to prevent resistor damage
+				#ifdef BRAKE_RESISTOR_PIN
+					digitalWrite(BRAKE_RESISTOR_PIN, LOW);
+					stepper_cl->brakeResistorState_b = false;
+				#endif
+			}
 		}
 
 
 	}
+}
+
+
+bool StepperWithLimits::getBrakeResistorState()
+{
+	return brakeResistorState_b;
+	//return true;
+}
+
+bool StepperWithLimits::servoIdleAction()
+{
+	#ifdef SERVO_POWER_PIN
+        //turn off the servo's power        
+        gpio_set_level((gpio_num_t)SERVO_POWER_PIN, 0);
+        //wait for the servo to initialize
+        delay(500);
+		return true;
+    #endif
+	return false;
 }
 
 

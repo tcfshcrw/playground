@@ -870,8 +870,8 @@ unsigned long firCycleIncrementer = 0;
 
 float filteredReading_exp_filter = 0;
 unsigned long printCycleCounter = 0;
-
-
+unsigned long servoActionLast = millis();
+bool servoIdleStatus=false;
 uint printCntr = 0;
 
 
@@ -889,7 +889,6 @@ float Position_Next_Prev = 0.0f;
 DAP_config_st dap_config_pedalUpdateTask_st;
 //void loop()
 
-bool brakeResistorState = false;
 void pedalUpdateTask( void * pvParameters )
 {
 
@@ -1127,6 +1126,15 @@ void pedalUpdateTask( void * pvParameters )
       FilterReadingJoystick=filteredReading;
 
     }
+
+    //if filtered reading > min force, mark the servo was in aciton
+    #ifdef SERVO_POWER_PIN
+      if(filteredReading>dap_config_pedalUpdateTask_st.payLoadPedalConfig_.preloadForce)
+      {
+        servoActionLast=millis();
+      }
+    #endif
+
     //float FilterReadingJoystick=averagefilter_joystick.process(filteredReading);
 
     float stepperPosFraction = stepper->getCurrentPositionFraction();
@@ -1200,7 +1208,7 @@ void pedalUpdateTask( void * pvParameters )
         moveSlowlyToPosition_b=true;
         //Serial.println("moving to center");
       }
-      if(Rudder_initializing && (Rudder_real_poisiton<51 && Rudder_real_poisiton>49))
+      if(Rudder_initializing && (Rudder_real_poisiton<52 && Rudder_real_poisiton>48))
       {
         if(Rudder_initialized_time==0)
         {
@@ -1210,12 +1218,17 @@ void pedalUpdateTask( void * pvParameters )
         {
           unsigned long Rudder_initialzing_time_Now = millis();
           //wait 3s for the initializing
-          if( (Rudder_initialzing_time_Now-Rudder_initialized_time)> 3000 )
+          //Serial.print("Rudder initializing...");
+          //Serial.println(Rudder_initialzing_time_Now-Rudder_initialized_time);
+          if( (Rudder_initialzing_time_Now-Rudder_initialized_time)> Rudder_timeout )
           {
             Rudder_initializing=false;
             moveSlowlyToPosition_b=false;
             Serial.println("Rudder initialized");
             Rudder_initialized_time=0;
+            #ifdef USING_BUZZER
+              Buzzer.play_melody_tone(melody_Airship_theme, sizeof(melody_Airship_theme)/sizeof(melody_Airship_theme[0]),melody_Airship_theme_duration);
+            #endif
           }
         }
         
@@ -1263,6 +1276,21 @@ void pedalUpdateTask( void * pvParameters )
 
     }
 
+    //pedal not in action, disable pedal power
+    #ifdef SERVO_POWER_PIN
+      if(stepper->servoStatus==SERVO_CONNECTED &&millis()-servoActionLast>MAXIMUM_STEPPER_IDLE_TIMEOUT)
+      {
+        stepper->servoIdleAction();
+        stepper->servoStatus=SERVO_IDLE_NOT_CONNECTED;
+        Buzzer.single_beep_tone(770,100);
+        pixels.setPixelColor(0,0xff,0x00,0x00);//show red
+        pixels.show(); 
+        delay(300);
+        Buzzer.single_beep_tone(770,100);
+        Serial.println("Servo Idle timeout, please restart pedal.");
+
+      }
+    #endif
 
     // print all servo parameters for debug purposes
     if ( (dap_config_pedalUpdateTask_st.payLoadPedalConfig_.debug_flags_0 & DEBUG_INFO_0_LOG_ALL_SERVO_PARAMS) )
@@ -1437,7 +1465,7 @@ void pedalUpdateTask( void * pvParameters )
           dap_state_basic_st.payloadPedalState_Basic_.erroe_code_u8=11;
           isv57.isv57_update_parameter_b=false;
         }*/
-        if( stepper->getLifelineSignal()==false )
+        if( stepper->getLifelineSignal()==false && stepper->servoStatus!=SERVO_IDLE_NOT_CONNECTED)
         {
           dap_state_basic_st.payloadPedalState_Basic_.erroe_code_u8=12;
         }
@@ -1458,12 +1486,14 @@ void pedalUpdateTask( void * pvParameters )
         dap_state_extended_st.payloadPedalState_Extended_.servoPosition_i16 = stepper->getServosInternalPositionCorrected()- stepper->getMinPosition();
         dap_state_extended_st.payloadPedalState_Extended_.servo_voltage_0p1V =  stepper->getServosVoltage();
         dap_state_extended_st.payloadPedalState_Extended_.servo_current_percent_i16 = stepper->getServosCurrent();
+        dap_state_extended_st.payloadPedalState_Extended_.servo_position_error_i16 = stepper->getServosPosError();
         
 
 
         //dap_state_extended_st.payloadPedalState_Extended_.servoPositionTarget_i16 = stepper->getCurrentPositionFromMin();
         dap_state_extended_st.payloadPedalState_Extended_.servoPositionTarget_i16 = stepper->getCurrentPosition() - stepper->getMinPosition();
         dap_state_extended_st.payloadPedalState_Extended_.angleSensorOutput_ui16 = angleReading_ui16;
+        dap_state_extended_st.payloadPedalState_Extended_.brakeResistorState_b = stepper->getBrakeResistorState();
         dap_state_extended_st.payLoadHeader_.PedalTag=dap_config_pedalUpdateTask_st.payLoadPedalConfig_.pedal_type;
         dap_state_extended_st.payLoadHeader_.payloadType = DAP_PAYLOAD_TYPE_STATE_EXTENDED;
         dap_state_extended_st.payLoadHeader_.version = DAP_VERSION_CONFIG;
@@ -1942,6 +1972,18 @@ void serialCommunicationTask( void * pvParameters )
         {
           //general output
           SetControllerOutputValue(joystickNormalizedToInt32_local);
+          
+          #ifdef USB_JOYSTICK
+            // Restart HID output if faulty behavior was detected
+            JoystickSendState();
+            if(!GetJoystickStatus())
+            {
+              RestartJoystick();
+              Serial.println("HID Eroor, Restart Joystick...");
+              //last_serial_joy_out=millis();
+            }
+          #endif
+
         }
       }
     #endif
