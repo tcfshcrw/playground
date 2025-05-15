@@ -96,11 +96,7 @@ DAP_bridge_state_st dap_bridge_state_lcl;//
 #include "SPI.h"
 #include <EEPROM.h>
 #define EEPROM_offset 15
-/**********************************************************************************************/
-/*                                                                                            */
-/*                         iterpolation  definitions                                          */
-/*                                                                                            */
-/**********************************************************************************************/
+
 
 
 
@@ -691,6 +687,9 @@ void ESPNOW_SyncTask( void * pvParameters )
   }
 }
 
+bool PedalUpdateIntervalPrint_b=false;
+unsigned long PedalUpdateLast=0;
+bool PedalUpdateIntervalPrint_trigger=false;
 void Serial_Task( void * pvParameters)
 {
   for(;;)
@@ -702,6 +701,11 @@ void Serial_Task( void * pvParameters)
     {
       basic_rssi_update=true;
       bridge_state_last_update=millis();
+    }
+    if(current_time-PedalUpdateLast>500)
+    {
+      PedalUpdateIntervalPrint_b=true;
+      PedalUpdateLast=current_time;
     }
 
     bool structChecker = true;
@@ -852,6 +856,23 @@ void Serial_Task( void * pvParameters)
                 Serial.println("[L]Command not supported ");
                 delay(1000); 
               #endif
+
+            }
+            if(dap_bridge_state_lcl.payloadBridgeState_.Bridge_action==4)
+            {
+              if(PedalUpdateIntervalPrint_trigger)
+              {
+                //aciton=4 print pedal update interval
+                Serial.println("[L]Bridge debug mode off.");
+                PedalUpdateIntervalPrint_trigger=false;
+              }
+              else
+              {
+                //aciton=4 print pedal update interval
+                Serial.println("[L]Bridge debug mode on.");
+                PedalUpdateIntervalPrint_trigger=true;
+              }
+
 
             }
             
@@ -1019,7 +1040,6 @@ void Serial_Task( void * pvParameters)
           Serial.print(" RSSI:");
           Serial.println(rssi_filter_value);        
         #endif
-        
     }
     uint8_t pedalIDX;
     for(pedalIDX=0;pedalIDX<3;pedalIDX++)
@@ -1034,8 +1054,27 @@ void Serial_Task( void * pvParameters)
           Serial.println(" Disconnected");
           dap_bridge_state_st.payloadBridgeState_.Pedal_availability[pedalIDX]=0;
         }
+      }  
+    }
+    //debug message print
+    if(PedalUpdateIntervalPrint_b)
+    {
+      if(PedalUpdateIntervalPrint_trigger)
+      {
+        for(pedalIDX=0;pedalIDX<3;pedalIDX++)
+        {
+          if(dap_bridge_state_st.payloadBridgeState_.Pedal_availability[pedalIDX]==1)
+          {
+            Serial.print("[L]Pedal ");
+            Serial.print(pedalIDX);
+            Serial.print(" Update interval: ");
+            Serial.print(current_time-pedal_last_update[pedalIDX]);
+            Serial.print(" RSSI: ");
+            Serial.println(rssi[pedalIDX]);
+          }
+        }
       }
-
+      PedalUpdateIntervalPrint_b=false;
     }
     
     delay(2);
@@ -1097,6 +1136,14 @@ void Joystick_Task( void * pvParameters )
       
 
       joystickSendState();
+      //bool joystatus=GetJoystickStatus();
+      if(!GetJoystickStatus())
+      {
+
+        RestartJoystick();
+        Serial.println("[L]HID Eroor, Restart Joystick...");
+        //last_serial_joy_out=millis();
+      }
     }
     #endif
     // set analog value

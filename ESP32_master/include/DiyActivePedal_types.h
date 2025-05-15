@@ -3,7 +3,7 @@
 #include <stdint.h>
 
 // define the payload revision
-#define DAP_VERSION_CONFIG 145
+#define DAP_VERSION_CONFIG 148
 
 // define the payload types
 #define DAP_PAYLOAD_TYPE_CONFIG 100
@@ -54,6 +54,7 @@ struct payloadPedalState_Basic {
   uint16_t joystickOutput_u16;
   uint8_t error_code_u8;
   uint8_t pedalFirmwareVersion_u8[3];
+  uint8_t servoStatus;
 };
 
 struct payloadPedalState_Extended {
@@ -66,9 +67,11 @@ struct payloadPedalState_Extended {
   // register values from servo
   int16_t servoPosition_i16;
   int16_t servoPositionTarget_i16;
+  int16_t servo_position_error_i16;
   uint16_t angleSensorOutput_ui16;
   int16_t servo_voltage_0p1V;
   int16_t servo_current_percent_i16;
+  uint8_t brakeResistorState_b;
 };
 
 struct payloadBridgeState {
@@ -190,14 +193,11 @@ struct payloadPedalConfig {
 
   //pedal type, 0= clutch, 1= brake, 2= gas
   uint8_t pedal_type;
-  //OTA flag
-  //uint8_t OTA_flag;
 
   uint8_t stepLossFunctionFlags_u8;
-  //joystick out flag
-  //uint8_t Joystick_ESPsync_to_ESP;
   uint8_t kf_Joystick_u8;
   uint8_t kf_modelNoise_joystick; 
+  uint8_t servoIdleTimeout;
 
 };
 

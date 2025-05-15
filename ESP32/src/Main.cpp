@@ -1145,7 +1145,8 @@ void pedalUpdateTask( void * pvParameters )
         ESP.restart();
       }
       //pedal not in action, disable pedal power
-      if(stepper->servoStatus==SERVO_CONNECTED &&millis()-servoActionLast>MAXIMUM_STEPPER_IDLE_TIMEOUT)
+      uint32_t pedalIdleTimout= dap_config_pedalUpdateTask_st.payLoadPedalConfig_.servoIdleTimeout*60*1000;// timeout in ms
+      if(stepper->servoStatus==SERVO_CONNECTED && millis()-servoActionLast>pedalIdleTimout && dap_config_pedalUpdateTask_st.payLoadPedalConfig_.servoIdleTimeout!=0)
       {
         stepper->servoIdleAction();
         stepper->servoStatus=SERVO_IDLE_NOT_CONNECTED;
