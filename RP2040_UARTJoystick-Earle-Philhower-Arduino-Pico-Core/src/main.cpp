@@ -1,74 +1,68 @@
-#include <Arduino.h>
-#include "Joystick_RP2040.h"
-
-typedef struct __attribute__((packed)) payloadjoystick {
-  uint8_t payloadtype;
-  int32_t controllerValue_i32[3];
-  int8_t pedal_status;
-  uint16_t checkSum;
-} ;
-
-typedef struct __attribute__((packed)) payloadFooter {
-  uint16_t checkSum;
-};
-
-typedef struct __attribute__((packed)) DAP_JoystickUART_State {
-  payloadjoystick _payloadjoystick;
-  payloadFooter _payloadfooter;
-};
-
-Joystick_RP2040 Joystick;
-DAP_JoystickUART_State dap_joystickUART_st_local;
-const uint8_t DAP_PAYLOAD_TYPE_JOYSTICKUART = 230;
-
-uint16_t checksumCalculator(uint8_t *data, uint16_t length) {
-  uint8_t sum1 = 0, sum2 = 0;
-  for (int i = 0; i < length; i++) {
-    sum1 = (sum1 + data[i]) % 255;
-    sum2 = (sum2 + sum1) % 255;
-  }
-  return (sum2 << 8) | sum1;
-}
+#include <Joystick.h>
 
 void setup() {
-  Serial1.setTX(4);
-  Serial1.setRX(5);
-  Serial1.begin(115200);
-
-  TinyUSBDevice.setManufacturerDescriptor("YourCompany");
-  TinyUSBDevice.setProductDescriptor("Custom Joystick");
-  TinyUSBDevice.setSerialDescriptor("SN2025A01");
-
+  //Serial.begin(115200);
+  //Serial.println("Use BOOTSEL to start the Joystick demo.");
   Joystick.begin();
 }
 
 void loop() {
-  if (Serial1.available() >= sizeof(DAP_JoystickUART_State)) {
-    Serial1.readBytes((char*)&dap_joystickUART_st_local, sizeof(DAP_JoystickUART_State));
-    bool structChecker = true;
-
-    if (dap_joystickUART_st_local._payloadjoystick.payloadtype != DAP_PAYLOAD_TYPE_JOYSTICKUART)
-      structChecker = false;
-
-    uint16_t crc = checksumCalculator(
-        (uint8_t*)&(dap_joystickUART_st_local._payloadjoystick),
-        sizeof(dap_joystickUART_st_local._payloadjoystick));
-
-    if (crc != dap_joystickUART_st_local._payloadfooter.checkSum)
-      structChecker = false;
-
-    if (structChecker) {
-      int val0 = constrain(map(dap_joystickUART_st_local._payloadjoystick.controllerValue_i32[0], 0, 10000, -127, 127), -127, 127);
-      int val1 = constrain(map(dap_joystickUART_st_local._payloadjoystick.controllerValue_i32[1], 0, 10000, -127, 127), -127, 127);
-      int val2 = constrain(map(dap_joystickUART_st_local._payloadjoystick.controllerValue_i32[2], 0, 10000, -127, 127), -127, 127);
-
-      Joystick.setXAxis(val0);
-      Joystick.setYAxis(val1);
-      Joystick.setZAxis(val2);
-      Joystick.setRxAxis(val0);
-      Joystick.setRyAxis(val1);
-      Joystick.setRzAxis(val2);
-      Joystick.sendState();
-    }
+  if (BOOTSEL) {
+	//Serial.println("Joystick buttons");
+    for(uint8_t i = 1; i<=32; i++)
+    {
+		Joystick.button(i,true);
+		delay(250);
+		Joystick.button(i,false);
+		delay(10); //we need a short delay here, sending packets with less than 1ms leads to packet loss!
+	}
+	//alternativ with manual send:
+	Joystick.useManualSend(true);
+	//Serial.println("Joystick buttons - manual send");
+    for(uint8_t i = 1; i<=32; i++)
+    {
+		Joystick.button(i,true);
+		Joystick.send_now();
+		delay(250);
+		Joystick.button(i,false);
+	}
+	Joystick.useManualSend(false);
+	
+    //iterate all joystick axis
+    //Note: although you can use 0-1023 here (10bit), internally 8bits are used (-127 to 127)
+    //Serial.println("Joystick X");
+    for(uint16_t i = 0; i<1023; i++) { Joystick.X(i); delay(2); } Joystick.X(512);
+    //Serial.println("Joystick Y");
+    for(uint16_t i = 0; i<1023; i++) { Joystick.Y(i); delay(2); } Joystick.Y(512);
+    //Serial.println("Joystick Z");
+    for(uint16_t i = 0; i<1023; i++) { Joystick.Z(i); delay(2); } Joystick.Z(512);
+    //Serial.println("Joystick Zrotate");
+    for(uint16_t i = 0; i<1023; i++) { Joystick.Zrotate(i); delay(2); } Joystick.Zrotate(512);
+    //Serial.println("Joystick sliderLeft");
+    for(uint16_t i = 0; i<1023; i++) { Joystick.sliderLeft(i); delay(2); } Joystick.sliderLeft(0);
+    //Serial.println("Joystick sliderRight");
+    for(uint16_t i = 0; i<1023; i++) { Joystick.sliderRight(i); delay(2); } Joystick.sliderRight(0);
+    //Serial.println("Joystick hat");
+    for(uint16_t i = 0; i<360; i++) { Joystick.hat(i); delay(20); } Joystick.hat(-1);
+    
+    //use int8 mode for the axis.
+    //Note: hat is not used differently.
+    //Serial.println("Now all axis in 8bit mode, -127 to 127");
+    Joystick.use8bit(true);
+    //Serial.println("Joystick X");
+    for(int16_t i = -127; i<128; i++) { Joystick.X(i); delay(2); } Joystick.X(0);
+    //Serial.println("Joystick Y");
+    for(int16_t i = -127; i<128; i++) { Joystick.Y(i); delay(2); } Joystick.Y(0);
+    //Serial.println("Joystick Z");
+    for(int16_t i = -127; i<128; i++) { Joystick.Z(i); delay(2); } Joystick.Z(0);
+    //Serial.println("Joystick Zrotate");
+    for(int16_t i = -127; i<128; i++) { Joystick.Zrotate(i); delay(2); } Joystick.Zrotate(0);
+    //Serial.println("Joystick sliderLeft");
+    for(int16_t i = -127; i<128; i++) { Joystick.sliderLeft(i); delay(2); } Joystick.sliderLeft(0);
+    //Serial.println("Joystick sliderRight");
+    for(int16_t i = -127; i<128; i++) { Joystick.sliderRight(i); delay(2); } Joystick.sliderRight(0);
+    Joystick.use8bit(false);
   }
 }
+
+
