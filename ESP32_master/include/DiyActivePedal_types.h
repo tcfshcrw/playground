@@ -13,7 +13,8 @@
 #define DAP_PAYLOAD_TYPE_ESPNOW_PAIRING 140
 #define DAP_PAYLOAD_TYPE_ESPNOW_RUDDER 150
 #define DAP_PAYLOAD_TYPE_ESPNOW_JOYSTICK 160
-#define DAP_PAYLOAD_TYPE_BRIDGE_STATE 210
+#define DAP_PAYLOAD_TYPE_BRIDGE_STATE 210 
+#define DAP_PAYLOAD_TYPE_JOYSTICKUART 230
 
 struct payloadHeader {
   
@@ -79,6 +80,7 @@ struct payloadBridgeState {
   uint8_t Pedal_availability[3];
   uint8_t Bridge_action;//0=none, 1=enable pairing 2=Restart 3=download mode 
   uint8_t Bridge_firmware_version_u8[3];
+  int32_t Pedal_RSSI_Realtime[3];
 
 };
 struct payloadPedalConfig {
@@ -254,6 +256,20 @@ struct DAP_ESPPairing_st {
   payloadHeader payLoadHeader_;
   payloadESPNowInfo payloadESPNowInfo_;
   payloadFooter payloadFooter_; 
+};
+
+struct payloadjoystick
+{
+  uint8_t payloadtype;
+  int32_t controllerValue_i32[3];
+  int8_t pedal_status;
+  uint16_t checkSum;
+};
+
+struct DAP_JoystickUART_State 
+{
+  payloadjoystick _payloadjoystick;
+  payloadFooter _payloadfooter;
 };
 
 struct DAP_calculationVariables_st

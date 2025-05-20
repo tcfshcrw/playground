@@ -17,7 +17,7 @@ uint8_t* Recv_mac;
 uint16_t ESPNow_send=0;
 uint16_t ESPNow_recieve=0;
 int rssi_display;
-int rssi[3]={0,0,0};
+int32_t rssi[3]={0,0,0};
 //bool MAC_get=false;
 bool ESPNOW_status =false;
 bool ESPNow_initial_status=false;
@@ -27,6 +27,7 @@ bool update_basic_state=false;
 bool update_extend_state=false;
 bool pedal_OTA_action_b=false;
 uint16_t Joystick_value[]={0,0,0};
+uint16_t Joystick_value_original[]={0,0,0};
 bool ESPNow_request_config_b[3]={false,false,false};
 bool ESPNow_error_b=false;
 uint16_t pedal_throttle_value=0;
@@ -161,12 +162,14 @@ void onRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len)
         {
           pedal_cluth_value=joystickNormalizedToInt32;
           Joystick_value[0]=Joystick_Data.controllerValue_i32;
+          Joystick_value_original[0]=joystickNormalizedToInt32;
           //joystick_update=true;
         }
         if(mac_addr[5]==Brk_mac[5])
         {
           pedal_brake_value=joystickNormalizedToInt32;
           Joystick_value[1]=Joystick_Data.controllerValue_i32;
+          Joystick_value_original[1]=joystickNormalizedToInt32;
           
           //joystick_update=true;
         }
@@ -174,6 +177,7 @@ void onRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len)
         {
           pedal_throttle_value=joystickNormalizedToInt32;
           Joystick_value[2]=Joystick_Data.controllerValue_i32;
+          Joystick_value_original[2]=joystickNormalizedToInt32;
           pedal_status=Joystick_Data.pedal_status;//control pedal status only by Throttle
           //joystick_update=true;
         }
@@ -401,4 +405,15 @@ void ESPNow_initialize()
     ESPNow_initial_status=true;
     Serial.println("[L]ESPNow Initialized");
   
+}
+void print_struct_hex(DAP_bridge_state_st* s) {
+    const uint8_t* p = (const uint8_t*)s;
+    for (size_t i = 0; i < sizeof(DAP_bridge_state_st); i++) 
+    {
+      Serial.print("0x");  
+      if (p[i] < 16) Serial.print('0');
+      Serial.print(p[i], HEX);
+      Serial.print("-");
+    }
+    Serial.println("");
 }
