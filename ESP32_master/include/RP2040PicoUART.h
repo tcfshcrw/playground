@@ -1,6 +1,7 @@
 #pragma once
 #include <Arduino.h>
 #include <HardwareSerial.h>
+#define DAP_PAYLOAD_TYPE_JOYSTICKUART 215
 const int RP2040baudrate=921600;
 const int handshakeGPIO=17;
 const int RP2040txPin=15;
@@ -11,6 +12,7 @@ struct __attribute__((packed)) payloadjoystick
     uint8_t key;
     int16_t controllerValue_i32[3];
     int8_t pedal_status;
+    uint8_t pedalAvailability[3];
     uint8_t JoystickAction;
 };
 struct __attribute__((packed)) JoystickPayloadFooter

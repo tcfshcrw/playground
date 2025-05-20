@@ -257,8 +257,9 @@ void sendPacket(uint8_t* data, size_t len)
   RP2040PicoUART *_rp2040picoUART;
   DAP_JoystickUART_State dap_joystickUART_state_lcl;
 #endif
-  void setup()
-  {
+
+void setup()
+{
   //Serial.begin(115200);
   //Serial.begin(921600);
   //Serial.begin(512000);
@@ -267,7 +268,7 @@ void sendPacket(uint8_t* data, size_t len)
     _rp2040picoUART= new RP2040PicoUART(RP2040rxPin, RP2040txPin, handshakeGPIO, RP2040baudrate);
   #endif
 
-#if PCB_VERSION == 5 || PCB_VERSION == 6 || PCB_VERSION == 7 || PCB_VERSION == 8
+  #if PCB_VERSION == 5 || PCB_VERSION == 6 || PCB_VERSION == 7 || PCB_VERSION == 8
     //Serial.setTxTimeoutMs(0);
     Serial.setRxBufferSize(1024);
     Serial.setTimeout(5);
@@ -276,15 +277,15 @@ void sendPacket(uint8_t* data, size_t len)
     //Serial0.begin(921600);
     //Serial0.setDebugOutput(false);
     //esp_log_level_set("*",ESP_LOG_INFO);
-#else
-  Serial.setRxBufferSize(1024);
-  Serial.begin(921600);
-  Serial.setTimeout(5);
+  #else
+    Serial.setRxBufferSize(1024);
+    Serial.begin(921600);
+    Serial.setTimeout(5);
 
-#endif
-#ifdef USB_JOYSTICK
-	SetupController();
-#endif
+  #endif
+  #ifdef USB_JOYSTICK
+	  SetupController();
+  #endif
   Serial.println(" ");
   Serial.println(" ");
   Serial.println(" ");
@@ -307,9 +308,9 @@ void sendPacket(uint8_t* data, size_t len)
   */
   delay(10);
   #ifdef ESPNow_Pairing_function
-  //button read setup
-  pinMode(Pairing_GPIO, INPUT_PULLUP);
-  EEPROM.begin(256);
+    //button read setup
+    pinMode(Pairing_GPIO, INPUT_PULLUP);
+    EEPROM.begin(256);
   #endif
 /*
   if(semaphore_updateJoystick==NULL)
@@ -1084,29 +1085,12 @@ void Serial_Task( void * pvParameters)
         for(int i=0; i<3;i++)
         {
           dap_joystickUART_state_lcl._payloadjoystick.controllerValue_i32[i]=Joystick_value_original[i];
-          //dap_joystickUART_state_lcl._payloadjoystick.controllerValue_i32[i]=(uint32_t) joystick_fake_value;
-          
+          dap_joystickUART_state_lcl._payloadjoystick.pedalAvailability[i] = dap_bridge_state_st.payloadBridgeState_.Pedal_availability[i];
         }
-        /*
-        joystick_fake_value++;
-        if(joystick_fake_value>1023)
-        {
-          joystick_fake_value=0;
-        }
-        */
         dap_joystickUART_state_lcl._payloadjoystick.pedal_status=pedal_status;
         dap_joystickUART_state_lcl._payloadfooter.checkSum= checksumCalculator((uint8_t*)(&(dap_joystickUART_state_lcl._payloadjoystick)), sizeof(dap_joystickUART_state_lcl._payloadjoystick));
         _rp2040picoUART->UARTSendPacket((uint8_t*)&dap_joystickUART_state_lcl, sizeof(DAP_JoystickUART_State));
-        //dap_joystickUART_state_local_ptr = & dap_joystickUART_state_lcl;
-        /*
-        if(digitalRead(handshakeGPIO)==HIGH)
-        {
-          sendPacket((uint8_t*)&dap_joystickUART_state_lcl, sizeof(DAP_JoystickUART_State));
-        }
-          */
-        
-        //Serial.println("UART1 package send");
-        
+
       }
     #endif
 

@@ -3,12 +3,14 @@
 #include <stdint.h>
 const uint8_t DAP_PAYLOAD_TYPE_JOYSTICKUART=215;
 const uint16_t JOYSTICK_VALUE_MAX=10000;
+const uint16_t JOYSTICK_RANGE_LOCAL=1024;
 struct __attribute__((packed)) payloadjoystick
 {
   uint8_t payloadtype;
   uint8_t key;
   int16_t controllerValue_i32[3];
   int8_t pedal_status;
+  uint8_t pedalAvailability[3];
   uint8_t JoystickAction;
 };
 struct __attribute__((packed)) JoystickPayloadFooter
@@ -27,4 +29,11 @@ enum Pedal_status
   Pedal_status_Pedal,
   Pedal_status_Rudder,
   Pedal_status_RudderBrake
+};
+
+enum JoystickAction
+{
+  NONE,
+  JOYSTICKACTION_DEBUG_MODE,
+  JOYSTICKACTION_RESET_INTO_BOOTLOADER
 };
