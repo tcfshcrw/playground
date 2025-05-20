@@ -5,7 +5,24 @@ const int RP2040baudrate=921600;
 const int handshakeGPIO=17;
 const int RP2040txPin=15;
 const int RP2040rxPin=16;
-
+struct __attribute__((packed)) payloadjoystick
+{
+    uint8_t payloadtype;
+    uint8_t key;
+    int16_t controllerValue_i32[3];
+    int8_t pedal_status;
+    uint8_t JoystickAction;
+};
+struct __attribute__((packed)) JoystickPayloadFooter
+{
+    // To check if structure is valid
+    uint16_t checkSum;
+};
+struct __attribute__((packed)) DAP_JoystickUART_State
+{
+    payloadjoystick _payloadjoystick;
+    JoystickPayloadFooter _payloadfooter;
+};
 class RP2040PicoUART
 {
     public:

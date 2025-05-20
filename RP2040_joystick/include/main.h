@@ -1,23 +1,30 @@
 #pragma once
 #include<Arduino.h>
 #include <stdint.h>
-const uint8_t DAP_PAYLOAD_TYPE_JOYSTICKUART=230;
-const uint16_t JOYSTICK_VALUE_MAX=1023;
-struct payloadjoystick
+const uint8_t DAP_PAYLOAD_TYPE_JOYSTICKUART=215;
+const uint16_t JOYSTICK_VALUE_MAX=10000;
+struct __attribute__((packed)) payloadjoystick
 {
   uint8_t payloadtype;
-  int32_t controllerValue_i32[3];
+  uint8_t key;
+  int16_t controllerValue_i32[3];
   int8_t pedal_status;
-  uint16_t checkSum;
-} ;
-struct payloadFooter 
+  uint8_t JoystickAction;
+};
+struct __attribute__((packed)) JoystickPayloadFooter
 {
   // To check if structure is valid
   uint16_t checkSum;
 };
-
-struct DAP_JoystickUART_State 
+struct __attribute__((packed)) DAP_JoystickUART_State
 {
   payloadjoystick _payloadjoystick;
-  payloadFooter _payloadfooter;
+  JoystickPayloadFooter _payloadfooter;
+};
+
+enum Pedal_status
+{
+  Pedal_status_Pedal,
+  Pedal_status_Rudder,
+  Pedal_status_RudderBrake
 };

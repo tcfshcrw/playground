@@ -6,8 +6,8 @@
         "boot2_source": "boot2_w25q080_2_padded_checksum.S",
         "usb_vid": "0x1234",
         "usb_pid": "0x000a",
-        "usb_manufacturer": "Raspberry Pi",
-        "usb_product": "Pico_joy"        
+        "usb_manufacturer": "DIY",
+        "usb_product": "FFB_PEDAL_BRIDGE"        
       }
     },
     "core": "arduino",
