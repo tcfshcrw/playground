@@ -1081,7 +1081,8 @@ void Serial_Task( void * pvParameters)
         DAP_JoystickUART_State * dap_joystickUART_state_local_ptr;
         UARTJoystickUpdate_b=false;
         dap_joystickUART_state_lcl._payloadjoystick.payloadtype=(uint8_t)DAP_PAYLOAD_TYPE_JOYSTICKUART;
-        dap_joystickUART_state_lcl._payloadjoystick.key = 0x99;
+        dap_joystickUART_state_lcl._payloadjoystick.key = DAP_JOY_KEY;
+        dap_joystickUART_state_lcl._payloadjoystick.DAP_JOY_Version = DAP_JOY_VERSION;
         for(int i=0; i<3;i++)
         {
           dap_joystickUART_state_lcl._payloadjoystick.controllerValue_i32[i]=Joystick_value_original[i];
