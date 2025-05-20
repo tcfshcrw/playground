@@ -284,7 +284,7 @@
   //#define Using_analog_output_ESP32_S3
 
   //#define BLUETOOTH_GAMEPAD
-  #define USB_JOYSTICK
+  //#define USB_JOYSTICK
   #define USING_LED
   #define LED_ENABLE_WAVESHARE
   #define LED_GPIO 38

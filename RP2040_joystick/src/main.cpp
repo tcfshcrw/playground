@@ -55,6 +55,9 @@ void setup()
 
 unsigned long temp=0;
 unsigned long UART_last=0;
+int uart_index=0;
+uint8_t uart_buffer[sizeof(DAP_JoystickUART_State)];
+
 void loop() 
 {
   /*
@@ -67,6 +70,60 @@ void loop()
     debug_message_last=millis();
   }
   */
+  while (Serial2.available()) 
+  {
+    uart_buffer[uart_index++] = Serial2.read();
+    if (uart_index >= sizeof(DAP_JoystickUART_State)) 
+    {
+      memcpy(&dap_joystickUART_st_local, uart_buffer, sizeof(DAP_JoystickUART_State));
+      uart_index = 0;
+
+      // 檢查封包有效性
+      if (dap_joystickUART_st_local._payloadjoystick.payloadtype == DAP_PAYLOAD_TYPE_JOYSTICKUART) 
+      {
+        UART_last = millis();
+        uint16_t crc = checksumCalculator((uint8_t*)&(dap_joystickUART_st_local._payloadjoystick),
+                                          sizeof(dap_joystickUART_st_local._payloadjoystick));
+        if (crc == dap_joystickUART_st_local._payloadfooter.checkSum) {
+          int valX = constrain(map(dap_joystickUART_st_local._payloadjoystick.controllerValue_i32[0], 0, JOYSTICK_VALUE_MAX, 0, 1023), 0, 1023);
+          int valY = constrain(map(dap_joystickUART_st_local._payloadjoystick.controllerValue_i32[1], 0, JOYSTICK_VALUE_MAX, 0, 1023), 0, 1023);
+          int valZ = constrain(map(dap_joystickUART_st_local._payloadjoystick.controllerValue_i32[2], 0, JOYSTICK_VALUE_MAX, 0, 1023), 0, 1023);
+
+          Joystick.X(valX);
+          Joystick.Y(valY);
+          Joystick.Z(valZ);
+          Joystick.send_now(); // 只在有效封包後送出
+        } else {
+          Serial.println("CRC Error");
+        }
+      } else {
+        Serial.println("Type Error");
+      }
+    }
+  }
+      if (millis() - UART_last > 10000) 
+      {
+        UART_last = millis();
+        Serial.println("UART timeout");
+        restart_UART();
+      }
+  // Timeout 處理
+
+}
+
+void main_code() 
+{
+  /*
+  temp= millis()-runtime_last;
+  runtime_last=millis();
+  if(millis()-debug_message_last>500)
+  {
+    Serial.print("runtine interval:");
+    Serial.println(temp);
+    debug_message_last=millis();
+  }
+  */
+  
 
 
   Joystick.send_now();
