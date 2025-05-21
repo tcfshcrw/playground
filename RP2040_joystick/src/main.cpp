@@ -4,12 +4,13 @@
 #include "checksumcalculator.h"
 #include "uart.h"
 #include "hardware/watchdog.h"
+#define DEBUGOUT_INTERVAL 100
 
 DAP_JoystickUART_State dap_joystickUART_st_local;
 unsigned long runtime_last=0;
 unsigned long debug_message_last=0;
 void restart_UART();
-
+void printOutRaw();
 
 void setup()
 {
@@ -33,6 +34,7 @@ void setup()
   delay(100);
   digitalWrite(LED_PIN, HIGH);
   Serial.println("GPIO initialized");
+  //DEBUG_OUTPUT_b = true;
 }
 
 unsigned long temp=0;
@@ -119,6 +121,22 @@ void loop()
             }
             else if (dap_joystickUART_st_local._payloadjoystick.pedal_status == Pedal_status_RudderBrake)
             {
+              Joystick.Zrotate(0);     // clutch
+              Joystick.sliderLeft(0);  // brake
+              Joystick.sliderRight(0); // throttle
+              Joystick.Z((int16_t)(0.5 * JOYSTICK_RANGE_LOCAL));// keeo rudder in center
+              // int16_t filter_brake=0;
+              // int16_t filter_throttle=0;
+              if (dap_joystickUART_st_local._payloadjoystick.pedalAvailability[0] == 1)
+              {
+                Joystick.sliderLeft(controller_reading[0]);
+                Joystick.sliderRight(controller_reading[2]);
+              }
+              else
+              {
+                Joystick.sliderLeft(controller_reading[1]);
+                Joystick.sliderRight(controller_reading[2]);
+              }
             }
 
             Joystick.send_now();
@@ -126,7 +144,8 @@ void loop()
           }
           else
           {
-            Serial.println("CRC Error");
+            Serial.print(millis());
+            Serial.println(":CRC Error");
             Serial.print("Raw: ");
             for (int i = 0; i < sizeof(DAP_JoystickUART_State); i++)
             {
@@ -139,43 +158,34 @@ void loop()
         }
         else
         {
-          Serial.print("Verison Error, expected version: ");
+          Serial.print(millis());
+          Serial.print(": Verison Error, expected version: ");
           Serial.print(DAP_JOY_VERSION);
           Serial.print("get verison: ");
           Serial.println(dap_joystickUART_st_local._payloadjoystick.DAP_JOY_Version);
-          Serial.print("Raw: ");
-          for (int i = 0; i < sizeof(DAP_JoystickUART_State); i++)
-          {
-            Serial.print(uart_buffer_raw[i], HEX);
-            Serial.print(" ");
-          }
-          Serial.println();
+          printOutRaw();
           uart_index = 0; // clear buffer, and bytes alignment
         }
             }
       else
       {
-        Serial.print("Payload Type Error, Get:");
+        Serial.print(millis());
+        Serial.print(": Payload Type Error, Get:");
         Serial.print(dap_joystickUART_st_local._payloadjoystick.payloadtype);
         Serial.print(", Expect:");
         Serial.println(DAP_PAYLOAD_TYPE_JOYSTICKUART);
-        Serial.print("Raw: ");
-        for (int i = 0; i < sizeof(DAP_JoystickUART_State); i++)
-        {
-          Serial.print(uart_buffer_raw[i], HEX);
-          Serial.print(" ");
-        }
-        Serial.println();
+        printOutRaw();
         uart_index = 0; //clear buffer, and bytes alignment
       }
     }
   }
 
   // UART timeout check
-  if (millis() - UART_last > 5000)
+  if (millis() - UART_last > UART_TIMEOUT_IN_MS)
   {
     UART_last = millis();
-    Serial.println("UART timeout");
+    Serial.print(millis());
+    Serial.println(": UART timeout");
     restart_UART();
   }
 
@@ -190,19 +200,14 @@ void loop()
   {
     temp = millis() - runtime_last;
     runtime_last = millis();
-    if (millis() - debug_message_last > 100)
+    if (millis() - debug_message_last > DEBUGOUT_INTERVAL)
     {
-      Serial.print("runtine interval: ");
+      Serial.print(millis());
+      Serial.print(":runtime interval: ");
       Serial.print(temp);
       Serial.println(" ms");
       debug_message_last = millis();
-      Serial.print("Raw: ");
-      for (int i = 0; i < sizeof(DAP_JoystickUART_State); i++)
-      {
-        Serial.print(uart_buffer_raw[i], HEX);
-        Serial.print(" ");
-      }
-      Serial.println();
+      printOutRaw();
     }
 
   }
@@ -216,4 +221,16 @@ void restart_UART()
   delay(3000);
   Serial2.begin(baud);
   digitalWrite(handshakeGPIO, HIGH);
+}
+
+void printOutRaw()
+{
+  Serial.print(millis());
+  Serial.print(":Raw: ");
+  for (int i = 0; i < sizeof(DAP_JoystickUART_State); i++)
+  {
+    Serial.print(uart_buffer_raw[i], HEX);
+    Serial.print(" ");
+  }
+  Serial.println();
 }

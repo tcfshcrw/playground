@@ -3,7 +3,7 @@
 #include <HardwareSerial.h>
 #define DAP_PAYLOAD_TYPE_JOYSTICKUART 215
 #define DAP_JOY_VERSION 0x01
-#define DAP_JOY_KEY 0x99
+#define DAP_JOY_KEY 0x97
 const int RP2040baudrate=921600;
 const int handshakeGPIO=17;
 const int RP2040txPin=15;
