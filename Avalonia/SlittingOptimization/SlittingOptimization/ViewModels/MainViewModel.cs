@@ -9,23 +9,27 @@ public partial class MainViewModel : ObservableObject
     public ObservableCollection<CutItem> Items { get; } = new();
 
     public IRelayCommand AddItemCommand { get; }
-    public IRelayCommand<CutItem> RemoveItemCommand { get; }
+    public IRelayCommand RemoveLastItemCommand { get; }
 
     public MainViewModel()
     {
         AddItemCommand = new RelayCommand(AddItem);
-        RemoveItemCommand = new RelayCommand<CutItem>(RemoveItem);
+        RemoveLastItemCommand = new RelayCommand(RemoveLastItem, CanRemoveLastItem);
 
-        // 測試資料
-        Items.Add(new CutItem { Code = "A", Width = 100, Weight = 2, Preferred = false, MaxCount = 3 });
+        // initialize default data
+        Items.Add(new CutItem { Code = "A", Width = 140, Weight = 1, Preferred = false, MaxCount = 3 });
+        Items.Add(new CutItem { Code = "B", Width = 160, Weight = 1, Preferred = false, MaxCount = 4 });
+        Items.Add(new CutItem { Code = "C", Width = 180, Weight = 1, Preferred = false, MaxCount = 4 });
+        Items.Add(new CutItem { Code = "D", Width = 200, Weight = 1, Preferred = false, MaxCount = 4 });
     }
 
     private void AddItem() => Items.Add(new CutItem());
-    private void RemoveItem(CutItem? item)
+    void RemoveLastItem()
     {
-        if (item != null)
-            Items.Remove(item);
+        if (Items.Count > 0)
+            Items.RemoveAt(Items.Count - 1);
     }
+    bool CanRemoveLastItem() => Items.Count > 0;
     
     public partial class CutItem : ObservableObject
     {
