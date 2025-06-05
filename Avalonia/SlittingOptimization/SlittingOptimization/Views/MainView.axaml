@@ -1,0 +1,57 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:SlittingOptimization.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="SlittingOptimization.Views.MainView"
+             x:DataType="vm:MainViewModel">
+  <Design.DataContext>
+    <!-- This only sets the DataContext for the previewer in an IDE,
+         to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+    <vm:MainViewModel />
+  </Design.DataContext>
+  <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" >
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5">
+        <Label Content="Raw Material Width"/>
+        <TextBox Name="TextBoxRawMaterialWidth"/>
+      </StackPanel>
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5">
+        <Label Content="Slitting Wear"/>
+        <TextBox Name="TextBoxSlittingWear"/>
+      </StackPanel>
+      <StackPanel Orientation="Horizontal" Margin="0,0,0,8" MinHeight="200">
+        <ListBox ItemsSource="{Binding Items}">
+          <ListBox.ItemTemplate>
+            <DataTemplate>
+              <StackPanel Orientation="Horizontal" Spacing="5">
+                <TextBox Width="60" Text="{Binding Code}" />
+                <TextBox Width="60" Text="{Binding Width}" />
+                <TextBox Width="60" Text="{Binding Weight}" />
+                <CheckBox IsChecked="{Binding Preferred}" />
+                <TextBox Width="60" Text="{Binding MaxCount}" />
+              </StackPanel>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+        <Button Content="Add New" Command="{Binding Path=AddItemCommand}" />
+      </StackPanel>
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5">
+        <Label Content="Algorithm:"/>
+        <ComboBox x:Name="ComboBoxAlgorithmSelector" Width="120" SelectedIndex="0">
+        <ComboBoxItem Content="BFS"/>
+        <ComboBoxItem Content="DP"/>
+        <ComboBoxItem Content="BestFit"/>
+        <ComboBoxItem Content="GeneticAlgorithm"/>
+        <ComboBoxItem Content="SimulatedAnnealing"/>
+        <ComboBoxItem Content="BranchAndBound"/>
+        <ComboBoxItem Content="MonteCarlo"/>
+        <ComboBoxItem Content="A*"/>
+        <ComboBoxItem Content="ChatGPT"/>
+        <ComboBoxItem Content="BruteForce"/>
+      </ComboBox>
+      </StackPanel>
+      <Button Name="BtnOnCalculate" Click="BtnOnCalculate_OnClick" FontSize="15" Content="Calculate" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+      <TextBox Name="TextBoxResult" Text="" AcceptsReturn="True"/>
+  </StackPanel>
+</UserControl>
