@@ -3,7 +3,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:SlittingOptimization.ViewModels"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             mc:Ignorable="d" d:DesignWidth="430" d:DesignHeight="900"
              x:Class="SlittingOptimization.Views.MainView"
              x:DataType="vm:MainViewModel">
   <Design.DataContext>
@@ -36,10 +36,10 @@
               <ListBox.ItemTemplate>
                 <DataTemplate>
                   <StackPanel Orientation="Horizontal" Spacing="5">
-                    <TextBox Width="60" Text="{Binding Code}" />
+                    <TextBox  Width="60" Text="{Binding Code}" />
                     <TextBox Width="60" Text="{Binding Width}" />
-                    <TextBox Width="60" Text="{Binding Weight}" />
-                    <CheckBox IsChecked="{Binding Preferred}" />
+                    <TextBox  Width="60" Text="{Binding Weight}" />
+                    <CheckBox  IsChecked="{Binding Preferred}" />
                     <TextBox Width="60" Text="{Binding MaxCount}" />
                   </StackPanel>
                 </DataTemplate>
