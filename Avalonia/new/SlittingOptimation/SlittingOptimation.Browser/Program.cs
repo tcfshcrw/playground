@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Browser;
-using SlittingOptimation;
+using SlittingOptimization;
 
 internal sealed partial class Program
 {

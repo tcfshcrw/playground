@@ -1,7 +1,7 @@
 ﻿using System;
 using Avalonia;
 
-namespace SlittingOptimation.Desktop;
+namespace SlittingOptimization.Desktop;
 
 sealed class Program
 {
