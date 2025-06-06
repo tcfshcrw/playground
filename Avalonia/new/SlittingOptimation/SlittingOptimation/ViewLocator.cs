@@ -1,9 +1,9 @@
 using System;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
-using SlittingOptimation.ViewModels;
+using SlittingOptimization.ViewModels;
 
-namespace SlittingOptimation;
+namespace SlittingOptimization;
 
 public class ViewLocator : IDataTemplate
 {

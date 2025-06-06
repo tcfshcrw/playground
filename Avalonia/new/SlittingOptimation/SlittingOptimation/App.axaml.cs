@@ -4,10 +4,10 @@ using Avalonia.Data.Core;
 using Avalonia.Data.Core.Plugins;
 using System.Linq;
 using Avalonia.Markup.Xaml;
-using SlittingOptimation.ViewModels;
-using SlittingOptimation.Views;
+using SlittingOptimization.ViewModels;
+using SlittingOptimization.Views;
 
-namespace SlittingOptimation;
+namespace SlittingOptimization;
 
 public partial class App : Application
 {
