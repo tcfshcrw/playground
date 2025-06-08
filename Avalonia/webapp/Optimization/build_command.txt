@@ -1,0 +1,10 @@
+dotnet publish -c Release -f net8.0-browser -o publish /p:AvaloniaUseWasm=true
+
+add
+<style>
+input, textarea, input[type="text"], input[type="password"], input[type="email"] {
+    font-size: 17px !important;
+}
+</style>
+
+into css file

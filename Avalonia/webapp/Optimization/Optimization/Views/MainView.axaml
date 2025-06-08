@@ -1,0 +1,94 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:Optimization.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="450" d:DesignHeight="800"
+             x:Class="Optimization.Views.MainView"
+             x:DataType="vm:MainViewModel"
+             xmlns:local="clr-namespace:Optimization.Convertor">
+	<UserControl.Resources>
+		<local:InverseBooleanConverter x:Key="InverseBooleanConverter" />
+	</UserControl.Resources>
+	<Design.DataContext>
+    <!-- This only sets the DataContext for the previewer in an IDE,
+         to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+    <vm:MainViewModel />
+	</Design.DataContext>
+	
+	<ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+		<StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+			<Border Background="DimGray" CornerRadius="5">
+				<StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" >
+					<Label Content="Slitting Optimization" FontFamily="Noto Sans, Arial, sans-serif" FontSize="20" HorizontalContentAlignment="Center"/>
+					<StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5">
+						<Label Content="Raw Coil Width"/>
+						<TextBox Name="TextBoxRawMaterialWidth" Text="1200"/>
+					</StackPanel>
+					<StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5">
+						<Label Content="Loss Per Cut"/>
+						<TextBox Name="TextBoxSlittingWear" Text="0"/>
+					</StackPanel>
+					<StackPanel Orientation="Vertical" Margin="0,0,0,8" >
+						<StackPanel Orientation="Horizontal" Spacing="5">
+							<Label Content="P/N" Width="60" HorizontalContentAlignment="Center"/>
+							<Label Content="Width" Width="60" HorizontalContentAlignment="Center"/>
+							<Label Content="Weight" Width="60" HorizontalContentAlignment="Center"/>
+							<Label Content="Preferred" Width="70" HorizontalContentAlignment="Center"/>
+							<Label Content="Max" Width="60" HorizontalContentAlignment="Center"/>
+						</StackPanel>
+						<ListBox ItemsSource="{Binding Items}">
+							<ListBox.ItemTemplate>
+								<DataTemplate>
+									<StackPanel Orientation="Horizontal" Spacing="5">
+										<TextBox  Width="60" Text="{Binding Code}" FontSize="17"/>
+										<TextBox Width="60" Text="{Binding Width}" FontSize="17"/>
+										<TextBox  Width="60" Text="{Binding Weight}" FontSize="17"/>
+										<CheckBox  IsChecked="{Binding Preferred}" />
+										<TextBox Width="60" Text="{Binding MaxCount}" FontSize="17" />
+									</StackPanel>
+								</DataTemplate>
+							</ListBox.ItemTemplate>
+						</ListBox>
+						<StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5">
+							<Button  Content="Add New" Command="{Binding Path=AddItemCommand}" HorizontalAlignment="Center" Width="200" HorizontalContentAlignment="Center"/>
+							<Button Content="Delete Last" Command="{Binding RemoveLastItemCommand}" HorizontalAlignment="Center" Width="200" HorizontalContentAlignment="Center"/>
+						</StackPanel>
+					</StackPanel>
+					<StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5">
+						<Label Content="Algorithm:"/>
+						<ComboBox x:Name="ComboBoxAlgorithmSelector" Width="250" SelectedIndex="0">
+							<ComboBoxItem Content="BFS"/>
+							<ComboBoxItem Content="DP"/>
+							<ComboBoxItem Content="BestFit"/>
+							<ComboBoxItem Content="GeneticAlgorithm"/>
+							<ComboBoxItem Content="SimulatedAnnealing"/>
+							<ComboBoxItem Content="BranchAndBound"/>
+							<ComboBoxItem Content="MonteCarlo"/>
+							<ComboBoxItem Content="A*"/>
+							<ComboBoxItem Content="BruteForce"/>
+						</ComboBox>
+					</StackPanel>
+					<Button Name="BtnOnCalculate" Click="BtnOnCalculate_OnClick" FontSize="15" Content="Calculate" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+					<Label Content="Visualized Slitting" Height="20" HorizontalAlignment="Left" FontSize="17" HorizontalContentAlignment="Left" Padding="0"/>
+					<Canvas Name="CanvasVisualSlitting" Width="400" Height="40"/>
+					<StackPanel Height="25" Orientation="Horizontal">
+						<Label Content="Detailed Result" Height="20" HorizontalAlignment="Left" FontSize="17" HorizontalContentAlignment="Left" Padding="0"/>
+						<CheckBox Content="Copyable" Margin="10,0,0,0" IsChecked="{Binding IsResultEditable, Mode=TwoWay}"/>
+					</StackPanel>
+					<StackPanel>
+						<TextBlock Name="TextBoxResult" Text=""  FontSize="15" IsVisible="{Binding IsResultEditable, Converter={StaticResource InverseBooleanConverter}}"/>
+					</StackPanel>
+					<StackPanel Height="25">
+						<Label Content="Log" Height="20" HorizontalAlignment="Left" FontSize="17" HorizontalContentAlignment="Left" Padding="0"/>
+					</StackPanel>
+					<StackPanel>
+						<TextBlock Name="TextBoxLog" Text="Logs:"  FontSize="15" />
+					</StackPanel>
+					
+				</StackPanel>
+			</Border>
+		</StackPanel>
+
+	</ScrollViewer>
+</UserControl>
