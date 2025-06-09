@@ -22,12 +22,12 @@
 				<StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" >
 					<Label Content="Slitting Optimization" FontFamily="Noto Sans, Arial, sans-serif" FontSize="20" HorizontalContentAlignment="Center"/>
 					<StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5">
-						<Label Content="Raw Coil Width"/>
-						<TextBox Name="TextBoxRawMaterialWidth" Text="1200"/>
+						<Label Content="Raw Coil Width(mm):" VerticalContentAlignment="Center" Padding="2,0,0,0"/>
+						<TextBox Name="TextBoxRawMaterialWidth" Text="1200" FontSize="17" Padding="0" VerticalContentAlignment="Center"/>
 					</StackPanel>
 					<StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5">
-						<Label Content="Loss Per Cut"/>
-						<TextBox Name="TextBoxSlittingWear" Text="0"/>
+						<Label Content="Loss Per Cut(mm):" Padding="0" VerticalContentAlignment="Center"/>
+						<TextBox Name="TextBoxSlittingWear" Text="0" FontSize="17" Padding="2,0,0,0" VerticalContentAlignment="Center"/>
 					</StackPanel>
 					<StackPanel Orientation="Vertical" Margin="0,0,0,8" >
 						<StackPanel Orientation="Horizontal" Spacing="5">
@@ -51,8 +51,8 @@
 							</ListBox.ItemTemplate>
 						</ListBox>
 						<StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5">
-							<Button  Content="Add New" Command="{Binding Path=AddItemCommand}" HorizontalAlignment="Center" Width="200" HorizontalContentAlignment="Center"/>
-							<Button Content="Delete Last" Command="{Binding RemoveLastItemCommand}" HorizontalAlignment="Center" Width="200" HorizontalContentAlignment="Center"/>
+							<Button  Content="Add New" Command="{Binding Path=AddItemCommand}" HorizontalAlignment="Center" Width="175" HorizontalContentAlignment="Center"/>
+							<Button Content="Delete Last" Command="{Binding RemoveLastItemCommand}" HorizontalAlignment="Center" Width="175" HorizontalContentAlignment="Center"/>
 						</StackPanel>
 					</StackPanel>
 					<StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5">
@@ -70,20 +70,23 @@
 						</ComboBox>
 					</StackPanel>
 					<Button Name="BtnOnCalculate" Click="BtnOnCalculate_OnClick" FontSize="15" Content="Calculate" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
-					<Label Content="Visualized Slitting" Height="20" HorizontalAlignment="Left" FontSize="17" HorizontalContentAlignment="Left" Padding="0"/>
-					<Canvas Name="CanvasVisualSlitting" Width="400" Height="40"/>
+					<Label Content="Visualized Slitting" Height="25" HorizontalAlignment="Left" FontSize="20" HorizontalContentAlignment="Left" Padding="0" Margin="5,0,0,0"/>
+					<Canvas Name="CanvasVisualSlitting" Width="350" Height="40"/>
 					<StackPanel Height="25" Orientation="Horizontal">
-						<Label Content="Detailed Result" Height="20" HorizontalAlignment="Left" FontSize="17" HorizontalContentAlignment="Left" Padding="0"/>
+						<Label Content="Detailed Result" Height="25" HorizontalAlignment="Left" FontSize="20" HorizontalContentAlignment="Left" Padding="0" Margin="5,0,0,0"/>
 						<CheckBox Content="Copyable" Margin="10,0,0,0" IsChecked="{Binding IsResultEditable, Mode=TwoWay}"/>
 					</StackPanel>
 					<StackPanel>
-						<TextBlock Name="TextBoxResult" Text=""  FontSize="15" IsVisible="{Binding IsResultEditable, Converter={StaticResource InverseBooleanConverter}}"/>
+						<TextBox Text="{Binding DetailResultText}" FontSize="17" IsVisible="{Binding IsResultEditable}" IsReadOnly="True" Margin="5,0,0,0"/>
+						<TextBlock Name="TextBoxResult" Text="{Binding DetailResultText}"  FontSize="15" IsVisible="{Binding IsResultEditable, Converter={StaticResource InverseBooleanConverter}}" Margin="5,0,0,0"/>
 					</StackPanel>
-					<StackPanel Height="25">
-						<Label Content="Log" Height="20" HorizontalAlignment="Left" FontSize="17" HorizontalContentAlignment="Left" Padding="0"/>
+					<StackPanel Height="25" Orientation="Horizontal">
+						<Label Content="Log" Height="25" HorizontalAlignment="Left" FontSize="20" HorizontalContentAlignment="Left" Padding="0" Margin="5,0,0,0"/>
+						<CheckBox Content="Copyable" Margin="10,0,0,0" IsChecked="{Binding IsLogEditable, Mode=TwoWay}" />
 					</StackPanel>
 					<StackPanel>
-						<TextBlock Name="TextBoxLog" Text="Logs:"  FontSize="15" />
+						<TextBox Text="{Binding LogText}" FontSize="17" IsVisible="{Binding IsLogEditable}" IsReadOnly="True" Margin="5,0,0,0"/>
+						<TextBlock Name="TextBoxLog" Text="{Binding LogText}"  FontSize="15" IsVisible="{Binding IsLogEditable, Converter={StaticResource InverseBooleanConverter}}" Margin="5,0,0,0"/>
 					</StackPanel>
 					
 				</StackPanel>

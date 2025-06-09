@@ -95,7 +95,7 @@ public partial class MainView : UserControl
                 _calculationEndTime = DateTime.Now;
                 TimeSpan diff = _calculationEndTime - _calculationStartTime;
                 int millisceonds = (int)diff.TotalMilliseconds;
-                TextBoxLog.Text += $"\n{SelectedAlgorithm} calculation time: {millisceonds}ms";
+                vm.LogText += $"{SelectedAlgorithm} calculation time: {millisceonds}ms\n";
                 //add the background rect to the canvas. 
                 var boardRect = new Rectangle { Width = canvasWidth, Height = boardHeight, Fill = Brushes.LightGray };
                 Canvas.SetTop(boardRect, y); Canvas.SetLeft(boardRect, 0);
@@ -156,7 +156,11 @@ public partial class MainView : UserControl
         sb.AppendLine($"All weight:{totalWeightAll}");
         sb.AppendLine($"All Waste:{totalWasteAll}mm");
         //sb.AppendLine(Algorithm_text);
-        TextBoxResult.Text = sb.ToString();
+        //TextBoxResult.Text = sb.ToString();
+        if (DataContext is MainViewModel vm2)
+        {
+            vm2.DetailResultText=sb.ToString();
+        }
         //TextBoxResult.Text = "result"+"click";
 
         throw new System.NotImplementedException();
