@@ -23,11 +23,11 @@
 					<Label Content="Slitting Optimization" FontFamily="Noto Sans, Arial, sans-serif" FontSize="20" HorizontalContentAlignment="Center"/>
 					<StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5">
 						<Label Content="Raw Coil Width(mm):" VerticalContentAlignment="Center" />
-						<TextBox Name="TextBoxRawMaterialWidth" Text="1200" FontSize="17" Padding="2,0,0,0" VerticalContentAlignment="Center"/>
+						<TextBox Name="TextBoxRawMaterialWidth" Text="{Binding TextBoxRawMaterialWidth}" FontSize="17" Padding="2,0,0,0" VerticalContentAlignment="Center"/>
 					</StackPanel>
 					<StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5">
 						<Label Content="Loss Per Cut(mm):" Padding="0" VerticalContentAlignment="Center"/>
-						<TextBox Name="TextBoxSlittingWear" Text="0" FontSize="17" Padding="2,0,0,0" VerticalContentAlignment="Center"/>
+						<TextBox Name="TextBoxSlittingWear" Text="{Binding TextBoxSlittingWear}" FontSize="17" Padding="2,0,0,0" VerticalContentAlignment="Center"/>
 					</StackPanel>
 					<StackPanel Orientation="Vertical" Margin="0,0,0,8" >
 						<StackPanel Orientation="Horizontal" Spacing="5">
@@ -57,7 +57,7 @@
 					</StackPanel>
 					<StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5">
 						<Label Content="Algorithm:"/>
-						<ComboBox x:Name="ComboBoxAlgorithmSelector" Width="250" SelectedIndex="0">
+						<ComboBox x:Name="ComboBoxAlgorithmSelector" Width="250" SelectedIndex="{Binding SelectedAlgorithmIndex}">
 							<ComboBoxItem Content="BFS"/>
 							<ComboBoxItem Content="DP"/>
 							<ComboBoxItem Content="BestFit"/>
@@ -69,9 +69,34 @@
 							<ComboBoxItem Content="BruteForce"/>
 						</ComboBox>
 					</StackPanel>
-					<Button Name="BtnOnCalculate" Click="BtnOnCalculate_OnClick" FontSize="15" Content="Calculate" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+					<Button Name="BtnOnCalculate" Command="{Binding CalculateCommand}" FontSize="15" Content="Calculate" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
 					<Label Content="Visualized Slitting" Height="25" HorizontalAlignment="Left" FontSize="20" HorizontalContentAlignment="Left" Padding="0" Margin="5,0,0,0"/>
-					<Canvas Name="CanvasVisualSlitting" Width="350" Height="40"/>
+					<ItemsControl ItemsSource="{Binding Rect}" Width="{Binding CanvasWidth}" Height="{Binding CanvasHeight}" Background="Transparent">
+						<ItemsControl.ItemsPanel>
+							<ItemsPanelTemplate>
+								<Canvas/>
+							</ItemsPanelTemplate>
+						</ItemsControl.ItemsPanel>
+						<ItemsControl.Styles>
+							<Style Selector="ContentPresenter" x:DataType="vm:RectViewModel">
+								<Setter Property="Canvas.Left" Value="{Binding X}"/>
+								<Setter Property="Canvas.Top" Value="{Binding Y}"/>
+							</Style>
+						</ItemsControl.Styles>
+						<ItemsControl.ItemTemplate>
+							<DataTemplate x:DataType="vm:RectViewModel">
+								<Grid>
+									<Rectangle
+										Width="{Binding Width}"
+										Height="{Binding Height}"
+										Fill="{Binding Fill}"
+										Stroke="Gray"
+										StrokeThickness="0.3"/>
+									<TextBlock Text="{Binding Text}" FontSize="10" Margin="3,0,0,0"/>
+								</Grid>
+							</DataTemplate>
+						</ItemsControl.ItemTemplate>
+					</ItemsControl>
 					<StackPanel Height="25" Orientation="Horizontal">
 						<Label Content="Detailed Result" Height="25" HorizontalAlignment="Left" FontSize="20" HorizontalContentAlignment="Left" Padding="0" Margin="5,0,0,0"/>
 						<CheckBox Content="Copyable" Margin="10,0,0,0" IsChecked="{Binding IsResultEditable, Mode=TwoWay}"/>
