@@ -6,5 +6,12 @@ input, textarea, input[type="text"], input[type="password"], input[type="email"]
     font-size: 17px !important;
 }
 </style>
-
 into css file
+<style>
+    input, textarea {
+        font-size: 17px !important;
+        -webkit-text-size-adjust: 100% !important;
+}
+</style>
+into index.html in header area
+
