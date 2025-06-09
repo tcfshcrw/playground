@@ -22,7 +22,7 @@
 				<StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" >
 					<Label Content="Slitting Optimization" FontFamily="Noto Sans, Arial, sans-serif" FontSize="20" HorizontalContentAlignment="Center"/>
 					<StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5">
-						<Label Content="Raw Coil Width(mm):" VerticalContentAlignment="Center" />
+						<Label Content="Raw Coil Width(mm):" VerticalContentAlignment="Center" Padding="0"/>
 						<TextBox Name="TextBoxRawMaterialWidth" Text="{Binding TextBoxRawMaterialWidth}" FontSize="17" Padding="2,0,0,0" VerticalContentAlignment="Center"/>
 					</StackPanel>
 					<StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5">
