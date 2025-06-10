@@ -17,7 +17,6 @@ public partial class MainViewModel : ViewModelBase
     public ObservableCollection<RectViewModel> Rect { get; } = new();
     public IRelayCommand AddItemCommand { get; }
     public IRelayCommand RemoveLastItemCommand { get; }
-    public IRelayCommand AddCircleCommand { get; }
     public IRelayCommand CalculateCommand { get; }
     [ObservableProperty] private string debugtext;
 
@@ -207,47 +206,7 @@ public partial class MainViewModel : ViewModelBase
     
 
     
-    private Tuple<Dictionary<MainViewModel.CutItem, int>, int, int> CalculateWithDP(List<MainViewModel.CutItem> items, int totalWidth, int cutLoss)
-    {
-        Dictionary<int, Dictionary<MainViewModel.CutItem, int>> combos = new Dictionary<int, Dictionary<MainViewModel.CutItem, int>>();
-        combos[0] = new Dictionary<MainViewModel.CutItem, int>(new CutItemComparer());
-
-        foreach (var item in items)
-        {
-            var currentCombos = combos.ToList(); // 複製當前所有狀態，避免在內部修改
-            foreach (var kv in currentCombos)
-            {
-                int w = kv.Key;
-                var currentCombo = kv.Value;
-
-                int currentCount = currentCombo.ContainsKey(item) ? currentCombo[item] : 0;
-                if (currentCount >= item.MaxCount) continue;
-
-                int cutCount = currentCombo.Values.Sum();
-                int cost = item.Width + (cutCount > 0 ? cutLoss : 0);
-                int nextW = w + cost;
-
-                if (nextW > totalWidth) continue;
-
-                var newCombo = new Dictionary<MainViewModel.CutItem, int>(currentCombo, new CutItemComparer());
-                if (!newCombo.ContainsKey(item)) newCombo[item] = 0;
-                newCombo[item]++;
-
-                // ✅ 只保留最大 nextW 時的任一組合（DP 不比較 weight）
-                if (!combos.ContainsKey(nextW))
-                    combos[nextW] = newCombo;
-            }
-        }
- 
-
-        // ✅ 找出最大使用長度
-        int bestUsed = combos.Keys.Max();
-        var bestCombo = combos[bestUsed];
-
-        int bestWeight = bestCombo.Sum(kv => kv.Key.Weight * kv.Value); // 附帶算出總權重
-
-        return Tuple.Create(bestCombo, bestUsed, bestWeight);
-    }
+   
     
     class CutItemComparer : IEqualityComparer<MainViewModel.CutItem>
     {
@@ -261,196 +220,10 @@ public partial class MainViewModel : ViewModelBase
             return obj.Code.GetHashCode() ^ obj.Width ^ obj.Weight;
         }
     }
-    private Tuple<Dictionary<MainViewModel.CutItem, int>, int, int> CalculateBestFit(List<MainViewModel.CutItem> items, int totalWidth, int cutLoss)
-    {
-        // 依照效率（Weight per mm）排序（可改為 Width 或其他）
-        // 改為依照「寬度」排序，大的先填（可改成從小到大看情況）
-        var sorted = items
-            .Where(i => i.Width > 0 && i.MaxCount > 0)
-            .OrderByDescending(i => i.Width)
-            .ToList();
-
-        var combo = new Dictionary<MainViewModel.CutItem, int>(new CutItemComparer());
-        int used = 0;
-        int weight = 0; // 附加資訊
-        int totalCuts = 0;
-
-        while (true)
-        {
-            bool added = false;
-            foreach (var item in sorted)
-            {
-                int currentCount = combo.ContainsKey(item) ? combo[item] : 0;
-                if (currentCount >= item.MaxCount) continue;
-
-                int loss = (totalCuts > 0 ? cutLoss : 0);
-                int cost = item.Width + loss;
-
-                if (used + cost <= totalWidth)
-                {
-                    used += cost;
-                    weight += item.Weight; // 附加統計
-                    if (!combo.ContainsKey(item)) combo[item] = 0;
-                    combo[item]++;
-                    totalCuts++;
-                    added = true;
-                    break; // 放入一個後重新排序跑
-                }
-            }
-
-            if (!added) break; // 無法再加入任何項目
-        }
-
-        return combo.Count > 0 ? Tuple.Create(combo, used, weight) : null;
-    }
-
-    
-    private List<MainViewModel.CutItem> GenerateRandomGene(List<MainViewModel.CutItem> items, Random rand)
-    {
-        var gene = new List<MainViewModel.CutItem>();
-        foreach (var item in items)
-        {
-            int count = rand.Next(0, item.MaxCount + 1);
-            for (int i = 0; i < count; i++)
-                gene.Add(item);
-        }
-        return gene.OrderBy(_ => rand.Next()).ToList();
-    }
-    private List<MainViewModel.CutItem> MutateGene(List<MainViewModel.CutItem> gene, Random rand)
-    {
-        if (gene.Count < 2) return gene;
-        int i = rand.Next(gene.Count);
-        int j = rand.Next(gene.Count);
-        var temp = gene[i];
-        gene[i] = gene[j];
-        gene[j] = temp;
-        return gene;
-    }
-    private int EvaluateUsedLength(List<MainViewModel.CutItem> gene, int totalWidth, int cutLoss, out int used, out int weight)
-    {
-        int total = 0, cuts = 0;
-        weight = 0;
-
-        foreach (var cut in gene)
-        {
-            int loss = (cuts > 0 ? cutLoss : 0);
-            int cost = cut.Width + loss;
-            if (total + cost > totalWidth) break;
-
-            total += cost;
-            weight += cut.Weight;
-            cuts++;
-        }
-
-        used = total;
-        return used; // ✅ 回傳作為 score 的就是使用寬度
-    }
-    private Tuple<Dictionary<MainViewModel.CutItem, int>, int, int> CalculateWithSimulatedAnnealing(
-List<MainViewModel.CutItem> items, int totalWidth, int cutLoss,
-int maxIterations = 4000, double initialTemp = 300.0, double coolingRate = 0.95)
-    {
-        var rand = new Random();
-        var bestGene = GenerateRandomGene(items, rand);
-        var bestScore = EvaluateUsedLength(bestGene, totalWidth, cutLoss, out int bestUsed, out int bestWeight);
-
-        var currentGene = new List<MainViewModel.CutItem>(bestGene);
-        double temperature = initialTemp;
-
-        for (int iter = 0; iter < maxIterations; iter++)
-        {
-            var neighbor = MutateGene(new List<MainViewModel.CutItem>(currentGene), rand);
-            var score = EvaluateUsedLength(neighbor, totalWidth, cutLoss, out int used, out int weight);
-
-            int delta = score - bestScore;
-            if (delta > 0 || rand.NextDouble() < Math.Exp(delta / temperature))
-            {
-                currentGene = new List<MainViewModel.CutItem>(neighbor);
-                if (score > bestScore)
-                {
-                    bestGene = new List<MainViewModel.CutItem>(neighbor);
-                    bestScore = score;
-                    bestUsed = used;
-                    bestWeight = weight;
-                }
-            }
-
-            temperature *= coolingRate;
-        }
-
-        // 統計最終結果
-        var result = new Dictionary<MainViewModel.CutItem, int>(new CutItemComparer());
-        int totalCuts = 0, finalUsed = 0;
-        foreach (var cut in bestGene)
-        {
-            int loss = (totalCuts > 0 ? cutLoss : 0);
-            int cost = cut.Width + loss;
-            if (finalUsed + cost > totalWidth) break;
-
-            finalUsed += cost;
-            if (!result.ContainsKey(cut)) result[cut] = 0;
-            result[cut]++;
-            totalCuts++;
-        }
-
-        return result.Count > 0 ? Tuple.Create(result, finalUsed, bestWeight) : null;
-    }
-    
-
-    private Tuple<Dictionary<MainViewModel.CutItem, int>, int, int> CalculateWithMonteCarlo(List<MainViewModel.CutItem> items, int totalWidth, int cutLoss, int iterations = 5000)
-    {
-        var rand = new Random();
-        Dictionary<MainViewModel.CutItem, int> bestCombo = null;
-        int bestUsed = -1;
-        int bestWeight = 0;
-
-        for (int it = 0; it < iterations; it++)
-        {
-            var combo = new Dictionary<MainViewModel.CutItem, int>(new CutItemComparer());
-            int used = 0, weight = 0, cuts = 0;
-
-            // 隨機打亂每項的出現次數與順序
-            var shuffled = items.SelectMany(item =>
-            {
-                int count = rand.Next(0, item.MaxCount + 1);
-                return Enumerable.Repeat(item, count);
-            }).OrderBy(x => rand.Next()).ToList();
-
-            foreach (var item in shuffled)
-            {
-                int loss = (cuts > 0 ? cutLoss : 0);
-                int cost = item.Width + loss;
-
-                if (used + cost > totalWidth)
-                    break;
-
-                used += cost;
-                weight += item.Weight;
-                if (!combo.ContainsKey(item)) combo[item] = 0;
-                combo[item]++;
-                cuts++;
-            }
-
-            if (used > bestUsed)
-            {
-                bestUsed = used;
-                bestWeight = weight;
-                bestCombo = new Dictionary<MainViewModel.CutItem, int>(combo, new CutItemComparer());
-            }
-        }
-
-        return bestCombo != null ? Tuple.Create(bestCombo, bestUsed, bestWeight) : null;
-    }
-    
-   
-    
-    
     
 
     
-    
 
-
-       
     
     public partial class CutItem : ObservableObject
     {
