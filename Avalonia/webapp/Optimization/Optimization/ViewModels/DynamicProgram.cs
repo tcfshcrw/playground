@@ -17,50 +17,60 @@ public partial class MainViewModel : ViewModelBase
         var preferredItems = items.Where(i => i.Preferred).ToList();
         bool mustSelectPreferred = preferredItems.Count > 0;
 
-        // 每個狀態：已用長度/對應一組(組合,用長,總重)
-        var states = new List<(int used, int weight, Dictionary<MainViewModel.CutItem, int> combo)>();
-        states.Add((0, 0, new Dictionary<MainViewModel.CutItem, int>(new CutItemComparer())));
+        // 狀態：已用長度 → 最佳組合
+        var dp = new Dictionary<int, Dictionary<MainViewModel.CutItem, int>>();
+        dp[0] = new Dictionary<MainViewModel.CutItem, int>(new CutItemComparer());
 
-        for (int round = 0; round < items.Count; round++)
+        foreach (var item in items)
         {
-            var newStates = new List<(int used, int weight, Dictionary<MainViewModel.CutItem, int> combo)>();
-            foreach (var state in states)
+            // 最多 item.MaxCount 次，因為每個 item 只能用這麼多
+            for (int count = 1; count <= item.MaxCount; count++)
             {
-                foreach (var item in items)
-                {
-                    int usedCount = state.combo.ContainsKey(item) ? state.combo[item] : 0;
-                    if (usedCount >= item.MaxCount) continue;
+                // item 寬 * count + cut loss
+                int addWidth = count * item.Width;
+                if (count > 1)
+                    addWidth += (count - 1) * cutLoss;
 
-                    int extraLoss = state.combo.Values.Sum() >= 1 ? cutLoss : 0;
-                    int nextUsed = state.used + item.Width + extraLoss;
+                // 要在遍歷時複製 key list（因為字典會被動態改動）
+                var existingStates = dp.Keys.ToList();
+                foreach (var usedLength in existingStates)
+                {
+                    int nextUsed = usedLength + addWidth;
                     if (nextUsed > totalWidth) continue;
 
-                    var newCombo = new Dictionary<MainViewModel.CutItem, int>(state.combo, new CutItemComparer());
-                    if (!newCombo.ContainsKey(item)) newCombo[item] = 0;
-                    newCombo[item]++;
+                    // 構造新組合
+                    var combo = new Dictionary<MainViewModel.CutItem, int>(dp[usedLength], new CutItemComparer());
+                    if (!combo.ContainsKey(item)) combo[item] = 0;
+                    combo[item] += count;
 
-                    int newWeight = state.weight + item.Weight;
+                    // 計算 weight
+                    int newWeight = combo.Sum(x => x.Key.Weight * x.Value);
 
-                    // 狀態去重：若已經有同組合、同用長，weight較小可略過（可加快）
-                    // 但這裡我們暫時全部保留
-                    newStates.Add((nextUsed, newWeight, newCombo));
+                    // 若已經有該 nextUsed 組合，比較 weight 大小
+                    if (!dp.ContainsKey(nextUsed) || 
+                        newWeight > dp[nextUsed].Sum(x => x.Key.Weight * x.Value))
+                    {
+                        dp[nextUsed] = combo;
+                    }
                 }
             }
-            states.AddRange(newStates);
         }
 
-        // 最後挑選所有Preferred都被選到且用長<=totalWidth，且用量最大、weight最大
-        var best = states
-            .Where(s =>
-                s.used <= totalWidth
-                && (!mustSelectPreferred || preferredItems.All(p => s.combo.TryGetValue(p, out int cnt) && cnt > 0)))
-            .OrderByDescending(s => s.used)
-            .ThenByDescending(s => s.weight)
+        // 找所有 preferred 都有出現的最佳解
+        var best = dp
+            .Where(kv => !mustSelectPreferred ||
+                preferredItems.All(p => kv.Value.TryGetValue(p, out int cnt) && cnt > 0))
+            .OrderByDescending(kv => kv.Key)
+            .ThenByDescending(kv => kv.Value.Sum(x => x.Key.Weight * x.Value))
             .FirstOrDefault();
 
-        if (best.combo == null || best.combo.Count == 0)
+        if (best.Value == null || best.Value.Count == 0)
             return null;
 
-        return Tuple.Create(best.combo, best.used, best.weight);
+        var bestCombo = best.Value;
+        int bestUsed = best.Key;
+        int bestWeight = bestCombo.Sum(kv => kv.Key.Weight * kv.Value);
+
+        return Tuple.Create(bestCombo, bestUsed, bestWeight);
     }
 }
