@@ -20,7 +20,10 @@
 		<StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
 			<Border Background="DimGray" CornerRadius="5">
 				<StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" >
-					<Label Content="Slitting Optimization" FontFamily="Noto Sans, Arial, sans-serif" FontSize="20" HorizontalContentAlignment="Center"/>
+					<StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+						<Label Content="Slitting Optimization" FontFamily="Noto Sans, Arial, sans-serif" FontSize="20" FontWeight="Bold" Margin="75,0,0,0" HorizontalContentAlignment="Center"/>
+						<Label Content="Verison:1.0.1" Padding="0" FontSize="10" VerticalAlignment="Bottom"/>
+					</StackPanel>
 					<StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5">
 						<Label Content="Raw Coil Width(mm):" VerticalContentAlignment="Center" Padding="0"/>
 						<TextBox Name="TextBoxRawMaterialWidth" Text="{Binding TextBoxRawMaterialWidth}" FontSize="17" Padding="2,0,0,0" VerticalContentAlignment="Center"/>
@@ -31,9 +34,9 @@
 					</StackPanel>
 					<StackPanel Orientation="Vertical" Margin="0,0,0,8" >
 						<StackPanel Orientation="Horizontal" Spacing="5">
-							<Label Content="P/N" Width="60" HorizontalContentAlignment="Center"/>
+							<Label Content="P/N" Width="60" HorizontalContentAlignment="Center" Margin="13,0,0,0" HorizontalAlignment="Center"/>
 							<Label Content="Width" Width="60" HorizontalContentAlignment="Center"/>
-							<Label Content="Weight" Width="60" HorizontalContentAlignment="Center"/>
+							<Label Content="Weight" Width="65" HorizontalContentAlignment="Center" Margin="5,0,0,0"/>
 							<Label Content="Preferred" Width="70" HorizontalContentAlignment="Center"/>
 							<Label Content="Max" Width="60" HorizontalContentAlignment="Center"/>
 						</StackPanel>
@@ -43,14 +46,14 @@
 									<StackPanel Orientation="Horizontal" Spacing="5">
 										<TextBox  Width="60" Text="{Binding Code}" FontSize="17"/>
 										<TextBox Width="60" Text="{Binding Width}" FontSize="17"/>
-										<TextBox  Width="60" Text="{Binding Weight}" FontSize="17"/>
-										<CheckBox  IsChecked="{Binding Preferred}" />
-										<TextBox Width="60" Text="{Binding MaxCount}" FontSize="17" />
+										<TextBox  Width="60" Text="{Binding Weight}" FontSize="17" ToolTip.Tip="Weight (refers to importance, not mass)"/>
+										<CheckBox  IsChecked="{Binding Preferred}" Margin="25,0,15,0" HorizontalContentAlignment="Center" ToolTip.Tip="Check the box if this item is required"/>
+										<TextBox Width="60" Text="{Binding MaxCount}" FontSize="17" ToolTip.Tip="Maximum Quantity Allowed for Cutting"/>
 									</StackPanel>
 								</DataTemplate>
 							</ListBox.ItemTemplate>
 						</ListBox>
-						<StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5">
+						<StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5">
 							<Button  Content="Add New" Command="{Binding Path=AddItemCommand}" HorizontalAlignment="Center" Width="175" HorizontalContentAlignment="Center"/>
 							<Button Content="Delete Last" Command="{Binding RemoveLastItemCommand}" HorizontalAlignment="Center" Width="175" HorizontalContentAlignment="Center"/>
 						</StackPanel>
