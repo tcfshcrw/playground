@@ -12,23 +12,23 @@ namespace Optimization.ViewModels;
 
 public partial class MainViewModel : ViewModelBase
 {
-    private Tuple<Dictionary<MainViewModel.CutItem, int>, int, int> CalculateWithMonteCarlo(List<MainViewModel.CutItem> items, int totalWidth, int cutLoss, int iterations = 5000)
+    private Tuple<Dictionary<CutItem, int>, int, int> CalculateWithMonteCarlo(List<CutItem> items, int totalWidth, int cutLoss, int iterations = 5000)
     {
         var rand = new Random();
         var preferredItems = items.Where(i => i.Preferred).ToList();
         bool mustSelectPreferred = preferredItems.Count > 0;
 
-        Dictionary<MainViewModel.CutItem, int> bestCombo = null;
+        Dictionary<CutItem, int> bestCombo = null;
         int bestUsed = -1;
         int bestWeight = 0;
 
         for (int it = 0; it < iterations; it++)
         {
-            var combo = new Dictionary<MainViewModel.CutItem, int>(new CutItemComparer());
+            var combo = new Dictionary<CutItem, int>(new CutItemComparer());
             int used = 0, weight = 0, cuts = 0;
 
             // 1. 先強制放入所有 Preferred 各一個
-            var selected = new List<MainViewModel.CutItem>();
+            var selected = new List<CutItem>();
             bool valid = true;
             foreach (var p in preferredItems)
             {
@@ -77,7 +77,7 @@ public partial class MainViewModel : ViewModelBase
             {
                 bestUsed = used;
                 bestWeight = weight;
-                bestCombo = new Dictionary<MainViewModel.CutItem, int>(combo, new CutItemComparer());
+                bestCombo = new Dictionary<CutItem, int>(combo, new CutItemComparer());
             }
         }
 

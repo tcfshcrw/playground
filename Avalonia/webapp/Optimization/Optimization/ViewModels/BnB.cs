@@ -12,17 +12,17 @@ namespace Optimization.ViewModels;
 
 public partial class MainViewModel : ViewModelBase
 {
-    private Tuple<Dictionary<MainViewModel.CutItem, int>, int, int> CalculateWithBranchAndBound(
-List<MainViewModel.CutItem> items, int totalWidth, int cutLoss)
+    private Tuple<Dictionary<CutItem, int>, int, int> CalculateWithBranchAndBound(
+List<CutItem> items, int totalWidth, int cutLoss)
     {
         var preferredItems = items.Where(i => i.Preferred).ToList();
 
-        var queue = new Queue<(int index, int usedLength, int weight, Dictionary<MainViewModel.CutItem, int> combo)>();
-        queue.Enqueue((0, 0, 0, new Dictionary<MainViewModel.CutItem, int>(new CutItemComparer())));
+        var queue = new Queue<(int index, int usedLength, int weight, Dictionary<CutItem, int> combo)>();
+        queue.Enqueue((0, 0, 0, new Dictionary<CutItem, int>(new CutItemComparer())));
 
         int bestUsed = -1;
         int bestWeight = 0;
-        Dictionary<MainViewModel.CutItem, int> bestCombo = null;
+        Dictionary<CutItem, int> bestCombo = null;
 
         while (queue.Count > 0)
         {
@@ -55,7 +55,7 @@ List<MainViewModel.CutItem> items, int totalWidth, int cutLoss)
             if (used > bestUsed && allPreferredSelected)
             {
                 bestUsed = used;
-                bestCombo = new Dictionary<MainViewModel.CutItem, int>(combo, new CutItemComparer());
+                bestCombo = new Dictionary<CutItem, int>(combo, new CutItemComparer());
                 bestWeight = weight;
             }
 
@@ -74,7 +74,7 @@ List<MainViewModel.CutItem> items, int totalWidth, int cutLoss)
                 if (newUsed > totalWidth)
                     break;
 
-                var newCombo = new Dictionary<MainViewModel.CutItem, int>(combo, new CutItemComparer());
+                var newCombo = new Dictionary<CutItem, int>(combo, new CutItemComparer());
                 if (count > 0)
                     newCombo[currentItem] = count;
 

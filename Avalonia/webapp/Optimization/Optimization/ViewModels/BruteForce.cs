@@ -12,12 +12,12 @@ namespace Optimization.ViewModels;
 
 public partial class MainViewModel : ViewModelBase
 {
-   private Tuple<Dictionary<MainViewModel.CutItem, int>, int, int> CalculateWithBruteForce(
-List<MainViewModel.CutItem> items, int totalWidth, int cutLoss)
+   private Tuple<Dictionary<CutItem, int>, int, int> CalculateWithBruteForce(
+List<CutItem> items, int totalWidth, int cutLoss)
     {
         var preferredItems = items.Where(i => i.Preferred).ToList();
 
-        var bestCombo = new Dictionary<MainViewModel.CutItem, int>(new CutItemComparer());
+        var bestCombo = new Dictionary<CutItem, int>(new CutItemComparer());
         int bestUsed = -1;
         int bestWeight = 0;
 
@@ -31,7 +31,7 @@ List<MainViewModel.CutItem> items, int totalWidth, int cutLoss)
 
         for (int comboIndex = 0; comboIndex < totalCombinations; comboIndex++)
         {
-            var currentCombo = new Dictionary<MainViewModel.CutItem, int>(new CutItemComparer());
+            var currentCombo = new Dictionary<CutItem, int>(new CutItemComparer());
             int currentUsed = 0;
             int currentWeight = 0;
             int pieceCount = 0;
@@ -60,7 +60,7 @@ List<MainViewModel.CutItem> items, int totalWidth, int cutLoss)
             {
                 bestUsed = currentUsed;
                 bestWeight = currentWeight;
-                bestCombo = new Dictionary<MainViewModel.CutItem, int>(currentCombo, new CutItemComparer());
+                bestCombo = new Dictionary<CutItem, int>(currentCombo, new CutItemComparer());
             }
 
             // 進位遞增組合

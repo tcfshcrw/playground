@@ -12,8 +12,8 @@ namespace Optimization.ViewModels;
 
 public partial class MainViewModel : ViewModelBase
 {
-    private Tuple<Dictionary<MainViewModel.CutItem, int>, int, int> CalculateWithSimulatedAnnealing(
-        List<MainViewModel.CutItem> items, int totalWidth, int cutLoss,
+    private Tuple<Dictionary<CutItem, int>, int, int> CalculateWithSimulatedAnnealing(
+        List<CutItem> items, int totalWidth, int cutLoss,
         int maxIterations = 4000, double initialTemp = 300.0, double coolingRate = 0.95)
     {
         var rand = new Random();
@@ -21,7 +21,7 @@ public partial class MainViewModel : ViewModelBase
         bool mustSelectPreferred = preferredItems.Count > 0;
 
         // 1. 初始化：先強制每個 Preferred 至少出現一次
-        var baseGene = new List<MainViewModel.CutItem>();
+        var baseGene = new List<CutItem>();
         foreach (var p in preferredItems) baseGene.Add(p);
 
         // 其餘隨機補齊
@@ -29,22 +29,22 @@ public partial class MainViewModel : ViewModelBase
         var bestScore = EvaluateUsedLengthWithPreferred(bestGene, totalWidth, cutLoss, preferredItems, out int bestUsed,
             out int bestWeight);
 
-        var currentGene = new List<MainViewModel.CutItem>(bestGene);
+        var currentGene = new List<CutItem>(bestGene);
         double temperature = initialTemp;
 
         for (int iter = 0; iter < maxIterations; iter++)
         {
-            var neighbor = MutateGeneWithPreferred(new List<MainViewModel.CutItem>(currentGene), preferredItems, rand);
+            var neighbor = MutateGeneWithPreferred(new List<CutItem>(currentGene), preferredItems, rand);
             var score = EvaluateUsedLengthWithPreferred(neighbor, totalWidth, cutLoss, preferredItems, out int used,
                 out int weight);
 
             int delta = score - bestScore;
             if (delta > 0 || rand.NextDouble() < Math.Exp(delta / temperature))
             {
-                currentGene = new List<MainViewModel.CutItem>(neighbor);
+                currentGene = new List<CutItem>(neighbor);
                 if (score > bestScore)
                 {
-                    bestGene = new List<MainViewModel.CutItem>(neighbor);
+                    bestGene = new List<CutItem>(neighbor);
                     bestScore = score;
                     bestUsed = used;
                     bestWeight = weight;
@@ -55,7 +55,7 @@ public partial class MainViewModel : ViewModelBase
         }
 
         // 統計最終結果
-        var result = new Dictionary<MainViewModel.CutItem, int>(new CutItemComparer());
+        var result = new Dictionary<CutItem, int>(new CutItemComparer());
         int totalCuts = 0, finalUsed = 0;
         foreach (var cut in bestGene)
         {
@@ -76,15 +76,15 @@ public partial class MainViewModel : ViewModelBase
         return result.Count > 0 ? Tuple.Create(result, finalUsed, bestWeight) : null;
     }
 
-    private List<MainViewModel.CutItem> GenerateRandomGeneWithPreferred(
-        List<MainViewModel.CutItem> items,
-        List<MainViewModel.CutItem> preferredSeed,
+    private List<CutItem> GenerateRandomGeneWithPreferred(
+        List<CutItem> items,
+        List<CutItem> preferredSeed,
         Random rand,
         int totalWidth,
         int cutLoss)
     {
         // 先放所有 Preferred
-        var gene = new List<MainViewModel.CutItem>(preferredSeed);
+        var gene = new List<CutItem>(preferredSeed);
         var comboCount = preferredSeed
             .GroupBy(x => x)
             .ToDictionary(g => g.Key, g => g.Count(), new CutItemComparer());
@@ -123,12 +123,12 @@ public partial class MainViewModel : ViewModelBase
         return gene;
     }
 
-    private List<MainViewModel.CutItem> MutateGeneWithPreferred(
-        List<MainViewModel.CutItem> gene,
-        List<MainViewModel.CutItem> preferredItems,
+    private List<CutItem> MutateGeneWithPreferred(
+        List<CutItem> gene,
+        List<CutItem> preferredItems,
         Random rand)
     {
-        var result = new List<MainViewModel.CutItem>(gene);
+        var result = new List<CutItem>(gene);
         var combo = result.GroupBy(x => x).ToDictionary(g => g.Key, g => g.Count(), new CutItemComparer());
 
         // 1. 隨機挑一種操作
@@ -195,17 +195,17 @@ public partial class MainViewModel : ViewModelBase
     }
     
     private int EvaluateUsedLengthWithPreferred(
-        List<MainViewModel.CutItem> gene,
+        List<CutItem> gene,
         int totalWidth,
         int cutLoss,
-        List<MainViewModel.CutItem> preferredItems,
+        List<CutItem> preferredItems,
         out int used,
         out int weight)
     {
         used = 0;
         weight = 0;
         int totalCuts = 0;
-        var combo = new Dictionary<MainViewModel.CutItem, int>(new CutItemComparer());
+        var combo = new Dictionary<CutItem, int>(new CutItemComparer());
 
         foreach (var cut in gene)
         {

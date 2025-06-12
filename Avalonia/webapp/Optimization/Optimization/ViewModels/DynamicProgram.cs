@@ -12,14 +12,14 @@ namespace Optimization.ViewModels;
 
 public partial class MainViewModel : ViewModelBase
 {
-    private Tuple<Dictionary<MainViewModel.CutItem, int>, int, int> CalculateWithDp(List<MainViewModel.CutItem> items, int totalWidth, int cutLoss)
+    private Tuple<Dictionary<CutItem, int>, int, int> CalculateWithDp(List<CutItem> items, int totalWidth, int cutLoss)
     {
         var preferredItems = items.Where(i => i.Preferred).ToList();
         bool mustSelectPreferred = preferredItems.Count > 0;
 
         // 狀態：已用長度 → 最佳組合
-        var dp = new Dictionary<int, Dictionary<MainViewModel.CutItem, int>>();
-        dp[0] = new Dictionary<MainViewModel.CutItem, int>(new CutItemComparer());
+        var dp = new Dictionary<int, Dictionary<CutItem, int>>();
+        dp[0] = new Dictionary<CutItem, int>(new CutItemComparer());
 
         foreach (var item in items)
         {
@@ -39,7 +39,7 @@ public partial class MainViewModel : ViewModelBase
                     if (nextUsed > totalWidth) continue;
 
                     // 構造新組合
-                    var combo = new Dictionary<MainViewModel.CutItem, int>(dp[usedLength], new CutItemComparer());
+                    var combo = new Dictionary<CutItem, int>(dp[usedLength], new CutItemComparer());
                     if (!combo.ContainsKey(item)) combo[item] = 0;
                     combo[item] += count;
 

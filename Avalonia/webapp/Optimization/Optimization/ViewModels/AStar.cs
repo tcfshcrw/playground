@@ -12,18 +12,18 @@ namespace Optimization.ViewModels;
 
 public partial class MainViewModel : ViewModelBase
 {
-    private Tuple<Dictionary<MainViewModel.CutItem, int>, int, int> CalculateWithAStar(List<MainViewModel.CutItem> items, int totalWidth, int cutLoss)
+    private Tuple<Dictionary<CutItem, int>, int, int> CalculateWithAStar(List<CutItem> items, int totalWidth, int cutLoss)
     {
         var comparer = new CutItemComparer();
-        var queue = new PriorityQueue<(int used, int weight, int cuts, Dictionary<MainViewModel.CutItem, int> combo), int>();
+        var queue = new PriorityQueue<(int used, int weight, int cuts, Dictionary<CutItem, int> combo), int>();
         var visited = new HashSet<string>();
 
         var preferredItems = items.Where(i => i.Preferred).ToList();
         bool mustSelectPreferred = preferredItems.Count > 0;
 
-        queue.Enqueue((0, 0, 0, new Dictionary<MainViewModel.CutItem, int>(comparer)), 0);
+        queue.Enqueue((0, 0, 0, new Dictionary<CutItem, int>(comparer)), 0);
 
-        Dictionary<MainViewModel.CutItem, int> bestCombo = null;
+        Dictionary<CutItem, int> bestCombo = null;
         int bestUsed = -1;
         int bestWeight = 0; // 附帶統計用
 
@@ -40,7 +40,7 @@ public partial class MainViewModel : ViewModelBase
             {
                 bestUsed = used;
                 bestWeight = weight;
-                bestCombo = new Dictionary<MainViewModel.CutItem, int>(combo, comparer);
+                bestCombo = new Dictionary<CutItem, int>(combo, comparer);
             }
 
             foreach (var item in items)
@@ -53,7 +53,7 @@ public partial class MainViewModel : ViewModelBase
                 if (nextUsed > totalWidth)
                     continue;
 
-                var newCombo = new Dictionary<MainViewModel.CutItem, int>(combo, comparer);
+                var newCombo = new Dictionary<CutItem, int>(combo, comparer);
                 if (!newCombo.ContainsKey(item)) newCombo[item] = 0;
                 newCombo[item]++;
 

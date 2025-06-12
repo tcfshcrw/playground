@@ -7,9 +7,11 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Text.Json;
+using System.Threading.Tasks;
 using Avalonia.Media;
-
 namespace Optimization.ViewModels;
+using System.Runtime.InteropServices.JavaScript;
 
 public partial class MainViewModel : ViewModelBase
 {
@@ -39,10 +41,12 @@ public partial class MainViewModel : ViewModelBase
         RemoveLastItemCommand = new RelayCommand(RemoveLastItem, CanRemoveLastItem);
         CalculateCommand = new RelayCommand(calculate);
         // initialize default data
+        /*
         Items.Add(new CutItem { Code = "A", Width = 140, Weight = 1, Preferred = false, MaxCount = 3 });
         Items.Add(new CutItem { Code = "B", Width = 160, Weight = 1, Preferred = false, MaxCount = 4 });
         Items.Add(new CutItem { Code = "C", Width = 180, Weight = 1, Preferred = false, MaxCount = 4 });
         Items.Add(new CutItem { Code = "D", Width = 200, Weight = 1, Preferred = false, MaxCount = 4 });
+        */
         //Squares.Add(new Square { X = 20, Y = 20, Size = 100, Fill = Brushes.Blue });
         IsLogEditable = false;
         IsResultEditable = false;
@@ -66,7 +70,18 @@ public partial class MainViewModel : ViewModelBase
     
     private void calculate()
     {
-
+        //save input data
+        try
+        {
+            SaveCutItemsToLocal();
+        }
+        catch (Exception e)
+        {
+            //Console.WriteLine(e);
+            LogText+=e.Message;
+            throw;
+        }
+        
         //var boardLines = TextBoxRawMaterialWidth.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
         //var boards = boardLines.Select(line => int.TryParse(line.Trim(), out var w) ? w : 0).Where(w => w > 0).ToList();
         //var boards = textBoxRawMaterialWidth;
@@ -76,7 +91,7 @@ public partial class MainViewModel : ViewModelBase
         int totalWeightAll = 0, totalWasteAll = 0;
         double boardHeight = canvasHeight;
         double canvasWidth = this.canvasWidth;
-        //var items = ListBoxInput.Items as IEnumerable<MainViewModel.CutItem>
+        //var items = ListBoxInput.Items as IEnumerable<CutItem>
          var items = Items; // items 就是 ObservableCollection<CutItem>
          var validItems = items
                 .Where(i => i.Width > 0 && i.Weight >= 0)
@@ -208,41 +223,47 @@ public partial class MainViewModel : ViewModelBase
     
    
     
-    class CutItemComparer : IEqualityComparer<MainViewModel.CutItem>
+    class CutItemComparer : IEqualityComparer<CutItem>
     {
-        public bool Equals(MainViewModel.CutItem x, MainViewModel.CutItem y)
+        public bool Equals(CutItem x, CutItem y)
         {
             return x.Code == y.Code && x.Width == y.Width && x.Weight == y.Weight;
         }
 
-        public int GetHashCode(MainViewModel.CutItem obj)
+        public int GetHashCode(CutItem obj)
         {
             return obj.Code.GetHashCode() ^ obj.Width ^ obj.Weight;
         }
     }
     
-
-    
-
-    
-    public partial class CutItem : ObservableObject
+    public void LoadCutItemsFromLocal()
     {
-        [ObservableProperty] private string code = "";
-        [ObservableProperty] private int width;
-        [ObservableProperty] private int weight;
-        [ObservableProperty] private bool preferred;
-        [ObservableProperty] private int maxCount;
-
-        public CutItem()
+        try
         {
-            code = "";
-            width = 110;
-            weight = 1;
-            preferred = false;
-            maxCount = 3;
+            var loaded = LocalStorageHelper.LoadCutItems();
+            Items.Clear();
+            foreach (var item in loaded)
+                Items.Add(item);
         }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            LogText=e.Message;
+            throw;
+        }
+
+    }
+
+    public void SaveCutItemsToLocal()
+    {
+        
+        LocalStorageHelper.SaveCutItems(Items.ToList());
     }
     
+
+    
+
+
     
 }
 
@@ -258,6 +279,23 @@ public class RectViewModel : ObservableObject
     public string Text { get; set; }
 }
 
+public partial class CutItem : ObservableObject
+{
+    [ObservableProperty] public string code = "";
+    [ObservableProperty] public int width;
+    [ObservableProperty] public int weight;
+    [ObservableProperty] public bool preferred;
+    [ObservableProperty] public int maxCount;
+
+    public CutItem()
+    {
+        code = "";
+        width = 110;
+        weight = 1;
+        preferred = false;
+        maxCount = 3;
+    }
+}
 
 
 

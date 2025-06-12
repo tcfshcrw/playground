@@ -12,7 +12,7 @@ namespace Optimization.ViewModels;
 
 public partial class MainViewModel : ViewModelBase
 {
-    private Tuple<Dictionary<MainViewModel.CutItem, int>, int, int> CalculateBestFit(List<MainViewModel.CutItem> items, int totalWidth, int cutLoss)
+    private Tuple<Dictionary<CutItem, int>, int, int> CalculateBestFit(List<CutItem> items, int totalWidth, int cutLoss)
     {
         var preferredItems = items.Where(i => i.Preferred).ToList();
         var sorted = items
@@ -20,7 +20,7 @@ public partial class MainViewModel : ViewModelBase
             .OrderByDescending(i => i.Width)
             .ToList();
 
-        var combo = new Dictionary<MainViewModel.CutItem, int>(new CutItemComparer());
+        var combo = new Dictionary<CutItem, int>(new CutItemComparer());
         int used = 0;
         int weight = 0;
         int totalCuts = 0;

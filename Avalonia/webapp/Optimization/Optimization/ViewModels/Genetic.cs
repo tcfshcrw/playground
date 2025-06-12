@@ -12,8 +12,8 @@ namespace Optimization.ViewModels;
 
 public partial class MainViewModel : ViewModelBase
 {
-        public Tuple<Dictionary<MainViewModel.CutItem, int>, int, int> CalculateWithGenetic_Preferr(
-    List<MainViewModel.CutItem> items, int totalWidth, int cutLoss,
+        public Tuple<Dictionary<CutItem, int>, int, int> CalculateWithGenetic_Preferr(
+    List<CutItem> items, int totalWidth, int cutLoss,
     int generations = 200, int populationSize = 100)
     {
         int itemCount = items.Count;
@@ -179,7 +179,7 @@ public partial class MainViewModel : ViewModelBase
         }
 
         // === 最終輸出結果，優先放 preferred ===
-        var result = new Dictionary<MainViewModel.CutItem, int>(new CutItemComparer());
+        var result = new Dictionary<CutItem, int>(new CutItemComparer());
         int usedFinal = 0, cutsFinal = 0, weightFinal = 0;
         int[] usedCounts = new int[itemCount];
 
