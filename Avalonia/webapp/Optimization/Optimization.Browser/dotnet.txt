@@ -1,0 +1,1 @@
+$env:PATH = "C:\Users\coylee\scoop\apps\dotnet-sdk-lts\current;" + $env:PATH

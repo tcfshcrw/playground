@@ -8,10 +8,14 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Avalonia.Media;
-namespace Optimization.ViewModels;
+using System.Text.Json.Serialization;
+using CommunityToolkit.Mvvm.ComponentModel;
 using System.Runtime.InteropServices.JavaScript;
+namespace Optimization.ViewModels;
+
 
 public partial class MainViewModel : ViewModelBase
 {
@@ -20,6 +24,8 @@ public partial class MainViewModel : ViewModelBase
     public IRelayCommand AddItemCommand { get; }
     public IRelayCommand RemoveLastItemCommand { get; }
     public IRelayCommand CalculateCommand { get; }
+    public IRelayCommand TestCommand { get; }
+    public IRelayCommand LoadConfigCommand { get; }
     [ObservableProperty] private string debugtext;
 
     [ObservableProperty] private string detailResultText;
@@ -32,21 +38,24 @@ public partial class MainViewModel : ViewModelBase
     [ObservableProperty] private int selectedAlgorithmIndex;
     [ObservableProperty] private int canvasWidth;
     [ObservableProperty] private int canvasHeight;
+    [ObservableProperty] private string appVersion;
     private DateTime _calculationStartTime = DateTime.Now;
     private DateTime _calculationEndTime = DateTime.Now;
     private string SelectedAlgorithm;
     public MainViewModel()
     {
         AddItemCommand = new RelayCommand(AddItem);
-        RemoveLastItemCommand = new RelayCommand(RemoveLastItem, CanRemoveLastItem);
+        RemoveLastItemCommand = new RelayCommand(RemoveLastItem/*, CanRemoveLastItem*/);
         CalculateCommand = new RelayCommand(calculate);
+        TestCommand = new RelayCommand(test);
+        LoadConfigCommand = new RelayCommand(LoadCutItemsFromLocal);
         // initialize default data
-        /*
+        
         Items.Add(new CutItem { Code = "A", Width = 140, Weight = 1, Preferred = false, MaxCount = 3 });
         Items.Add(new CutItem { Code = "B", Width = 160, Weight = 1, Preferred = false, MaxCount = 4 });
         Items.Add(new CutItem { Code = "C", Width = 180, Weight = 1, Preferred = false, MaxCount = 4 });
         Items.Add(new CutItem { Code = "D", Width = 200, Weight = 1, Preferred = false, MaxCount = 4 });
-        */
+        
         //Squares.Add(new Square { X = 20, Y = 20, Size = 100, Fill = Brushes.Blue });
         IsLogEditable = false;
         IsResultEditable = false;
@@ -57,15 +66,23 @@ public partial class MainViewModel : ViewModelBase
         selectedAlgorithmIndex = 0;
         textBoxRawMaterialWidth = "1200";
         textBoxSlittingWear = "0";
+        appVersion = "1.0.02";
     }
 
-    private void AddItem() => Items.Add(new CutItem());
-    void RemoveLastItem()
+    private void AddItem()
+    {
+        Items.Add(new CutItem());
+        Console.WriteLine("Item count: "+Items.Count);
+        Console.WriteLine("Can remove Item?: "+CanRemoveLastItem());
+    }
+
+    
+    private void RemoveLastItem()
     {
         if (Items.Count > 0)
             Items.RemoveAt(Items.Count - 1);
     }
-    bool CanRemoveLastItem() => Items.Count > 0;
+    private bool CanRemoveLastItem() => Items.Count > 0;
     
     
     private void calculate()
@@ -73,7 +90,12 @@ public partial class MainViewModel : ViewModelBase
         //save input data
         try
         {
-            SaveCutItemsToLocal();
+            
+            //SaveCutItemsToLocal();
+            var json = System.Text.Json.JsonSerializer.Serialize(Items.ToList(), JsonContext.Default.ListCutItem);
+            LocalStorageHelper.LocalStorageSet("cutItems", json);
+            Console.WriteLine(json);
+            Console.WriteLine("Save config");
         }
         catch (Exception e)
         {
@@ -240,10 +262,22 @@ public partial class MainViewModel : ViewModelBase
     {
         try
         {
-            var loaded = LocalStorageHelper.LoadCutItems();
+            var json = LocalStorageHelper.LocalStorageGet("cutItems");
+            if (string.IsNullOrEmpty(json))
+            {
+                return;
+            }
+            Console.WriteLine("載入筆數: " + json);
+            // 3. 反序列化成 List<CutItem>
+            var loaded = System.Text.Json.JsonSerializer.Deserialize(json, JsonContext.Default.ListCutItem);
+
+            Console.WriteLine("載入筆數: " + loaded.Count);
+
+            // 4. 載入回你的 Items 或 ViewModel
             Items.Clear();
-            foreach (var item in loaded)
+            foreach (var item in loaded ?? Enumerable.Empty<CutItem>())
                 Items.Add(item);
+
         }
         catch (Exception e)
         {
@@ -259,12 +293,28 @@ public partial class MainViewModel : ViewModelBase
         
         LocalStorageHelper.SaveCutItems(Items.ToList());
     }
-    
-
-    
 
 
-    
+    public void test()
+    {
+        
+        try
+        {
+            //LocalStorageHelper.LocalStorageSet("cutItems", "[{\"code\":\"A\",\"width\":10,\"weight\":5,\"preferred\":false,\"maxCount\":1}]");
+            //var json = LocalStorageHelper.LocalStorageGet("cutItems");
+            //Console.WriteLine(json); // 應該要看到一模一樣的 JSON 字串
+            LoadCutItemsFromLocal();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.ToString());
+        }
+        
+
+    }
+
+
+
 }
 
 
@@ -278,14 +328,81 @@ public class RectViewModel : ObservableObject
     public IBrush Fill { get; set; }
     public string Text { get; set; }
 }
+public class CutItem : ObservableObject
+{
+    private string code = "";
+    private int width;
+    private int weight;
+    private bool preferred;
+    private int maxCount;
 
+    [JsonPropertyName("code")]
+    public string Code
+    {
+        get => code;
+        set => SetProperty(ref code, value);
+    }
+
+    [JsonPropertyName("width")]
+    public int Width
+    {
+        get => width;
+        set => SetProperty(ref width, value);
+    }
+
+    [JsonPropertyName("weight")]
+    public int Weight
+    {
+        get => weight;
+        set => SetProperty(ref weight, value);
+    }
+
+    [JsonPropertyName("preferred")]
+    public bool Preferred
+    {
+        get => preferred;
+        set => SetProperty(ref preferred, value);
+    }
+
+    [JsonPropertyName("maxCount")]
+    public int MaxCount
+    {
+        get => maxCount;
+        set => SetProperty(ref maxCount, value);
+    }
+
+    // 預設建構子
+    public CutItem()
+    {
+        Code = "";
+        Width = 110;
+        Weight = 1;
+        Preferred = false;
+        MaxCount = 3;
+    }
+}
+/*
 public partial class CutItem : ObservableObject
 {
-    [ObservableProperty] public string code = "";
-    [ObservableProperty] public int width;
-    [ObservableProperty] public int weight;
-    [ObservableProperty] public bool preferred;
-    [ObservableProperty] public int maxCount;
+    [ObservableProperty]
+    [JsonPropertyName("code")]
+    public string code ;
+
+    [ObservableProperty]
+    [JsonPropertyName("width")]
+    public int width;
+
+    [ObservableProperty]
+    [JsonPropertyName("weight")]
+    public int weight;
+
+    [ObservableProperty]
+    [JsonPropertyName("preferred")]
+    public bool preferred;
+
+    [ObservableProperty]
+    [JsonPropertyName("maxCount")]
+    public int maxCount;
 
     public CutItem()
     {
@@ -296,6 +413,9 @@ public partial class CutItem : ObservableObject
         maxCount = 3;
     }
 }
+*/
+
+
 
 
 

@@ -21,8 +21,8 @@
 			<Border Background="DimGray" CornerRadius="5">
 				<StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" >
 					<StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
-						<Label Content="Slitting Optimization" FontFamily="Noto Sans, Arial, sans-serif" FontSize="20" FontWeight="Bold" Margin="75,0,0,0" HorizontalContentAlignment="Center"/>
-						<Label Content="Verison:1.0.1" Padding="0" FontSize="10" VerticalAlignment="Bottom"/>
+						<Label Content="Slitting Optimization" FontFamily="Noto Sans, Arial, sans-serif" FontSize="20" FontWeight="Bold" Margin="55,0,0,0" HorizontalContentAlignment="Center"/>
+						<Label Content="{Binding AppVersion}" Padding="0" FontSize="10" VerticalAlignment="Bottom"/>
 					</StackPanel>
 					<StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5">
 						<Label Content="Raw Coil Width(mm):" VerticalContentAlignment="Center" Padding="0"/>
@@ -54,13 +54,14 @@
 							</ListBox.ItemTemplate>
 						</ListBox>
 						<StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5">
-							<Button  Content="Add New" Command="{Binding Path=AddItemCommand}" HorizontalAlignment="Center" Width="175" HorizontalContentAlignment="Center"/>
-							<Button Content="Delete Last" Command="{Binding RemoveLastItemCommand}" HorizontalAlignment="Center" Width="175" HorizontalContentAlignment="Center"/>
+							<Button  Content="Add New" Command="{Binding Path=AddItemCommand}" HorizontalAlignment="Center" Width="120" HorizontalContentAlignment="Center"/>
+							<Button Content="Delete Last" Command="{Binding RemoveLastItemCommand}" HorizontalAlignment="Center" Width="120" HorizontalContentAlignment="Center"/>
+							<Button Content="Last Items" Command="{Binding LoadConfigCommand}" HorizontalAlignment="Center" Width="120" HorizontalContentAlignment="Center"/>
 						</StackPanel>
 					</StackPanel>
 					<StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5">
 						<Label Content="Algorithm:"/>
-						<ComboBox x:Name="ComboBoxAlgorithmSelector" Width="250" SelectedIndex="{Binding SelectedAlgorithmIndex}">
+						<ComboBox x:Name="ComboBoxAlgorithmSelector" Width="250" SelectedIndex="{Binding SelectedAlgorithmIndex}" ToolTip.Tip="Change Algorithm if you feel wait too long.">
 							<ComboBoxItem Content="BFS"/>
 							<ComboBoxItem Content="DP"/>
 							<ComboBoxItem Content="BestFit"/>

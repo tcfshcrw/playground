@@ -17,8 +17,6 @@ public partial class MainView : UserControl
     {
         InitializeComponent();
         DataContext = new MainViewModel();
-        if (DataContext is MainViewModel vm)
-            vm.LoadCutItemsFromLocal();
     }
     
 }

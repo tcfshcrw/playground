@@ -6,18 +6,27 @@ namespace Optimization.ViewModels;
 using System.Runtime.InteropServices.JavaScript;
 //#if NET8_0_OR_GREATER && BROWSER
 // JS interop 版本
+using System.Text.Json.Serialization;
+using System.Collections.Generic;
+
+[JsonSerializable(typeof(List<CutItem>))]
+public partial class JsonContext : JsonSerializerContext { }
 public static partial class LocalStorageHelper
 {
-    [JSImport("window.localStorageSet")]
-    internal static partial void LocalStorageSet(string key, string value);
-    [JSImport("window.localStorageGet")]
-    internal static partial string? LocalStorageGet(string key);
 
+    [JSImport("globalThis.localStorageSet")]
+    public static partial void LocalStorageSet(string key, string value);
+    [JSImport("globalThis.localStorageGet")]
+    public static partial string? LocalStorageGet(string key);
+    [JSImport("globalThis.console.log")]
+    public static partial void ConsoleLog(string text);
+    [JSImport("globalThis.customLog")]
+    public static partial void CustomLog(string message);
     public static void SaveCutItems(List<CutItem> items)
     {
         try
         {
-            var json = JsonSerializer.Serialize(items);
+            var json = System.Text.Json.JsonSerializer.Serialize(items, JsonContext.Default.ListCutItem);
             LocalStorageHelper.LocalStorageSet("cutItems", json);
         }
         catch (Exception ex)
@@ -27,17 +36,19 @@ public static partial class LocalStorageHelper
         }
     }
 
-    public static List<CutItem> LoadCutItems()
+    /*
+    public static string LoadCutItems()
     {
         try
         {
             var json = LocalStorageGet("cutItems");
             if (string.IsNullOrEmpty(json))
                 return new List<CutItem>();
-            return System.Text.Json.JsonSerializer.Deserialize<List<CutItem>>(json, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            }) ?? new List<CutItem>();
+            
+
+
+
+
         }
         catch (Exception e)
         {
@@ -46,6 +57,7 @@ public static partial class LocalStorageHelper
         }
 
     }
+    */
 }
 
 
