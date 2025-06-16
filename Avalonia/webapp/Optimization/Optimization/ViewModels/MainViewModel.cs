@@ -14,8 +14,22 @@ using Avalonia.Media;
 using System.Text.Json.Serialization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using System.Runtime.InteropServices.JavaScript;
+using Avalonia.Controls;
+
 namespace Optimization.ViewModels;
 
+enum Algorithm
+{
+    BFS,
+    DP,
+    BestFit,
+    Genetic,
+    SimulatedAbbealing,
+    BranchAndBound,
+    MonteCarlo,
+    AStar,
+    BruteForce
+}
 
 public partial class MainViewModel : ViewModelBase
 {
@@ -67,6 +81,8 @@ public partial class MainViewModel : ViewModelBase
         textBoxRawMaterialWidth = "1200";
         textBoxSlittingWear = "0";
         appVersion = "1.0.02";
+        debugtext = "";
+        ItemCountCheck();
     }
 
     private void AddItem()
@@ -74,6 +90,7 @@ public partial class MainViewModel : ViewModelBase
         Items.Add(new CutItem());
         Console.WriteLine("Item count: "+Items.Count);
         Console.WriteLine("Can remove Item?: "+CanRemoveLastItem());
+        ItemCountCheck();
     }
 
     
@@ -81,6 +98,7 @@ public partial class MainViewModel : ViewModelBase
     {
         if (Items.Count > 0)
             Items.RemoveAt(Items.Count - 1);
+        ItemCountCheck();
     }
     private bool CanRemoveLastItem() => Items.Count > 0;
     
@@ -128,46 +146,46 @@ public partial class MainViewModel : ViewModelBase
                 double y = 0;
                 Tuple<Dictionary<CutItem, int>, int, int> result = null;
 
-                switch (selectedAlgorithmIndex)
+                switch (SelectedAlgorithmIndex)
                 {
-                    case 0:
+                    case (int)Algorithm.BFS:
                         result = CalculateBFS(validItems, boardWidth, cutLossValue);
                         this.SelectedAlgorithm = "BFS";
                         //Algorithm_text = "BFS result may get wrong due to the queue explicted";
                         break;
                     
-                    case 1:
+                    case (int)Algorithm.DP:
                         result = CalculateWithDp(validItems, boardWidth, cutLossValue);
                         this.SelectedAlgorithm = "DP";
                         break;
 
-                    case 2:
+                    case (int)Algorithm.BestFit:
                         result = CalculateBestFit(validItems, boardWidth, cutLossValue);
                         this.SelectedAlgorithm = "BestFit";
                         break;
 
-                    case 3:
+                    case (int)Algorithm.Genetic:
                         result = CalculateWithGenetic_Preferr(validItems, boardWidth, cutLossValue);
                         this.SelectedAlgorithm = "GeneticAlgorithm";
                         break;
 
-                    case 4:
+                    case (int)Algorithm.SimulatedAbbealing:
                         result = CalculateWithSimulatedAnnealing(validItems, boardWidth, cutLossValue);
                         this.SelectedAlgorithm = "SimulatedAnnealing";
                         break;
-                    case 5:
+                    case (int)Algorithm.BranchAndBound:
                         result = CalculateWithBranchAndBound(validItems, boardWidth, cutLossValue);
                         this.SelectedAlgorithm = "BranchAndBound";
                         break;
-                    case 6:
+                    case (int)Algorithm.MonteCarlo:
                         result = CalculateWithMonteCarlo(validItems, boardWidth, cutLossValue);
                         this.SelectedAlgorithm = "MonteCarlo";
                         break;
-                    case 7:
+                    case (int)Algorithm.AStar:
                         result = CalculateWithAStar(validItems, boardWidth, cutLossValue);
                         this.SelectedAlgorithm = "A Star";
                         break;
-                    case 8:
+                    case (int)Algorithm.BruteForce:
                         result = CalculateWithBruteForce(validItems, boardWidth, cutLossValue);
                         this.SelectedAlgorithm = "BruteForce";
                         break;
@@ -277,6 +295,7 @@ public partial class MainViewModel : ViewModelBase
             Items.Clear();
             foreach (var item in loaded ?? Enumerable.Empty<CutItem>())
                 Items.Add(item);
+            ItemCountCheck();
 
         }
         catch (Exception e)
@@ -312,6 +331,22 @@ public partial class MainViewModel : ViewModelBase
         
 
     }
+        public void ItemCountCheck()
+        {
+            if (Items.Count < 4)
+            {
+                SelectedAlgorithmIndex = (int)Algorithm.BruteForce;
+            }
+            else if (Items.Count < 8)
+            {
+                SelectedAlgorithmIndex = (int)Algorithm.BranchAndBound;
+            }
+            else
+            {
+                SelectedAlgorithmIndex = (int)Algorithm.Genetic;
+            }
+
+        }
 
 
 
