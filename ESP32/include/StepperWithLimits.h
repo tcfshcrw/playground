@@ -54,6 +54,7 @@ private:
 	bool enableCrashDetection_b = true;
 
 	bool logAllServoParams = false;
+	bool clearAllServoAlarms_b = false;
 
 	int32_t servoPos_local_corrected_i32 = 0;
 
@@ -97,10 +98,14 @@ public:
 	int32_t getServosCurrent();
 	int32_t getServosPos();
 	int32_t getServosPosError();
+	int32_t getEstimatedPosError();
+	//int32_t getEstimatedPosError_getCurrentStepperPos();
+	
 	bool getLifelineSignal();
 	
 	void configSteplossRecovAndCrashDetection(uint8_t flags_u8);
 	void printAllServoParameters();
+	void clearAllServoAlarms();
 
 
 	void setServosInternalPositionCorrected(int32_t posCorrected_i32);

@@ -1,6 +1,5 @@
 #pragma once
-//#include <ADS1256.h>
-
+#include <stdint.h>
 
 //#define PRINT_TASK_FREE_STACKSIZE_IN_WORDS
 
@@ -265,6 +264,7 @@ static const uint32_t SECONDS_PER_MINUTE = 60;
   //#define Pairing_GPIO 0
   #define OTA_update
   #define CONTROLLER_SPECIFIC_VIDPID
+  #define BAUDRATE3M
 #endif
 
 // For Gilphilbert PCBA design
@@ -301,9 +301,6 @@ static const uint32_t SECONDS_PER_MINUTE = 60;
   #define ISV57_TXPIN 10//27 //17
   #define ISV57_RXPIN 9//26 // 16
 
-  //#define Using_analog_output_ESP32_S3
-  #define ESPNOW_Enable
-  #define ESPNow_S3
   //#define BLUETOOTH_GAMEPAD
   #define USB_JOYSTICK
 
@@ -348,10 +345,6 @@ static const uint32_t SECONDS_PER_MINUTE = 60;
   #define ISV57_TXPIN 10//27 //17
   #define ISV57_RXPIN 9//26 // 16
 
-  //#define Using_analog_output_ESP32_S3
-  #define ESPNOW_Enable
-  #define ESPNow_S3
-  //#define BLUETOOTH_GAMEPAD
   #define USB_JOYSTICK
 
   #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 5
@@ -366,6 +359,8 @@ static const uint32_t SECONDS_PER_MINUTE = 60;
   #define USING_BUZZER
   #define BRAKE_RESISTOR_PIN 4
   #define SERVO_POWER_PIN 3
+  #define EMERGENCY_PIN 6
+  #define BAUDRATE3M
 #endif
 // Switch-!t PCB for Waveshare ESP32-S3-DEV-KIT-N8R8
 // More information at https://github.com/gaggi/ActivePedalPCB
@@ -451,13 +446,60 @@ static const uint32_t SECONDS_PER_MINUTE = 60;
 
   //#define BLUETOOTH_GAMEPAD
   #define USB_JOYSTICK
-  #define ESPNOW_Enable
-  #define ESPNow_S3
+  //#define ESPNOW_Enable
+  //#define ESPNow_S3
   #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 0
   //#define ESPNow_Pairing_function
   #define Pairing_GPIO 0
   #define OTA_update
   #define CONTROLLER_SPECIFIC_VIDPID
+  #define BAUDRATE3M
 
   // #define ANGLE_SENSOR_GPIO 11 // disabled by default, since to much runtime impact of ADC
+#endif
+
+
+
+// V6 version of dev PCB for ESP32 S3
+// flash instructions, see https://hutscape.com/tutorials/hello-arduino-esp32s3
+// 1. ESP32S3 Dev Module
+#if PCB_VERSION == 13
+  // ADC defines
+  #define USES_ADS1220
+  #define FFB_ADS1220_SCLK    6
+  #define FFB_ADS1220_DIN     7     // MOSI
+  #define FFB_ADS1220_DOUT    15    // MISO
+  #define FFB_ADS1220_DRDY    16
+  #define FFB_ADS1220_CS      17
+
+  // stepper pins
+  #define dirPinStepper    36
+  #define stepPinStepper   37
+
+  // level shifter is present on this PCB design
+  #define SENSORLESS_HOMING true
+
+  #define ISV57_TXPIN 2
+  #define ISV57_RXPIN 1
+
+  #define BRAKE_RESISTOR_PIN 35
+  
+
+  //#define BLUETOOTH_GAMEPAD
+  #define USB_JOYSTICK
+  //#define ESPNOW_Enable
+  //#define ESPNow_S3
+  #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 0
+  //#define ESPNow_Pairing_function
+  #define Pairing_GPIO 0
+  #define OTA_update
+  #define CONTROLLER_SPECIFIC_VIDPID
+  #define BAUDRATE3M
+  // #define ANGLE_SENSOR_GPIO 11 // disabled by default, since to much runtime impact of ADC
+#endif
+
+
+#ifdef ENABLE_ESP_NOW
+  #define ESPNOW_Enable
+  #define ESPNow_S3
 #endif
