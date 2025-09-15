@@ -15,8 +15,7 @@ class Modbus
 private:
     /* data */
     bool log = false;
-    int mode_ = -1;
-    uint32_t timeout_ = 100;
+    unsigned long timeout_ = 100;
     HardwareSerial* s ;
     uint8_t rawRx[512];
     int  lenRx = 0;
@@ -37,7 +36,7 @@ public:
     Modbus();
     Modbus(HardwareSerial &st);
     
-    bool init(int mode, bool en_log = false);
+    bool init(bool en_log = false);
     void setTimeout(uint16_t timeout);
 
 

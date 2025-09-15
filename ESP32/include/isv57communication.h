@@ -5,12 +5,6 @@
 #include "Modbus.h"
 
 
-// define modbus stuff
-#define MODE  5
-
-
-
-
 
 // servo states register addresses
 #define reg_add_position_given_p 0x0001 // checked
@@ -73,6 +67,7 @@ class isv57communication {
     bool readCurrentAlarm();
     void resetToFactoryParams();
     bool setServoVoltage(uint16_t voltageInVolt_u16);
+    bool setPositionSmoothingFactor(uint16_t posSmoothingFactor_u16);
 	
 	void clearServoUnitPosition();
     void disableAxis();
@@ -101,6 +96,7 @@ class isv57communication {
     uint8_t  raw[200];
     uint8_t len;
     int16_t zeroPos;
+    bool printProfilingFlag_b;
     //Modbus modbus;
   
 };

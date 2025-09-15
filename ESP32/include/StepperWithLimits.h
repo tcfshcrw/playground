@@ -1,19 +1,22 @@
+#pragma once
+
 #include <FastAccelStepper.h>
 #include "isv57communication.h"
 #include "DiyActivePedal_types.h"
 #include "Main.h"
 
 // these are physical properties of the stepper
-static const int32_t MAXIMUM_STEPPER_ACCELERATION = INT32_MAX / 10;       
+static const int32_t MAXIMUM_STEPPER_ACCELERATION = INT32_MAX / 10;
 static const int32_t MAXIMUM_STEPPER_IDLE_TIMEOUT = 1800000; //set the servo idle timeout      
-static const float STEPPER_WAKEUP_FORCE=0.5f; //set the servo wakeup force in kg.
+static const float STEPPER_WAKEUP_FORCE = 1.0f; //set the servo wakeup force in kg.
  // steps/s²
 // 10000000; //
 enum ServoStatus
 {
 	SERVO_NOT_CONNECTED,
 	SERVO_CONNECTED,
-	SERVO_IDLE_NOT_CONNECTED
+	SERVO_IDLE_NOT_CONNECTED,
+	SERVO_FORCE_STOP
 };
 
 class StepperWithLimits {
@@ -24,23 +27,6 @@ private:
 
 	isv57communication isv57;
 	
-
-	/*public: void StartTask(void)
-	{      
-		//Start Task with input parameter set to "this" class
-		xTaskCreatePinnedToCore(
-		this->servoCommunicationTask,        //Function to implement the task 
-		"servoCommunicationTask",            //Name of the task
-		5000,                   //Stack size in words 
-		this,                   //Task input parameter 
-		1,           //Priority of the task 
-		&task_iSV_Communication,                 //Task handle.
-		0);              //Core where the task should run 
-	}*/
-
-
-
-
 	
 	bool isv57LifeSignal_b = false;
 	bool invertMotorDir_global_b = false;
@@ -53,8 +39,13 @@ private:
 	bool enableSteplossRecov_b = true;
 	bool enableCrashDetection_b = true;
 
+	uint16_t posCommandSmoothingFactor_u16 = 0;
+
 	bool logAllServoParams = false;
 	bool clearAllServoAlarms_b = false;
+	bool resetServoRegistersToFactoryValues_b = false;
+
+	bool updateServoParams_b = false;
 
 	int32_t servoPos_local_corrected_i32 = 0;
 
@@ -69,6 +60,7 @@ public:
 
 	void checkLimitsAndResetIfNecessary();
 	void updatePedalMinMaxPos(uint8_t pedalStartPosPct, uint8_t pedalEndPosPct);
+	void pauseTask();
 	bool isAtMinPos();
 	void correctPos();
 	void findMinMaxSensorless(DAP_config_st dap_config_st);
@@ -104,8 +96,11 @@ public:
 	bool getLifelineSignal();
 	
 	void configSteplossRecovAndCrashDetection(uint8_t flags_u8);
+	void configSetPositionCommandSmoothingFactor(uint8_t posCommandSmoothingFactorArg_u8);
 	void printAllServoParameters();
 	void clearAllServoAlarms();
+	void resetServoParametersToFactoryValues();
+	void configSetProfilingFlag(bool proFlag_b);
 
 
 	void setServosInternalPositionCorrected(int32_t posCorrected_i32);

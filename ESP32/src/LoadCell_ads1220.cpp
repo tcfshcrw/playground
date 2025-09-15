@@ -1,5 +1,6 @@
 #include "LoadCell_ads1220.h"
 #include "Main.h"
+#include "Arduino.h"
 
 #ifdef USES_ADS1220
 
@@ -19,36 +20,42 @@ float updatedConversionFactor_f64 = 1.0f;
 // reference voltage in milli-volts
 float refVoltageInMV_fl32 = 5000.0f;
 
-// This flag will be set to true by the ISR
-volatile bool newDataReady = false;
+static SemaphoreHandle_t timer_fireLoadcellReadingReady_global;
+// --- Semaphore Handle ---
+// Moved to global scope to be accessible by the ISR and the class
+static SemaphoreHandle_t drdySemaphore = NULL;
+
+
+
 
 // This is our Interrupt Service Routine
 void IRAM_ATTR drdyInterrupt() {
-  newDataReady = true;
+  BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+    // Give the semaphore to unblock the reading task.
+    if (timer_fireLoadcellReadingReady_global != NULL) {
+        xSemaphoreGiveFromISR(timer_fireLoadcellReadingReady_global, &xHigherPriorityTaskWoken);
+        portYIELD_FROM_ISR(xHigherPriorityTaskWoken);  // request context switch if needed
+    }
 }
 
-
-ADS1220_WE& ADC() {
+/* Provides a singleton instance of the ADS1220 ADC driver. */
+ADS1220_WE& getADC() {
   
-  // Init custom SPI
   static SPIClass adsSPI(FSPI);  // Or use VSPI or HSPI for ESP32
-  adsSPI.begin(FFB_ADS1220_SCLK, FFB_ADS1220_DOUT, FFB_ADS1220_DIN, FFB_ADS1220_CS);
-
-
   static ADS1220_WE adc(&adsSPI, FFB_ADS1220_CS, FFB_ADS1220_DRDY, true);
   
   //static ADS1220_WE adc(FFB_ADS1220_CS, FFB_ADS1220_DRDY);
 
   static bool firstTime = true;
   if (firstTime) {
-    Serial.println("Starting ADC");  
+    ActiveSerial->println("Initializing ADS1220 ADC...");
 
-    // Use custom SPI pins on ESP32-S3
-    SPI.begin(FFB_ADS1220_SCLK, FFB_ADS1220_DOUT, FFB_ADS1220_DIN, FFB_ADS1220_CS);
+    // Initialize custom SPI bus. This should be done only once.
+    adsSPI.begin(FFB_ADS1220_SCLK, FFB_ADS1220_DOUT, FFB_ADS1220_DIN, FFB_ADS1220_CS);
 
     // Initialize ADS1220
     if (!adc.init()) {
-      Serial.println("ADS1220 not found!");
+      ActiveSerial->println("ADS1220 not found!");
       while (1);
     }
 
@@ -65,8 +72,9 @@ ADS1220_WE& ADC() {
 
     float refVolt_fl32 = adc.getVRef_V();
     refVoltageInMV_fl32 = refVolt_fl32 * 1000.0f; // convert to mV
-    Serial.print("Reference voltage: ");
-    Serial.println(refVolt_fl32);
+    ActiveSerial->print("Reference voltage: ");
+    ActiveSerial->print(refVolt_fl32);
+    ActiveSerial->println("V");
 
     // differential channels
     adc.setCompareChannels(ADS1220_MUX_0_1);              // Differential AIN0 - AIN1
@@ -84,11 +92,14 @@ ADS1220_WE& ADC() {
     //adc.setDrdyMode(ADS1220_DOUT_DRDY);
     adc.setDrdyMode(ADS1220_DRDY);
 
+    // needs to wait fir DRDY come from low to high --> do not use
+    adc.setNonBlockingMode(true); // switch ton non-blocking mode
+    
     // assign interrupt to DRDY falling edge to make waiting more efficient
     attachInterrupt(digitalPinToInterrupt(FFB_ADS1220_DRDY), drdyInterrupt, FALLING);
 
 
-    Serial.println("ADC Started");
+    ActiveSerial->println("ADC Started");
     
     firstTime = false;
   }
@@ -105,17 +116,14 @@ LoadCell_ADS1220::LoadCell_ADS1220()
   : _zeroPoint(0.0f), _varianceEstimate(DEFAULT_VARIANCE_ESTIMATE)
 {
   // differential channels
-  ADC().setCompareChannels(ADS1220_MUX_0_1);              // Differential AIN0 - AIN1
+  getADC().setCompareChannels(ADS1220_MUX_0_1);              // Differential AIN0 - AIN1
+  timer_fireLoadcellReadingReady_global = xSemaphoreCreateBinary();
 }
 
 
 
-
-
-
 void LoadCell_ADS1220::setLoadcellRating(uint8_t loadcellRating_u8) const {
-  ADS1220_WE& adc = ADC();
-  float originalConversionFactor_f64 = CONVERSION_FACTOR;
+  getADC(); // Ensure ADC is initialized
   
   updatedConversionFactor_f64 = 1.0f;
   if (LOADCELL_WEIGHT_RATING_KG>0)
@@ -125,38 +133,34 @@ void LoadCell_ADS1220::setLoadcellRating(uint8_t loadcellRating_u8) const {
       float loadcellRatingInGram_fl32 = (((float)loadcellRating_u8) * 1000.0f); // convert kg to gram
       float gramsPerMillivolt =  loadcellRatingInGram_fl32  / fullScale_mV;  // g per mV
       updatedConversionFactor_f64 = gramsPerMillivolt;
+      updatedConversionFactor_f64 *= 2.0f; // empirically identified
   }
 }
 
 
+// #define LOADCELL_RADING_INTERVALL_IN_US (uint32_t)500
+float IRAM_ATTR LoadCell_ADS1220::getReadingKg() const {
+  ADS1220_WE& adc = getADC();
+  static float voltage_mV;
 
-float LoadCell_ADS1220::getReadingKg() const {
-  ADS1220_WE& adc = ADC();
-  unsigned int timeout_us = 0;//TIMEOUT_FOR_DRDY_TO_BECOME_LOW;
-  bool timeoutReached_b = false;
-  float voltage_mV = 0.0f;
-  
-  while(!newDataReady){
-    if(timeout_us < TIMEOUT_FOR_DRDY_TO_BECOME_LOW){
-      timeout_us += DELAY_IN_US_FOR_DRDY_TO_BECOME_LOW;  
-      delayMicroseconds(DELAY_IN_US_FOR_DRDY_TO_BECOME_LOW);
-    } else {
-      timeoutReached_b = true;
+  // wait for the timer to fire
+  // This will block until the timer callback gives the semaphore. It won't consume CPU time while waiting.
+  if(timer_fireLoadcellReadingReady_global != NULL)
+  {
+    if (xSemaphoreTake(timer_fireLoadcellReadingReady_global, portMAX_DELAY) == pdTRUE) {
+      
+      // final check if DRDY is low. If nor, just discard the measurement.
+      if (digitalRead(FFB_ADS1220_DRDY) == LOW)
+      {
+        // Read the voltage from the ADS1220
+        voltage_mV = adc.getVoltage_mV();
+      }
+      
     }
   }
 
-  // read current voltage
-  if (false == timeoutReached_b) {
-    // Reset the flag immediately to be ready for the next conversion
-    newDataReady = false;
-    
-    // Read the voltage from the ADS1220
-    voltage_mV = adc.getVoltage_mV();
-  }
-  
   float weight_grams = voltage_mV * updatedConversionFactor_f64;
-
-  float weight_kg = weight_grams / 1000.0f; // convert grams to kg
+  float weight_kg = weight_grams * 0.001f; // convert grams to kg
   
   // correct bias, assume AWGN --> 3 * sigma is 99.9 %
   return weight_kg - ( _zeroPoint + 3.0f * _standardDeviationEstimate );
@@ -165,13 +169,14 @@ float LoadCell_ADS1220::getReadingKg() const {
 
 
 void LoadCell_ADS1220::estimateBiasAndVariance() {
-  ADS1220_WE& adc = ADC();
+  getADC(); // Ensure ADC is initialized
   
-  Serial.println("Identify loadcell bias and variance");
+  ActiveSerial->println("Identify loadcell bias and variance");
   float varEstimate;
   float mean = 0.0f;
   float M2 = 0.0f;
   long n = 0;
+  
 
   // capturer N measurements on do regressive mean and variance estimate
   // Use Welford-algorithm
@@ -193,20 +198,13 @@ void LoadCell_ADS1220::estimateBiasAndVariance() {
   _standardDeviationEstimate = sqrt(varEstimate);
   _varianceEstimate = varEstimate;
 
-  Serial.print("Offset ");
-  Serial.print(_zeroPoint, 5);
-  Serial.println("kg");
+  ActiveSerial->print("Offset ");
+  ActiveSerial->print(_zeroPoint, 5);
+  ActiveSerial->println("kg");
 
-  // Serial.print("Variance est.: ");
-  // Serial.print(varEstimate, 5);
-  // Serial.println("kg");
-
-  Serial.print("Stddev. est.: ");
-  Serial.print(_standardDeviationEstimate, 5);
-  Serial.println("kg");
+  ActiveSerial->print("Stddev. est.: ");
+  ActiveSerial->print(_standardDeviationEstimate, 5);
+  ActiveSerial->println("kg");
 }
 
 #endif
-
-
-

@@ -1,8 +1,8 @@
 #pragma once
 #define Rudder_timeout 1500
 #include "DiyActivePedal_types.h"
-#include "MovingAverageFilter.h"
-#include "SignalFilter.h"
+#include <MovingAverageFilter.h>
+#include "SignalFilter_1st_order.h"
 MovingAverageFilter averagefilter_rudder(200);
 MovingAverageFilter averagefilter_rudder_force(50);
 class Rudder{
@@ -24,11 +24,11 @@ class Rudder{
   float position_ratio_sync;
   float position_ratio_current;
   int debug_count=0;
-  KalmanFilter* kalman_rudder = NULL;
+  KalmanFilter_1st_order* kalman_rudder = NULL;
   //bool IsReady = false;
   Rudder()
   {
-    kalman_rudder=new KalmanFilter(3.0f);
+    kalman_rudder=new KalmanFilter_1st_order(3.0f);
   }
   void offset_calculate(DAP_calculationVariables_st* calcVars_st)
   {
@@ -159,14 +159,14 @@ class helicoptersRudder{
   float pedalPreload;
   float offsetLast;
   int debug_count=0;
-  float deadzoneTolerance=0.01;
+  float deadzoneTolerance=0.01f;
   float position_ratio_last;
   unsigned long debugPrintLast=0;
-  KalmanFilter* kalman_rudder = NULL;
+  KalmanFilter_1st_order* kalman_rudder = NULL;
   //bool IsReady = false;
   helicoptersRudder()
   {
-    kalman_rudder=new KalmanFilter(3.0f);
+    kalman_rudder=new KalmanFilter_1st_order(3.0f);
   }
   void offset_calculate(DAP_calculationVariables_st* calcVars_st)
   {
@@ -231,16 +231,16 @@ class helicoptersRudder{
     /*
     if(debugPrintLast-millis()>200)
     {
-      Serial.print("Current Force=");
-      Serial.println(currentForceReading);
-      Serial.print("offset_filter=");
-      Serial.println(offset_filter);
-      Serial.print("offset_Last=");
-      Serial.println(offsetLast);
-      Serial.print("position_ratio_Last=");
-      Serial.println(position_ratio_last);
-      Serial.print("position_ratio_sync=");
-      Serial.println(position_ratio_sync);     
+      ActiveSerial->print("Current Force=");
+      ActiveSerial->println(currentForceReading);
+      ActiveSerial->print("offset_filter=");
+      ActiveSerial->println(offset_filter);
+      ActiveSerial->print("offset_Last=");
+      ActiveSerial->println(offsetLast);
+      ActiveSerial->print("position_ratio_Last=");
+      ActiveSerial->println(position_ratio_last);
+      ActiveSerial->print("position_ratio_sync=");
+      ActiveSerial->println(position_ratio_sync);     
     }
     */
   }
