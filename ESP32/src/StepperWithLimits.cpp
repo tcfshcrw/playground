@@ -10,17 +10,12 @@
 
 #define BRAKE_RESISTOR_DEACTIVATION_TIME_IN_MS 1000
 
-//uint32_t speed_in_hz = TICKS_PER_S / ticks;
-// TICKS_PER_S = 16000000L
-// ticks = TICKS_PER_S / speed_in_hz
-#define maxSpeedInTicks  (TICKS_PER_S / MAXIMUM_STEPPER_SPEED)
-
 static const uint8_t LIMIT_TRIGGER_VALUE = LOW;                                   // does endstop trigger high or low
 static const int32_t ENDSTOP_MOVEMENT = (float)100; // how much to move between trigger checks
 static const int32_t ENDSTOP_MOVEMENT_SENSORLESS = ENDSTOP_MOVEMENT * 5;
 
 
-#define MAX_ESTIMATED_SERVO_OFFSET (int16_t)1000
+#define MAX_ESTIMATED_SERVO_OFFSET (int16_t)5000
 
 TaskHandle_t task_iSV_Communication;
 unsigned long cycleTimeLastCall_lifelineCheck = 0;//micros();
@@ -45,46 +40,33 @@ bool setServoToSleep_b = false;
 #define BRAKE_RESISTOR_UPPER_TRHESHOLD_VOLTAGE 4.0f
 #define BRAKE_RESISTOR_LOWER_TRHESHOLD_VOLTAGE 1.0f
 
-#define STEPPER_TASK_TIME_IN_MS (uint8_t)4
-#define STEPPER_FORWARD_PLANNING_TIME_IN_MS (uint8_t)4
-
-FastAccelStepperEngine& stepperEngine() {
-  static FastAccelStepperEngine myEngine = FastAccelStepperEngine();   // this is a factory and manager for all stepper instances
-
-  static bool firstTime = true;
-  if (firstTime) {
-     myEngine.init(CORE_ID_STEPPER_TASK);
-     firstTime = false;
-  }
-  
-  myEngine.task_rate(STEPPER_TASK_TIME_IN_MS);
-  return myEngine;
-}
+#define STEPPER_TASK_TIME_IN_MS (uint8_t)1
+#define STEPPER_FORWARD_PLANNING_TIME_IN_MS (uint8_t)1
 
 
-StepperWithLimits::StepperWithLimits(uint8_t pinStep, uint8_t pinDirection, bool invertMotorDir_b, uint32_t stepsPerMotorRev_arg_u32)
+StepperWithLimits::StepperWithLimits(uint8_t pinStep, uint8_t pinDirection, bool invertMotorDir_b, uint32_t stepsPerMotorRev_arg_u32, uint8_t ratioOfInertia_arg_u8)
   :  _endstopLimitMin(0),    _endstopLimitMax(0)
   , _posMin(0),      _posMax(0)
   , stepsPerMotorRev_u32(stepsPerMotorRev_arg_u32)
-
-
+  , ratioOfInertia_u8(ratioOfInertia_arg_u8)
 {
 
-	semaphore_lifelineSignal = xSemaphoreCreateMutex();
+  	_stepper = new FastNonAccelStepper(pinStep, pinDirection, invertMotorDir_b); 
+
 
 	// pinMode(pinMin, INPUT);
 	// pinMode(pinMax, INPUT);
 
-	ActiveSerial->printf("InvertStepperDir: %d\n", invertMotorDir_b);
-	_stepper = stepperEngine().stepperConnectToPin(pinStep);	
+	Serial.printf("InvertStepperDir: %d\n", invertMotorDir_b);
+	// _stepper = stepperEngine().stepperConnectToPin(pinStep);	
 
-	_stepper->setDirectionPin(pinDirection, invertMotorDir_b);
-    _stepper->setAutoEnable(true);
-    _stepper->setAbsoluteSpeedLimit( maxSpeedInTicks ); // ticks
-    _stepper->setSpeedInTicks( maxSpeedInTicks ); // ticks
-    _stepper->setAcceleration(MAXIMUM_STEPPER_ACCELERATION);  // steps/s²
-	_stepper->setLinearAcceleration(0);
-    _stepper->setForwardPlanningTimeInMs(STEPPER_FORWARD_PLANNING_TIME_IN_MS);
+	// _stepper->setDirectionPin(pinDirection, invertMotorDir_b);
+    // _stepper->setAutoEnable(true);
+    // _stepper->setAbsoluteSpeedLimit( maxSpeedInTicks ); // ticks
+    // _stepper->setSpeedInTicks( maxSpeedInTicks ); // ticks
+    // _stepper->setAcceleration(MAXIMUM_STEPPER_ACCELERATION);  // steps/s²
+	// _stepper->setLinearAcceleration(0);
+    // _stepper->setForwardPlanningTimeInMs(STEPPER_FORWARD_PLANNING_TIME_IN_MS);
 
 	
 	/************************************************************/
@@ -134,7 +116,7 @@ StepperWithLimits::StepperWithLimits(uint8_t pinStep, uint8_t pinDirection, bool
 		// flash iSV57 registers
 		isv57.setupServoStateReading();
 		invertMotorDir_global_b = invertMotorDir_b;
-		isv57.sendTunedServoParameters(invertMotorDir_global_b, stepsPerMotorRev_u32);
+		isv57.sendTunedServoParameters(invertMotorDir_global_b, stepsPerMotorRev_u32, ratioOfInertia_u8);
 
 
 		delay(30);
@@ -280,12 +262,12 @@ void StepperWithLimits::findMinMaxSensorless(DAP_config_st dap_config_st)
 		}
 			
 		// reduce speed and acceleration
-		_stepper->setSpeedInHz(MAXIMUM_STEPPER_SPEED / 16);
-		_stepper->setAcceleration(MAXIMUM_STEPPER_ACCELERATION / 16);
-		
+		_stepper->setMaxSpeed(MAXIMUM_STEPPER_SPEED / 16);
+
 		// run continously in one direction until endstop is hit
-		//_stepper->keepRunningBackward(MAXIMUM_STEPPER_SPEED / 10);
-		_stepper->move(INT32_MIN, false);
+		ActiveSerial->println("Move to min");
+		// _stepper->forceStopAndNewPosition(0);
+		_stepper->keepRunningBackward(MAXIMUM_STEPPER_SPEED / 16);
 		
 		while( (!endPosDetected) && (getLifelineSignal()) ){
 			delay(1);
@@ -306,56 +288,8 @@ void StepperWithLimits::findMinMaxSensorless(DAP_config_st dap_config_st)
 		ActiveSerial->println("Moved to pos: 0");
 		ActiveSerial->printf("Current pos: %d\n", _stepper->getCurrentPosition() );
 		
-		
-		
-
-		/************************************************************/
-		/* 			reset servos internal position counter,			*/
-		/*			thus step loss recovery is simplified.			*/
-		/************************************************************/
-		// restart servo axis. This will reset the seros reg_add_position_given_p count to zero, thus equalizing the ESP zero and the servos zero position.
-		/*restartServo = true;
-
-		bool servoAxisResetSuccessfull_b = false;
-		for (uint16_t waitTillServoCounterWasReset_Idx = 0; waitTillServoCounterWasReset_Idx < 10; waitTillServoCounterWasReset_Idx++)
-		{
-			delay(100);
-
-			//bool servoPosRes_b = (50 > abs(isv57.servo_pos_given_p) ) || ( 50 > (INT16_MAX - abs(isv57.servo_pos_given_p))  );
-			bool servoPosRes_b = 0 == (isv57.servo_pos_given_p); 
-			if ( (false == restartServo) && (servoPosRes_b) )
-			{
-				ActiveSerial->print("Servo axis was reset succesfully! Current position: ");
-				ActiveSerial->println(isv57.servo_pos_given_p);
-				servoAxisResetSuccessfull_b = true;
-				break;
-			}
-		}
-
-		if(false == servoAxisResetSuccessfull_b)
-		{
-			ActiveSerial->print("Servo axis not reset. Restarting ESP!");
-			ESP.restart();
-		}*/
-		
-
-		// ActiveSerial->print("Servo axis current position (before clearing): ");
-		// ActiveSerial->println(isv57.servo_pos_given_p);
-
-		// restartServo = true;
-		// delay(5000);
-
-		// ActiveSerial->print("Servo axis current position (after clearing): ");
-		// ActiveSerial->println(isv57.servo_pos_given_p);
-
-
-
-
-		
-		
 		delay(200);
 		isv57.setZeroPos();
-		// setMinPosition();
 
 		
 		/************************************************************/
@@ -369,7 +303,6 @@ void StepperWithLimits::findMinMaxSensorless(DAP_config_st dap_config_st)
 		endPosDetected = false; //abs( isv57.servo_current_percent) > STEPPER_WITH_LIMITS_SENSORLESS_CURRENT_THRESHOLD_IN_PERCENT;
 		
 		// run continously in one direction until endstop is hit
-		//_stepper->keepRunningForward(MAXIMUM_STEPPER_SPEED / 10);
 		_stepper->move(INT32_MAX, false);
 
 		// if endstop is reached, communication is lost or virtual endstop is hit
@@ -392,33 +325,37 @@ void StepperWithLimits::findMinMaxSensorless(DAP_config_st dap_config_st)
 		ActiveSerial->printf("Max endstop reached: %d\n", _endstopLimitMax);
 		
 		// move slowly to min position
-		//moveSlowlyToPos(_posMin);
-		//moveSlowlyToPos(5*ENDSTOP_MOVEMENT_SENSORLESS);
-		moveSlowlyToPos(0);
+		moveSlowlyToPos(100);
 		
-		
-		// increase speed and accelerartion back to normal
-		//_stepper->setMaxSpeed(MAXIMUM_STEPPER_SPEED);
-		_stepper->setAcceleration(MAXIMUM_STEPPER_ACCELERATION);
-		_stepper->setSpeedInHz(MAXIMUM_STEPPER_SPEED);
+		// increase speed back to normal
+		_stepper->setMaxSpeed(MAXIMUM_STEPPER_SPEED);
 	}	
 	
 
 }
 
+void StepperWithLimits::moveToPosWithSpeed(int32_t targetPos_ui32, uint32_t speedInHz_u32) {
+  _stepper->setMaxSpeed(speedInHz_u32);
+  _stepper->moveTo(targetPos_ui32, false);
+}
+
 
 void StepperWithLimits::moveSlowlyToPos(int32_t targetPos_ui32) {
-  // reduce speed and accelerartion
-  //_stepper->setMaxSpeed(MAXIMUM_STEPPER_SPEED / 4);
-  _stepper->setSpeedInHz(MAXIMUM_STEPPER_SPEED / 4);
+
+  // Get previous speed level
+  uint32_t prevSpeed_u32 = _stepper->getMaxSpeed();
+
+  // reduce speed
+  _stepper->setMaxSpeed(MAXIMUM_STEPPER_SPEED / 8);
 
   // move to min
   _stepper->moveTo(targetPos_ui32, true);
 
-
-  // increase speed and accelerartion
-  //_stepper->setMaxSpeed(MAXIMUM_STEPPER_SPEED);
-  _stepper->setSpeedInHz(MAXIMUM_STEPPER_SPEED);
+  // reset speed to previous speedlevel
+//   _stepper->setMaxSpeed(prevSpeed_u32);
+  delay(1);
+  _stepper->setMaxSpeed(MAXIMUM_STEPPER_SPEED);
+  delay(1);
 }
 
 
@@ -447,16 +384,7 @@ void StepperWithLimits::forceStop() {
 
 int8_t StepperWithLimits::moveTo(int32_t position, bool blocking) {
 
-  long curPos = _stepper->getCurrentPosition();
-  int32_t absPosChange = abs(position - curPos);
-  float absPosChangeNormalized_fl32 = (float)absPosChange / 10000.0f;
-  absPosChangeNormalized_fl32 = constrain(absPosChangeNormalized_fl32, 0.01f, 1.0f);
-
-//   _stepper->setSpeedInHz(MAXIMUM_STEPPER_SPEED * absPosChangeNormalized_fl32);
-//   _stepper->setAcceleration(MAXIMUM_STEPPER_ACCELERATION * absPosChangeNormalized_fl32);
-
   _stepper->moveTo(position, blocking);
-
   return 1;
 }
 
@@ -492,8 +420,7 @@ int32_t StepperWithLimits::getTargetPositionSteps() const {
 
 void StepperWithLimits::setSpeed(uint32_t speedInStepsPerSecond) 
 {
-  //_stepper->setMaxSpeed(speedInStepsPerSecond);            // steps/s 
-  _stepper->setSpeedInHz(MAXIMUM_STEPPER_SPEED);
+  _stepper->setMaxSpeed(speedInStepsPerSecond);            // steps/s 
 }
 
 bool StepperWithLimits::isAtMinPos()
@@ -507,12 +434,15 @@ bool StepperWithLimits::isAtMinPos()
 
 int32_t StepperWithLimits::getCurrentSpeedInMilliHz()
 {
-	return _stepper->getCurrentSpeedInMilliHz();
+	return _stepper->getMaxSpeed();
+	// return MAXIMUM_STEPPER_SPEED * 1000;
 }
 
 uint32_t StepperWithLimits::getMaxSpeedInMilliHz()
 {
-	return _stepper->getMaxSpeedInMilliHz();
+	// return _stepper->getMaxSpeedInMilliHz();
+	// Hz to mHz: 1 Hz = 1000 milli Hz
+	return MAXIMUM_STEPPER_SPEED * 1000;
 }
 
 
@@ -530,13 +460,13 @@ void StepperWithLimits::correctPos()
 			// tune the current servo position to compesnate the position offset
 			int32_t stepOffset =(int32_t)constrain(servo_offset_compensation_steps_i32, -10, 10);
 
-			// if (stepOffset != 0)
-			// {
-			// 	ActiveSerial->print("Position compensation: ");
-			// 	ActiveSerial->print(servo_offset_compensation_steps_i32);
-			// 	ActiveSerial->print(",   ");
-			// 	ActiveSerial->println(stepOffset);
-			// }
+			if (stepOffset != 0)
+			{
+				ActiveSerial->print("Position compensation: ");
+				ActiveSerial->print(servo_offset_compensation_steps_i32);
+				ActiveSerial->print(",   ");
+				ActiveSerial->println(stepOffset);
+			}
 
 			// offset = ESPs position - servos position
 			// new ESP pos = ESPs position - offset = ESPs position - ESPs position + servos position = servos position
@@ -701,6 +631,17 @@ void StepperWithLimits::configSetPositionCommandSmoothingFactor(uint8_t posComma
 	}
 }
 
+void StepperWithLimits::configSetRatioOfInertia(uint8_t ratioOfInertia_arg_u8)
+{
+	if (ratioOfInertia_u8 != (uint8_t)ratioOfInertia_arg_u8)
+	{
+		ratioOfInertia_u8 = constrain( (uint8_t)ratioOfInertia_arg_u8, 1, 255);
+		updateServoParams_b = true;
+
+
+	}
+}
+
 
 
 int64_t timeSinceLastServoPosChange_l = 0;
@@ -849,7 +790,10 @@ void IRAM_ATTR StepperWithLimits::servoCommunicationTask(void *pvParameters)
 				if (true == stepper_cl->updateServoParams_b)
 				{
 					stepper_cl->isv57.setPositionSmoothingFactor(stepper_cl->posCommandSmoothingFactor_u16);
+					stepper_cl->isv57.setRatioOfInertia(stepper_cl->ratioOfInertia_u8);
 					stepper_cl->updateServoParams_b = false;
+
+					ActiveSerial->println("Updating Servo parameters.");
 				}
 
 
@@ -982,15 +926,25 @@ void IRAM_ATTR StepperWithLimits::servoCommunicationTask(void *pvParameters)
 						bool posCorrectedInLoop_b = false;
 						if ( ( espPos_i32 - servoPosCorrected_i32 ) > INT16_MAX )
 						{
-							// 4294967296 = 2^16
-							servoPosCorrected_i32 += 4294967296;
+							// example positive int16 overflow:
+							// esp pos = 2^15-1 = 32767
+							// servo pos = -2^15 = -32768
+							// servo pos + 2^16 = -32768 + 65536 = 32768
+							
+							// 65536 = 2^16
+							servoPosCorrected_i32 += 65536;
 							posCorrectedInLoop_b = true;
 						}
 
 						if ( ( espPos_i32 - servoPosCorrected_i32 ) < INT16_MIN )
 						{
-							// 4294967296 = 2^16
-							servoPosCorrected_i32 -= 4294967296;
+							// example, negative int16 overflow:
+							// esp pos = -2^15 = -32768
+							// servo pos = 2^15-1 = 32767
+							// servo pos - 2^16 = 32767 - 65536 = -32769
+							
+							// 65536 = 2^16
+							servoPosCorrected_i32 -= 65536;
 							posCorrectedInLoop_b = true;
 						}
 
@@ -1005,7 +959,7 @@ void IRAM_ATTR StepperWithLimits::servoCommunicationTask(void *pvParameters)
 					
 					
 					// estimate position offset between ESPs target position and true servo position
-					int16_t estServoOffsetInSteps_i16 = stepper_cl->getServosInternalPositionCorrected() - stepper_cl->getCurrentPosition();
+					int16_t estServoOffsetInSteps_i16 = stepper_cl->getServosInternalPositionCorrected() + stepper_cl->getServosPosError() - stepper_cl->getCurrentPosition();
 					estServoOffsetInSteps_i16 = constrain(estServoOffsetInSteps_i16, -MAX_ESTIMATED_SERVO_OFFSET, MAX_ESTIMATED_SERVO_OFFSET );
 					stepper_cl->isv57.isv57dynamicStates_.estimated_pos_error_i16 = estServoOffsetInSteps_i16;
 					// stepper_cl->isv57.isv57dynamicStates_.estimated_pos_error_currentStepperPos_i16 = stepper_cl->getCurrentPosition();

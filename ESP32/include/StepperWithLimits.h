@@ -1,6 +1,6 @@
 #pragma once
 
-#include <FastAccelStepper.h>
+#include <FastNonAccelStepper.h>
 #include "isv57communication.h"
 #include "DiyActivePedal_types.h"
 #include "Main.h"
@@ -21,7 +21,7 @@ enum ServoStatus
 
 class StepperWithLimits {
 private:
-	FastAccelStepper* _stepper;
+	FastNonAccelStepper* _stepper;
 	int32_t _endstopLimitMin, _endstopLimitMax;    // stepper position at limit switches
 	int32_t _posMin,   _posMax;      // stepper position at min/max of travel
 
@@ -40,6 +40,7 @@ private:
 	bool enableCrashDetection_b = true;
 
 	uint16_t posCommandSmoothingFactor_u16 = 0;
+	uint8_t ratioOfInertia_u8 = 1;
 
 	bool logAllServoParams = false;
 	bool clearAllServoAlarms_b = false;
@@ -55,7 +56,7 @@ private:
 	
 
 public:
-	StepperWithLimits(uint8_t pinStep, uint8_t pinDirection, bool invertMotorDir_b, uint32_t stepsPerMotorRev_arg_u32);
+	StepperWithLimits(uint8_t pinStep, uint8_t pinDirection, bool invertMotorDir_b, uint32_t stepsPerMotorRev_arg_u32, uint8_t ratioOfInertia_arg_u8);
 	bool hasValidStepper() const { return NULL != _stepper; }
 
 	void checkLimitsAndResetIfNecessary();
@@ -67,6 +68,7 @@ public:
 	void forceStop();
 	int8_t moveTo(int32_t position, bool blocking = false);
 	void moveSlowlyToPos(int32_t targetPos_ui32);
+	void moveToPosWithSpeed(int32_t targetPos_ui32, uint32_t speedInHz_u32);
 
 	int32_t getCurrentPositionFromMin() const;
 	int32_t getMinPosition() const;
@@ -97,6 +99,7 @@ public:
 	
 	void configSteplossRecovAndCrashDetection(uint8_t flags_u8);
 	void configSetPositionCommandSmoothingFactor(uint8_t posCommandSmoothingFactorArg_u8);
+	void configSetRatioOfInertia(uint8_t ratioOfInertia_arg_u8);
 	void printAllServoParameters();
 	void clearAllServoAlarms();
 	void resetServoParametersToFactoryValues();

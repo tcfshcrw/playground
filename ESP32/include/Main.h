@@ -68,7 +68,7 @@
 //#define MOTOR_INVERT_MOTOR_DIR false
 static const uint32_t MAXIMUM_STEPPER_RPM = 4000;     
 static const uint32_t SECONDS_PER_MINUTE = 60;
-#define MAXIMUM_STEPPER_SPEED (uint32_t)250000//  max steps per second, see https://github.com/gin66/FastAccelStepper
+#define MAXIMUM_STEPPER_SPEED (uint32_t)MAX_SPEED_IN_HZ//100000//  max steps per second, see https://github.com/gin66/FastAccelStepper
 
 
 /********************************************************************/
@@ -269,7 +269,7 @@ static const uint32_t SECONDS_PER_MINUTE = 60;
   #define OTA_update
   #define CONTROLLER_SPECIFIC_VIDPID
   #define BAUDRATE3M
-  
+  #define PEDAL_SOFTWARE_ASSIGNMENT
 #endif
 
 // For Gilphilbert PCBA design
@@ -295,7 +295,8 @@ static const uint32_t SECONDS_PER_MINUTE = 60;
   #define MCP_SCL 4
 
   // Pedal assignment pin
-  #define PEDAL_HARDWARE_ASSIGNMENT
+  //#define PEDAL_HARDWARE_ASSIGNMENT
+  #define PEDAL_SOFTWARE_ASSIGNMENT
   #define CFG1 1
   #define CFG2 2
 
@@ -317,8 +318,6 @@ static const uint32_t SECONDS_PER_MINUTE = 60;
   #define LED_GPIO 12
   #define OTA_update
   #define USING_BUZZER
-  
-
   #define USE_CDC_INSTEAD_OF_UART
 #endif
 
@@ -340,25 +339,26 @@ static const uint32_t SECONDS_PER_MINUTE = 60;
   #define MCP_SCL 4
 
   // Pedal assignment pin
-  #define PEDAL_HARDWARE_ASSIGNMENT
+  //#define PEDAL_HARDWARE_ASSIGNMENT
+  #define PEDAL_SOFTWARE_ASSIGNMENT
   #define CFG1 1
   #define CFG2 2
 
-  //#define EMERGENCY_BUTTON
-  //#define ShutdownPin 6
+  // #define EMERGENCY_BUTTON
+  // #define ShutdownPin 6
   #define BuzzerPin 21
   // level shifter is present on this PCB design
   #define SENSORLESS_HOMING true
-  #define ISV57_TXPIN 10//27 //17
-  #define ISV57_RXPIN 9//26 // 16
+  #define ISV57_TXPIN 10 // 27 //17
+  #define ISV57_RXPIN 9  // 26 // 16
 
   #define USB_JOYSTICK
 
   #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 5
-  //#define ESPNow_Pairing_function
-  //#define Hardware_Pairing_button
+  // #define ESPNow_Pairing_function
+  // #define Hardware_Pairing_button
   #define Pairing_GPIO 33
-  //#define ESPNow_debug_rudder
+  // #define ESPNow_debug_rudder
   #define CONTROLLER_SPECIFIC_VIDPID
   #define USING_LED
   #define LED_GPIO 12
@@ -421,7 +421,7 @@ static const uint32_t SECONDS_PER_MINUTE = 60;
   #define LED_ENABLE_RGB
   #define OTA_update
   #define USING_BUZZER
-  
+  #define PEDAL_SOFTWARE_ASSIGNMENT
 #endif
 
 
@@ -460,7 +460,7 @@ static const uint32_t SECONDS_PER_MINUTE = 60;
   #define OTA_update
   #define CONTROLLER_SPECIFIC_VIDPID
   #define BAUDRATE3M
-  
+  #define PEDAL_SOFTWARE_ASSIGNMENT
   // #define ANGLE_SENSOR_GPIO 11 // disabled by default, since to much runtime impact of ADC
 #endif
 
@@ -499,6 +499,7 @@ static const uint32_t SECONDS_PER_MINUTE = 60;
   #define OTA_update
   #define CONTROLLER_SPECIFIC_VIDPID
   #define BAUDRATE3M
+  #define PEDAL_SOFTWARE_ASSIGNMENT
   // #define ANGLE_SENSOR_GPIO 11 // disabled by default, since to much runtime impact of ADC
 #endif
 

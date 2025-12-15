@@ -10,7 +10,7 @@ static const float ABS_SCALING = 50.0f;
 
 #define WAIT_TIME_IN_MS_TO_AQUIRE_GLOBAL_STRUCT 500
 
-const uint32_t EEPROM_OFFSET = (DAP_VERSION_CONFIG-128) * sizeof(DAP_config_st) % (2048-sizeof(DAP_config_st));
+const uint32_t EEPROM_OFFSET = ASSIGNMENT_EEPROM_OFFSET+ sizeof(DAP_Assignement_reg)+ASSIGNMENT_EEPROM_OFFSET/*+(DAP_VERSION_CONFIG-128) * sizeof(DAP_config_st) % (2048-sizeof(DAP_config_st))*/;
 
 void DAP_config_st::initialiseDefaults() {
 
@@ -115,31 +115,6 @@ void DAP_config_st::initialiseDefaults() {
   payLoadPedalConfig_.WS_freq=15;
   payLoadPedalConfig_.Road_multi = 50;
   payLoadPedalConfig_.Road_window=60;
-  /*
-  payLoadPedalConfig_.cubic_spline_param_a_array[0] = 0;
-  payLoadPedalConfig_.cubic_spline_param_a_array[1] = 0;
-  payLoadPedalConfig_.cubic_spline_param_a_array[2] = 0;
-  payLoadPedalConfig_.cubic_spline_param_a_array[3] = 0;
-  payLoadPedalConfig_.cubic_spline_param_a_array[4] = 0;
-
-  payLoadPedalConfig_.cubic_spline_param_b_array[0] = 0;
-  payLoadPedalConfig_.cubic_spline_param_b_array[1] = 0;
-  payLoadPedalConfig_.cubic_spline_param_b_array[2] = 0;
-  payLoadPedalConfig_.cubic_spline_param_b_array[3] = 0;
-  payLoadPedalConfig_.cubic_spline_param_b_array[4] = 0;
-  */
-
-  payLoadPedalConfig_.PID_p_gain = 0.3f;
-  payLoadPedalConfig_.PID_i_gain = 50.0f;
-  payLoadPedalConfig_.PID_d_gain = 0.0f;
-  payLoadPedalConfig_.PID_velocity_feedforward_gain = 0.0f;
-
-
-  payLoadPedalConfig_.MPC_0th_order_gain = 10.0f;
-  payLoadPedalConfig_.MPC_1st_order_gain = 0.0f;
-  payLoadPedalConfig_.MPC_2nd_order_gain = 0.0f;
-
-  payLoadPedalConfig_.control_strategy_b = 0;
 
   payLoadPedalConfig_.maxGameOutput = 100;
 
@@ -160,6 +135,9 @@ void DAP_config_st::initialiseDefaults() {
   payLoadPedalConfig_.kf_modelNoise_joystick=1;
   payLoadPedalConfig_.kf_Joystick_u8=0;
   payLoadPedalConfig_.servoIdleTimeout=0;
+  payLoadPedalConfig_.minForceForEffects_u8=0;
+  payLoadPedalConfig_.servoRatioOfInertia_u8=1;
+  payLoadPedalConfig_.configHash = (uint32_t)175245064 ;
 }
 
 
@@ -316,18 +294,18 @@ void DAP_calculationVariables_st::updateFromConfig(DAP_config_st& config_st)
   }
 
   absFrequency = ((float)config_st.payLoadPedalConfig_.absFrequency);
-  absAmplitude = ((float)config_st.payLoadPedalConfig_.absAmplitude) / 20.0f; // in kg or percent
+  absAmplitude = ((float)config_st.payLoadPedalConfig_.absAmplitude)  *0.001f;//in percent, max 20% of force range
 
   dampingPress = ((float)config_st.payLoadPedalConfig_.dampingPress) * 0.00015f;
   RPM_max_freq = ((float)config_st.payLoadPedalConfig_.RPM_max_freq);
   RPM_min_freq = ((float)config_st.payLoadPedalConfig_.RPM_min_freq);
-  RPM_AMP = ((float)config_st.payLoadPedalConfig_.RPM_AMP) / 100.0f;
+  RPM_AMP = ((float)config_st.payLoadPedalConfig_.RPM_AMP)  * 0.0002f;//in kg, max 4% of force range
   // Bite point effect;
 
   BP_trigger_value = (float)config_st.payLoadPedalConfig_.BP_trigger_value;
-  BP_amp = ((float)config_st.payLoadPedalConfig_.BP_amp) / 100.0f;
+  BP_amp = ((float)config_st.payLoadPedalConfig_.BP_amp)   *0.001f;//in kg, max 20% of force range
   BP_freq = (float)config_st.payLoadPedalConfig_.BP_freq;
-  WS_amp = ((float)config_st.payLoadPedalConfig_.WS_amp) / 20.0f;
+  WS_amp = ((float)config_st.payLoadPedalConfig_.WS_amp)  *0.001f;//in kg, max 20% of force range
   WS_freq = (float)config_st.payLoadPedalConfig_.WS_freq;
   // update force variables
   Force_Min = ((float)config_st.payLoadPedalConfig_.preloadForce);

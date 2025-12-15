@@ -212,50 +212,71 @@ bool isv57communication::setPositionSmoothingFactor(uint16_t posSmoothingFactor_
   return modbus.checkAndReplaceParameter(slaveId, pr_2_00+22, posSmoothingFactor_u16); // positional command smoothing factor in 0.1ms
 }
 
+bool isv57communication::setRatioOfInertia(uint8_t ratiOfInertia_u8)
+{
+  return modbus.checkAndReplaceParameter(slaveId, pr_0_00+4, ratiOfInertia_u8); // positional command smoothing factor in 0.1ms
+}
+
 
 // send tuned servo parameters
-void isv57communication::sendTunedServoParameters(bool commandRotationDirection, uint32_t stepsPerMotorRev_u32) {
+void isv57communication::sendTunedServoParameters(bool commandRotationDirection, uint32_t stepsPerMotorRev_u32, uint32_t ratioOfInertia_u32) {
   
   bool retValue_b = false;
 
 
+  
+// #define ADAPTIVE_SERVO_PARAMS
+// #ifdef ADAPTIVE_SERVO_PARAMS
+//   // see https://atbautomation.eu/uploads/User_Manual_Leadshine_iSV2-RS.pdf, p.22, Pr0.00
+//   // 1) Pr0.01 = 0 --> position mode
+//   // 2) Pr0.02 = 1 --> interpolation mode
+//   // 3) Pr0.04 inertia ratio
+//   // 4) Pr0.03 machine stiffness
+//   // 5) Pr0.00 = 1 --> adaptive bandwidth
+//   retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+0, 1); // adaptive bandwidth modell following controll
+//   retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+2, 1); // positioning mode with auto tuning
+//   retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+3, 9); // machine stiffness
+//   retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+4, 1); // inertia
+//   retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_2_00+0, 2); // adaptive filter on all the time
+// #endif
+
+
   // Pr0 register
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+1, 0); // control mode #
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+2, 0); // deactivate auto gain
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+3, 10); // machine stiffness
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+4, 80); // ratio of inertia
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+6, 0); // motor command direction
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+0, tuned_parameters[pr_0_00+0]); // control mode #
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+1, tuned_parameters[pr_0_00+1]); // control mode #
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+2, tuned_parameters[pr_0_00+2]); // deactivate auto gain
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+3, tuned_parameters[pr_0_00+3]); // machine stiffness
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+4, ratioOfInertia_u32 ); // ratio of inertia
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+6, tuned_parameters[pr_0_00+6]); // motor command direction
   //retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+6, commandRotationDirection); // Command Pulse Rotational Direction
   retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+8, (long)stepsPerMotorRev_u32); // microsteps
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+9, 1); // 1st numerator 
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+10, 1); // & denominator
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+13, 500); // 1st torque limit
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+14, 500); // position deviation setup
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+16, 50); // regenerative braking resitor
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+17, 50);
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+18, 0); // vibration suppression
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+19, 0);
-
-  
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+9, tuned_parameters[pr_0_00+9]); // 1st numerator 
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+10, tuned_parameters[pr_0_00+10]); // & denominator
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+13, tuned_parameters[pr_0_00+13]); // 1st torque limit
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+14, tuned_parameters[pr_0_00+14]); // position deviation setup
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+16, tuned_parameters[pr_0_00+16]); // regenerative braking resitor
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+17, tuned_parameters[pr_0_00+17]);
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+18, tuned_parameters[pr_0_00+18]); // vibration suppression
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_0_00+19, tuned_parameters[pr_0_00+19]);
 
   // Pr1 register
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_1_00+0, 600); // 1st position gain
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_1_00+1, 300); // 1st velocity loop gain
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_1_00+2, 300); // 1st time constant of velocity loop
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_1_00+3, 15); // 1st filter of velocity detection
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_1_00+4, 150); // 1st torque filter
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_1_00+10, 200); // velocity feed forward gain
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_1_00+11, 6000); // velocity feed forward filter
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_1_00+12, 0); // torque feed forward gain
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_1_00+13, 0); // torque feed forward filter
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_1_00+15, 0); // control switching mode
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_1_00+33, 0); // speed given filter
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_1_00+35, 0); // position command filter
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_1_00+36, 0); // encoder feedback
+  // retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_1_00+0, tuned_parameters[pr_1_00+0]); // 1st position gain
+  // retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_1_00+1, tuned_parameters[pr_1_00+1]); // 1st velocity loop gain
+  // retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_1_00+2, tuned_parameters[pr_1_00+2]); // 1st time constant of velocity loop
+  // retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_1_00+3, tuned_parameters[pr_1_00+3]); // 1st filter of velocity detection
+  // retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_1_00+4, tuned_parameters[pr_1_00+4]); // 1st torque filter
+  // retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_1_00+10, tuned_parameters[pr_1_00+10]); // velocity feed forward gain
+  // retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_1_00+11, tuned_parameters[pr_1_00+11]); // velocity feed forward filter
+  // retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_1_00+12, tuned_parameters[pr_1_00+12]); // torque feed forward gain
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_1_00+13, tuned_parameters[pr_1_00+13]); // torque feed forward filter
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_1_00+15, tuned_parameters[pr_1_00+15]); // control switching mode
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_1_00+33, tuned_parameters[pr_1_00+33]); // speed given filter
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_1_00+35, tuned_parameters[pr_1_00+35]); // position command filter
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_1_00+36, tuned_parameters[pr_1_00+36]); // encoder feedback
   //retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_1_00+37, 1052); // special function register
   //uint16_t special_function_flags = 0x4 | 0x8 | 0x10 | 0x40 | 0x400;
   uint16_t special_function_flags = 0x4 | 0x8 | 0x10 | 0x400;
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_1_00+37, special_function_flags); // special function register
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_1_00+37, tuned_parameters[pr_1_00+37]); // special function register
   // see https://www.oyostepper.com/images/upload/File/ISV57T-180.pdf
   // 0x01: =0: Enablespeedfeed-forwardfiltering; =1:Disablespeed feed-forward filtering
   // 0x02: =0: Enabletorquefeed-forwardfiltering; =2:disabletorque feed-forward filtering
@@ -265,49 +286,56 @@ void isv57communication::sendTunedServoParameters(bool commandRotationDirection,
   // 0x20: =0: dial input function not assignable; =0x20: dial input function assignable
   // 0x40: =0: Mask drive disable Er260 alarm; =0x40: Enable drive disable Er260 alarm
   // 0x400: =0: Mask undervoltage Er0D0 alarm; =0x400: Enable undervoltage Er0D0 alarm
+  
 
+  
   // Pr2 register
   // vibration suppression 
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_2_00+1, 50);
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_2_00+2, 20);
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_2_00+3, 99);
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_2_00+4, 90);
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_2_00+5, 20);
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_2_00+6, 99);
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_2_00+22, 0);
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_2_00+23, 0);// FIR based command smoothing time. Since the stpper task runs every 4ms, this time is selected to be larger than that. Unit is 0.1ms 
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_2_00, tuned_parameters[pr_2_00]);
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_2_00+1, tuned_parameters[pr_2_00+1]);
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_2_00+2, tuned_parameters[pr_2_00+2]);
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_2_00+3, tuned_parameters[pr_2_00+3]);
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_2_00+4, tuned_parameters[pr_2_00+4]);
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_2_00+5, tuned_parameters[pr_2_00+5]);
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_2_00+6, tuned_parameters[pr_2_00+6]);
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_2_00+22, tuned_parameters[pr_2_00+22]);
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_2_00+23, tuned_parameters[pr_2_00+23]);// FIR based command smoothing time. Since the stpper task runs every 4ms, this time is selected to be larger than that. Unit is 0.1ms 
   
 
   // Pr3 register
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_3_00+12, 0); // time setup acceleration
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_3_00+13, 0); // time setup deceleration
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_3_00+24, 5000); // maximum rpm
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_3_00+12, tuned_parameters[pr_3_00+12]); // time setup acceleration
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_3_00+13, tuned_parameters[pr_3_00+13]); // time setup deceleration
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_3_00+24, tuned_parameters[pr_3_00+24]); // maximum rpm
   
 
   // Pr5 register
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_5_00+13, 5000); // overspeed level
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_5_00+20, 1); // encoder output resolution  {0: Encoder units; 1: Command units; 2: 10000pulse/rotation}
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_5_00+35, 1); // lock front panel
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_5_00+13, tuned_parameters[pr_5_00+13]); // overspeed level
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_5_00+20, tuned_parameters[pr_5_00+20]); // encoder output resolution  {0: Encoder units; 1: Command units; 2: 10000pulse/rotation}
+  // retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_5_00+35, 1); // lock front panel
+  
+  // Pr6 register
+  // retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_6_00+17, 1); // lock front panel
+
 
   //retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_5_00+32, 300); // command pulse input maximum setup
 
+  // Pr7 register
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_7_00+0, tuned_parameters[pr_7_00+0]);
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_7_00+1, tuned_parameters[pr_7_00+1]);
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_7_00+28, tuned_parameters[pr_7_00+28]);
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_7_00+29, tuned_parameters[pr_7_00+29]);
 
   // Enable & tune reactive pumping. This will act like a braking resistor and reduce EMF voltage.
   // See https://en.wikipedia.org/wiki/Bleeder_resistor
   // Info from iSV2 manual: The external resistance is activated when the actual bus voltage is higher than Pr7.32 plus Pr7.33 and is deactivated when the actual bus voltage is lower than Pr7.32 minus Pr7.33
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_7_00+31, 0); // bleeder control mode; 0: is default and seems to enable braking mode, contrary to manual
-  //retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_7_00+32, 42); // bleeder braking voltage. Voltage when braking is activated
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_7_00+31, tuned_parameters[pr_7_00+31]); // bleeder control mode; 0: is default and seems to enable braking mode, contrary to manual
   retValue_b |= setServoVoltage(SERVO_MAX_VOLTAGE_IN_V_36V);
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_7_00+33, 1); // bleeder hysteresis voltage; Contrary to the manual this seems to be an offset voltage, thus Braking disabling voltage = Pr7.32 + Pr.33
-  
-  
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_7_00+33, tuned_parameters[pr_7_00+33]); // bleeder hysteresis voltage; Contrary to the manual this seems to be an offset voltage, thus Braking disabling voltage = Pr7.32 + Pr.33
 
-  // retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_7_00+28, 1000);
-  // retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_7_00+29, 100);
-  
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_7_00+28, 30);
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_7_00+29, 0);
 
+
+
+  
 
   //retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_5_00+33, 0); // pulse regenerative output limit setup [0,1]
   // retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_6_00+37, 0); // oscillation detection level [0, 1000] 0.1%
@@ -329,7 +357,7 @@ void isv57communication::sendTunedServoParameters(bool commandRotationDirection,
   // ActiveSerial->println(servoEnableStatus, HEX);
 
   // disable axis by default
-  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_4_00+8, 0x0303);
+  retValue_b |= modbus.checkAndReplaceParameter(slaveId, pr_4_00+8, tuned_parameters[pr_4_00+8]);
   
 
 
@@ -452,7 +480,7 @@ void isv57communication::readServoStates() {
     modbus.RxRaw(raw,  len);
     for (uint8_t regIdx = 0; regIdx < numberOfRegistersToRead_u8; regIdx++)
     { 
-      regArray[regIdx] = modbus.uint16(regIdx);
+      regArray[regIdx] = modbus.int16(regIdx);
     }
   }
 
@@ -519,7 +547,7 @@ bool isv57communication::readCurrentAlarm() {
     modbus.RxRaw(raw,  len);
     for (uint8_t regIdx = 0; regIdx < 1; regIdx++)
     { 
-      uint16_t tmp = modbus.uint16(regIdx) && 0x0FFF; // mask the first half byte as it does not contain info
+      uint16_t tmp = modbus.int16(regIdx) && 0x0FFF; // mask the first half byte as it does not contain info
       ActiveSerial->print("Current iSV57 alarm: ");
       ActiveSerial->println( tmp, HEX);
     }
@@ -546,7 +574,7 @@ bool isv57communication::readAlarmHistory() {
       modbus.RxRaw(raw,  len);
       for (uint8_t regIdx = 0; regIdx < 1; regIdx++)
       { 
-        uint16_t alarm_code = modbus.uint16(regIdx) & 0x0FFF; // mask the first half byte as it does not contain info
+        uint16_t alarm_code = modbus.int16(regIdx) & 0x0FFF; // mask the first half byte as it does not contain info
 
         if (alarm_code > 0)
         {
