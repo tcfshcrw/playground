@@ -4,7 +4,7 @@
 #include "Arduino.h"
 #include "CubicInterpolatorFloat.h"
 // define the payload revision
-#define DAP_VERSION_CONFIG 157
+#define DAP_VERSION_CONFIG 163
 
 // define the payload types
 #define DAP_PAYLOAD_TYPE_CONFIG 100
@@ -17,6 +17,7 @@
 #define DAP_PAYLOAD_TYPE_BRIDGE_STATE 210
 #define DAP_PAYLOAD_TYPE_ACTION_OTA 220
 #define DAP_PAYLOAD_TYPE_ESPNOW_LOG 225
+#define DAP_PAYLOAD_TYPE_ASSIGNMENT 230
 
 
 
@@ -25,6 +26,7 @@
 #define EOF_BYTE_0 0xAA
 #define EOF_BYTE_1 0x56
 
+#define ASSIGNMENT_EEPROM_OFFSET 9
 
 enum pedalStatus{
   PEDAL_STATUS_NORMAL,
@@ -34,7 +36,12 @@ enum pedalStatus{
 enum pedalID{
   PEDAL_ID_CLUTCH,
   PEDAL_ID_BRAKE,
-  PEDAL_ID_THROTTLE
+  PEDAL_ID_THROTTLE,
+  PEDAL_ID_ASSIGNMENT_ERROR,
+  PEDAL_ID_UNKNOWN,
+  PEDAL_ID_TEMP_1,
+  PEDAL_ID_TEMP_2,
+  PEDAL_ID_TEMP_3
 };
 enum class PedalSystemAction{
   NONE,
@@ -43,7 +50,12 @@ enum class PedalSystemAction{
   ENABLE_OTA,     // not in use
   ENABLE_PAIRING, // not in use
   ESP_BOOT_INTO_DOWNLOAD_MODE,
-  PRINT_PEDAL_INFO
+  PRINT_PEDAL_INFO,
+  SET_ASSIGNMENT_0,
+  SET_ASSIGNMENT_1,
+  SET_ASSIGNMENT_2,
+  CLEAR_ASSIGNMENT,
+  ASSIGNMENT_CHECK_BEEP
 };
 enum class RudderAction{
   NONE,
@@ -64,6 +76,11 @@ enum bridgeAction{
   BRIDGE_ACTION_JOYSTICK_DEBUG 
 };
 
+enum otaAction{
+  OTA_ACTION_NORMAL,
+  OTA_ACTION_FORCE_UPDATE,
+  OTA_ACTION_PLATFORMIO_DIRECT_UPLOAD
+};
 struct payloadHeader{
   // start of frame indicator
   uint8_t startOfFrame0_u8;
@@ -119,10 +136,10 @@ struct payloadPedalState_Extended {
   float forceVel_est_fl32;
 
   // register values from servo
-  int16_t servoPosition_i16;
-  int16_t servoPositionTarget_i16;
+  int32_t servoPosition_i32;
+  int32_t servoPositionTarget_i32;
   int16_t servoPositionEstimated_i16;
-  int16_t targetPosition_i16;
+  int32_t targetPosition_i32;
   int32_t currentSpeedInMilliHz_i32;
   //int16_t servoPositionEstimated_stepperPos_i16;
   int16_t servo_position_error_i16;
@@ -133,11 +150,12 @@ struct payloadPedalState_Extended {
 };
 
 struct payloadBridgeState{
-  uint8_t Pedal_RSSI;
+  uint8_t unassignedPedalCount;
   uint8_t Pedal_availability[3];
   uint8_t Bridge_action; // 0=none, 1=enable pairing 2=Restart 3=download mode
   uint8_t Bridge_firmware_version_u8[3];
   int32_t Pedal_RSSI_Realtime[3];
+  uint8_t macAddressDetected[18];
 };
 
 struct payloadRudderState {
@@ -251,18 +269,6 @@ struct payloadPedalConfig {
   //Custom Vibration 2
   uint8_t CV_amp_2;
   uint8_t CV_freq_2;
-  // PID parameters
-  float PID_p_gain;
-  float PID_i_gain;
-  float PID_d_gain;
-  float PID_velocity_feedforward_gain;
-
-  // MPC settings
-  float MPC_0th_order_gain;
-  float MPC_1st_order_gain;
-  float MPC_2nd_order_gain;
-
-  uint8_t control_strategy_b;
 
   // controller settings
   uint8_t maxGameOutput;
@@ -296,7 +302,9 @@ struct payloadPedalConfig {
   uint8_t kf_modelNoise_joystick;
   uint8_t servoIdleTimeout;
   uint8_t positionSmoothingFactor_u8;
-  
+  uint8_t minForceForEffects_u8;
+  uint8_t servoRatioOfInertia_u8;
+  uint32_t configHash;
 
 };
 
@@ -313,9 +321,16 @@ struct payloadOtaInfo{
     uint8_t mode_select;
     uint8_t SSID_Length;
     uint8_t PASS_Length;
-    uint8_t WIFI_SSID[30];
-    uint8_t WIFI_PASS[30];
+    uint8_t WIFI_SSID[64];
+    uint8_t WIFI_PASS[64];
 };
+
+struct payloadAssignmentRequest{
+  uint8_t assignmentAction;
+  uint8_t assignmentState;
+  uint8_t macAddress[6];
+};
+
 struct payloadFooter {
   // To check if structure is valid
   uint16_t checkSum;
@@ -371,10 +386,27 @@ struct DAP_ESPPairing_st {
   payloadESPNowInfo payloadESPNowInfo_;
   payloadFooter payloadFooter_; 
 };
+
+struct DAP_AssignmentBoardcast_st {
+  payloadHeader payLoadHeader_;
+  payloadAssignmentRequest payloadAssignmentRequest_;
+  payloadFooter payloadFooter_; 
+};
 struct DAP_Rudder_st {
   payloadHeader payLoadHeader_;
   payloadRudderState payloadRudderState_;
   payloadFooter payloadFooter_; 
+};
+
+struct DAP_Assignement_reg
+{
+  uint8_t payloadType;
+  uint8_t magicKey;
+  uint8_t isAdvancedPaired;
+  uint8_t deviceID;
+  uint8_t pairstatus[4];
+  uint8_t pairedMac[4][6];
+  uint16_t crc;
 };
 
 struct DAP_calculationVariables_st
