@@ -101,7 +101,7 @@
   //#define USB_JOYSTICK
   #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 1
   //#define ESPNow_Pairing_function
-  #define deviceID 98
+  #define DEVICE_ID 98
   #define Pairing_GPIO 0
 #endif
 
@@ -142,14 +142,14 @@
   //#define Using_analog_output_ESP32_S3
 
   //#define BLUETOOTH_GAMEPAD
-  #define USB_JOYSTICK
+  //#define USB_JOYSTICK
   #define USING_LED
   #define LED_ENABLE_WAVESHARE
   #define LED_GPIO 38
   #define Pairing_GPIO 13
   #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 5
   //#define ESPNow_Pairing_function
-  #define deviceID 99
+  #define DEVICE_ID 99
   #define Fanatec_comunication
   #define Fanatec_serial_RX 18
   #define Fanatec_serial_TX 17
@@ -203,7 +203,7 @@
   #define Pairing_GPIO 12
   #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 5
   //#define ESPNow_Pairing_function
-  #define deviceID 99
+  #define DEVICE_ID 99
   #define OTA_Update
 #endif
 
@@ -247,7 +247,7 @@
   #define Pairing_GPIO 0
   #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 5
   //#define ESPNow_Pairing_function
-  #define deviceID 99
+  #define DEVICE_ID 99
   #define OTA_Update
 #endif
 
@@ -291,8 +291,66 @@
   #define Pairing_GPIO 12
   #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 5
   //#define ESPNow_Pairing_function
-  #define deviceID 99
+  #define DEVICE_ID 99
   #define OTA_Update
   #define External_RP2040
 #endif
 
+#if PCB_VERSION == 9
+
+  #define ESPNOW_Enable
+  #define Using_Board_ESP32S3
+  //#define Using_MCP4728
+  //#define Using_analog_output_ESP32_S3
+
+  //#define BLUETOOTH_GAMEPAD
+  //#define USB_JOYSTICK
+  #define USING_LED
+  #define LED_ENABLE_WAVESHARE
+  #define LED_GPIO 38
+  #define Pairing_GPIO 12
+  #define SERIAL_COOMUNICATION_TASK_DELAY_IN_MS 5
+  //#define ESPNow_Pairing_function
+  #define DEVICE_ID 99
+  #define OTA_Update
+#endif
+
+//task defination
+#define CORE_ID_SERIAL_TX_TASK (uint8_t)1
+#define CORE_ID_SERIAL_RX_TASK (uint8_t)1
+#define CORE_ID_ESPNOW_TX_TASK (uint8_t)0
+#define CORE_ID_JOYSTICK_UPDATE_TASK (uint8_t)0
+#define CORE_ID_OTA_UPDATE_TASK (uint8_t)1
+#define CORE_ID_FANATEC_UPDATE_TASK (uint8_t)1
+#define CORE_ID_LED_UPDATE_TASK (uint8_t)1
+#define CORE_ID_MISC_TASK (uint8_t)1
+
+#define REPETITION_INTERVAL_SERIAL_TX_TASK (int64_t)2000
+#define REPETITION_INTERVAL_SERIAL_RX_TASK (int64_t)2000
+#define REPETITION_INTERVAL_ESPNOW_TX_TASK (int64_t)2000
+#define REPETITION_INTERVAL_JOYSTICK_UPDATE_TASK (int64_t)8000
+#define REPETITION_INTERVAL_OTA_UPDATE_TASK (int64_t)50000
+#define REPETITION_INTERVAL_FANATEC_UPDATE_TASK (int64_t)10000
+#define REPETITION_INTERVAL_LED_UPDATE_TASK (int64_t)10000
+#define REPETITION_INTERVAL_MISC_TASK (int64_t)50000
+
+#define TASK_PRIORITY_SERIAL_TX_TASK (UBaseType_t) 1
+#define TASK_PRIORITY_SERIAL_RX_TASK (UBaseType_t) 1
+#define TASK_PRIORITY_ESPNOW_TX_TASK (UBaseType_t) 1
+#define TASK_PRIORITY_JOYSTICK_UPDATE_TASK (UBaseType_t) 1
+#define TASK_PRIORITY_OTA_UPDATE_TASK (UBaseType_t) 1
+#define TASK_PRIORITY_FANATEC_UPDATE_TASK (UBaseType_t) 1
+#define TASK_PRIORITY_LED_UPDATE_TASK (UBaseType_t) 1
+#define TASK_PRIORITY_MISC_TASK (UBaseType_t)1
+
+#define STACK_SIZE_SERIAL_TX_TASK (int64_t) 5000
+#define STACK_SIZE_SERIAL_RX_TASK (int64_t) 5000  
+#define STACK_SIZE_ESPNOW_TX_TASK (int64_t) 10000
+#define STACK_SIZE_JOYSTICK_UPDATE_TASK (int64_t) 10000
+#define STACK_SIZE_OTA_UPDATE_TASK (int64_t) 16000
+#define STACK_SIZE_FANATEC_UPDATE_TASK (int64_t) 3000
+#define STACK_SIZE_LED_UPDATE_TASK (int64_t) 3000
+#define STACK_SIZE_MISC_TASK (int64_t)5000
+
+
+extern Stream *ActiveSerial;
