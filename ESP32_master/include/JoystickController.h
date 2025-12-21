@@ -5,9 +5,10 @@
 #ifdef USB_JOYSTICK
 
 #include "TinyusbJoystick.h"
-#include "Joystick_ESP32S2.h"
+//#include "Joystick_ESP32S2.h"
 extern uint8_t *hidDescriptorBufferForCheck; 
-extern Joystick_ tinyusbJoystick_;  // No accelerator, brake, or steering;
+//extern Joystick_ tinyusbJoystick_;  // No accelerator, brake, or steering;
+extern TinyusbJoystick tinyusbJoystick_;  // No accelerator, brake, or steering;
 extern uint16_t reportSize;
 
 bool IsControllerReady();

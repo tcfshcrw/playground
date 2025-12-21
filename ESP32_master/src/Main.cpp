@@ -152,6 +152,7 @@ void serialCommunicationTxTask( void * pvParameters);
 void ledUpdateDongleTask( void * pvParameters);
 void fanatecUpdateTask(void *pvParameters);
 void miscTask(void *pvParameters);
+void hidCommunicaitonRxTask(void *pvParameters);
 void setup()
 {
   #ifdef USB_JOYSTICK
@@ -200,6 +201,8 @@ void setup()
   #ifdef USB_JOYSTICK
     ActiveSerial->println("[L]Setup controller");
     SetupController();
+    taskScheduler.addScheduledTask(hidCommunicaitonRxTask, "Hid Rx", 2000, 1, 1, 3000);
+    /*
     ActiveSerial->print("[L]HID descriptor Size:");
     ActiveSerial->println(reportSize);
     ActiveSerial->print("[L]HID descriptor:");
@@ -212,16 +215,7 @@ void setup()
 
     }
     ActiveSerial->println("");
-    ActiveSerial->print("[L]HID descriptor tinyusb: ");
-    for(int i =0; i<sizeof(desc_hid_report);i++)
-    {
-      ActiveSerial->print("0x");  
-      if (desc_hid_report[i] < 16) ActiveSerial->print('0');
-      ActiveSerial->print(desc_hid_report[i], HEX);
-      ActiveSerial->print("-");
-
-    }
-    ActiveSerial->println("");
+    */
   #endif
   //create message queue
   messageQueueHandle = xQueueCreate(10, sizeof(ESPNOW_Message));
@@ -355,11 +349,13 @@ void setup()
   }
   //task scheduler adding task
   ActiveSerial->println("[L]Initializing task scheduler...");
+  
   taskScheduler.addScheduledTask(serialCommunicationRxTask, "Seria RX", REPETITION_INTERVAL_SERIAL_RX_TASK, TASK_PRIORITY_SERIAL_RX_TASK, CORE_ID_SERIAL_RX_TASK, STACK_SIZE_SERIAL_RX_TASK);
   taskScheduler.addScheduledTask(serialCommunicationTxTask, "Seria TX", REPETITION_INTERVAL_SERIAL_TX_TASK, TASK_PRIORITY_SERIAL_TX_TASK, CORE_ID_SERIAL_TX_TASK, STACK_SIZE_SERIAL_TX_TASK);
   taskScheduler.addScheduledTask(espNowCommunicationTxTask, "Espnow tx", REPETITION_INTERVAL_ESPNOW_TX_TASK, TASK_PRIORITY_ESPNOW_TX_TASK, CORE_ID_ESPNOW_TX_TASK, STACK_SIZE_ESPNOW_TX_TASK);
   taskScheduler.addScheduledTask(joystickUpdateTask, "Joystick Update", REPETITION_INTERVAL_JOYSTICK_UPDATE_TASK, TASK_PRIORITY_JOYSTICK_UPDATE_TASK, CORE_ID_JOYSTICK_UPDATE_TASK, STACK_SIZE_JOYSTICK_UPDATE_TASK);
   taskScheduler.addScheduledTask(miscTask, "MISC", REPETITION_INTERVAL_MISC_TASK, TASK_PRIORITY_MISC_TASK, CORE_ID_MISC_TASK, STACK_SIZE_MISC_TASK);
+  
   delay(100);
   taskScheduler.begin();
 
@@ -1725,3 +1721,67 @@ void miscTask(void *pvParameters)
     }
   }
 }
+
+void hidCommunicaitonRxTask(void *pvParameters)
+{
+  unsigned long scan_Last=0;
+  for(;;)
+  {
+    if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY) > 0)
+    {
+      if(tinyusbJoystick_.isGetData)
+      {
+        tinyusbJoystick_.isGetData= false;
+        ActiveSerial->println("");
+        ActiveSerial->print("[L]Raw Length:");
+        ActiveSerial->println(tinyusbJoystick_.rawLength);
+        ActiveSerial->print("[L]isGetData:");
+        ActiveSerial->print(tinyusbJoystick_.isGetData);
+        ActiveSerial->print(", buff size:");
+        ActiveSerial->print(tinyusbJoystick_.buffSizeDis);
+        ActiveSerial->print(", report type:");
+        ActiveSerial->print(tinyusbJoystick_.reportType);
+        ActiveSerial->print(", report ID:");
+        ActiveSerial->println(tinyusbJoystick_.reportID);
+        ActiveSerial->print("[L]Report: ");
+        for(int i =0; i<tinyusbJoystick_.buffSizeDis; i++)
+        {
+            ActiveSerial->print("0x");  
+            if (tinyusbJoystick_.buffDis[i] < 16) ActiveSerial->print('0');
+            ActiveSerial->print(tinyusbJoystick_.buffDis[i], HEX);
+            ActiveSerial->print("-");
+        }
+        ActiveSerial->println("");
+      }
+      if(millis()- scan_Last>1000)
+      {
+        //tinyusbJoystick_.isGetData = false;
+        
+        scan_Last = millis();
+      }
+      for(int i=0; i<3;i++)
+      {
+        if(tinyusbJoystick_.isConfigGet[i])
+        {
+          ActiveSerial->println("");
+          ActiveSerial->printf("[L]Get config for pedal: %d\n", i);
+          tinyusbJoystick_.isConfigGet[i]=false;
+        }
+        if(tinyusbJoystick_.isActionGet[i])
+        {
+          ActiveSerial->println("");
+          ActiveSerial->printf("[L]Get action for pedal: %d\n", i);
+          tinyusbJoystick_.isActionGet[i]=false;
+        }
+
+      }
+      if(tinyusbJoystick_.isBridgeActionGet)
+      {
+        ActiveSerial->println("");
+        ActiveSerial->printf("[L]Get Bridge action\n");
+        tinyusbJoystick_.isBridgeActionGet=false;
+      }
+    }
+  }
+}
+
