@@ -37,7 +37,7 @@ void TinyusbJoystick::begin(int VID, int PID)
 
     // Setup HID
     usb_hid.enableOutEndpoint(true); 
-    usb_hid.setPollInterval(2); // time in ms
+    usb_hid.setPollInterval(0); // time in ms
     usb_hid.setReportDescriptor(desc_hid_report, sizeof(desc_hid_report));
     usb_hid.begin();
     usb_hid.setReportCallback(NULL, TinyusbJoystick::context_callback);
@@ -90,43 +90,38 @@ void TinyusbJoystick::sendState()
     usb_hid.sendReport(JOYSTICK_STRUCT, &hid_report, sizeof(hid_report));
 }
 
-void TinyusbJoystick::sendLargeData(uint8_t* data, size_t totalLen) 
+void TinyusbJoystick::sendData(uint8_t* data, size_t totalLen) 
 {
-    uint8_t packet[PACKET_SIZE];
     size_t offset = 0;
     
-    while (offset < totalLen) {
-        memset(packet, 0, PACKET_SIZE);
+    while (offset < totalLen) 
+    {
+        uint8_t report[PACKET_SIZE]; // 假設 Report Size 是 64
+        memset(report, 0, PACKET_SIZE); // 清空 buffer
+
+        // 計算這次要傳多少 Payload
+        // 假設前 4 bytes 是 Header (ID, Type, TotalLen, ChunkLen)
         size_t chunkLen = totalLen - offset;
-        if (chunkLen > PAYLOAD_SIZE) {
-            chunkLen = PAYLOAD_SIZE;
-        }
+        if (chunkLen > PAYLOAD_SIZE) chunkLen = PAYLOAD_SIZE; // PAYLOAD_SIZE 通常是 60 (64-4)
 
-        uint8_t type;
-        if (offset == 0) {
-            type = PKT_TYPE_START; 
-        } else if (offset + chunkLen >= totalLen) {
-            type = PKT_TYPE_END;   
-        } else {
-            type = PKT_TYPE_CONT;  
-        }
-        packet[0] = type;
-        packet[1] = (uint8_t)totalLen;
-        packet[2] = (uint8_t)chunkLen;
-        memcpy(&packet[HEADER_SIZE], &data[offset], chunkLen);
-
-        usb_hid.sendReport(HID_PAYLOAD_INPUT, &packet[0], PACKET_SIZE); // 注意: TinyUSB 參數微調
+        // 設定 Header
+        uint8_t type = (offset == 0) ? PKT_TYPE_START : PKT_TYPE_CONT;
         
+        //report[0] = HID_PAYLOAD_INPUT; // 或是你的 Report ID
+        report[0] = type;
+        report[1] = (uint8_t)totalLen; // 告訴 PC 總長度
+        report[2] = (uint8_t)chunkLen; // 這次傳了多少
+
+        // 填入資料
+        memcpy(&report[4], &data[offset], chunkLen);
+
+        // 發送 HID Report
+        usb_hid.sendReport(HID_PAYLOAD_INPUT, report, PACKET_SIZE); // 呼叫你的底層發送函式
+
         offset += chunkLen;
-        delay(2); 
-    }
-    if (totalLen <= PAYLOAD_SIZE) {
-        memset(packet, 0, PACKET_SIZE);
-        //packet[0] = HID_PAYLOAD;
-        packet[0] = PKT_TYPE_END;
-        packet[1] = totalLen; 
-        packet[2] = 0; 
-        usb_hid.sendReport(HID_PAYLOAD_INPUT, &packet[0], PACKET_SIZE);
+        
+        // 根據 USB stack 的 buffer 情況，可能需要極短的 delay 避免塞爆
+        // delay(1); 
     }
 }
 
@@ -143,27 +138,32 @@ void TinyusbJoystick::onHIDReceived(uint8_t report_id, hid_report_type_t report_
     uint8_t type = buffer[1];
     uint8_t totallen = buffer[2];
     uint8_t len = buffer[3];
-    rawLength= totallen;
-    if (len > PAYLOAD_SIZE) len = PAYLOAD_SIZE;
+
+    // 如果是起始封包，重置計數器並設定預期總長度
     if (type == PKT_TYPE_START) {
         rxIndex = 0;
+        rawLength = totallen; // 記住這次傳輸的總長度
         isReceiving = true;
     }
 
     if (isReceiving) {
+        // 防止緩衝區溢位
         if (rxIndex + len > sizeof(rxBuffer)) {
             isReceiving = false; 
             return;
         }
+
+        // 複製數據
         if (len > 0) {
             memcpy(&rxBuffer[rxIndex], &buffer[HEADER_SIZE_GET], len);
             rxIndex += len;
         }
-        if (type == PKT_TYPE_END) 
-        {
+
+        // --- 修改處：依靠長度判斷是否結束 ---
+        // 檢查是否已收到足夠的數據
+        if (rxIndex >= rawLength) {
             isReceiving = false;
-            
-            ProcessFullData(rxBuffer, totallen);
+            ProcessFullData(rxBuffer, rawLength);
         }
     }
 }

@@ -1733,6 +1733,7 @@ void miscTask(void *pvParameters)
 void hidCommunicaitonRxTask(void *pvParameters)
 {
   unsigned long scan_Last=0;
+  unsigned long action_Last=0;
   for(;;)
   {
     if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY) > 0)
@@ -1785,7 +1786,8 @@ void hidCommunicaitonRxTask(void *pvParameters)
           if(tinyusbJoystick_.isActionGet[i])
           {
             //ActiveSerial->println("");
-            //ActiveSerial->printf("[L]Get action for pedal: %d\n", i);
+            //ActiveSerial->printf("[L]Get action for pedal: %d time: %lu\n", i, millis()-action_Last);
+            //action_Last=millis();
             int pedalIdx = tinyusbJoystick_.tmpAction[i].payLoadHeader_.PedalTag;
             if(pedalIdx == PEDAL_ID_CLUTCH || pedalIdx == PEDAL_ID_BRAKE || pedalIdx == PEDAL_ID_THROTTLE)
             {

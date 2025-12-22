@@ -140,7 +140,7 @@ public:
   void setRyAxis(int32_t value);
   void setRzAxis(int32_t value);
   void sendState();
-  void sendLargeData(uint8_t* data, size_t totalLen);
+  void sendData(uint8_t* data, size_t totalLen);
   static void context_callback(uint8_t report_id, hid_report_type_t report_type, uint8_t const* buffer, uint16_t bufsize);
   void onHIDReceived(uint8_t report_id, hid_report_type_t report_type, uint8_t const* buffer, uint16_t bufsize);
   void ProcessFullData(uint8_t *rxBuffer, uint8_t totalLen);
