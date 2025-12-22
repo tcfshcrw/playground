@@ -120,7 +120,7 @@ public:
   bool isReceiving = false;
   bool isGetData=false;
   Adafruit_USBD_HID usb_hid;
-  bool isActionGet[3];
+  bool isActionGet[8];
   bool isConfigGet[3];
   bool isBridgeActionGet;
   bool isOtaActionGet;
