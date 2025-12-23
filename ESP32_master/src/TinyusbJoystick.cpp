@@ -37,7 +37,7 @@ void TinyusbJoystick::begin(int VID, int PID)
 
     // Setup HID
     usb_hid.enableOutEndpoint(true); 
-    usb_hid.setPollInterval(0); // time in ms
+    usb_hid.setPollInterval(1); // time in ms
     usb_hid.setReportDescriptor(desc_hid_report, sizeof(desc_hid_report));
     usb_hid.begin();
     usb_hid.setReportCallback(NULL, TinyusbJoystick::context_callback);
@@ -113,13 +113,13 @@ void TinyusbJoystick::sendData(uint8_t* data, size_t totalLen)
         report[2] = (uint8_t)chunkLen; // 這次傳了多少
 
         // 填入資料
-        memcpy(&report[4], &data[offset], chunkLen);
+        memcpy(&report[3], &data[offset], chunkLen);
 
         // 發送 HID Report
         usb_hid.sendReport(HID_PAYLOAD_INPUT, report, PACKET_SIZE); // 呼叫你的底層發送函式
 
         offset += chunkLen;
-        
+        delay(2);
         // 根據 USB stack 的 buffer 情況，可能需要極短的 delay 避免塞爆
         // delay(1); 
     }
