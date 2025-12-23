@@ -122,6 +122,7 @@ public:
   Adafruit_USBD_HID usb_hid;
   bool isActionGet[8];
   bool isConfigGet[3];
+  bool isTestConfigGet[3];
   bool isBridgeActionGet;
   bool isOtaActionGet;
   DAP_actions_st tmpAction[8];

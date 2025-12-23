@@ -153,6 +153,7 @@ void ledUpdateDongleTask( void * pvParameters);
 void fanatecUpdateTask(void *pvParameters);
 void miscTask(void *pvParameters);
 void hidCommunicaitonRxTask(void *pvParameters);
+void hidCommunicaitonTxTask(void *pvParameters);
 void setup()
 {
   #ifdef USB_JOYSTICK
@@ -202,6 +203,7 @@ void setup()
     ActiveSerial->println("[L]Setup controller");
     SetupController();
     taskScheduler.addScheduledTask(hidCommunicaitonRxTask, "Hid Rx", 2000, 1, 1, 3000);
+    taskScheduler.addScheduledTask(hidCommunicaitonTxTask, "Hid Tx", 2000, 1, 1, 3000);
     /*
     ActiveSerial->print("[L]HID descriptor Size:");
     ActiveSerial->println(reportSize);
@@ -1908,6 +1910,27 @@ void hidCommunicaitonRxTask(void *pvParameters)
           #endif
           tinyusbJoystick_.isOtaActionGet = false;    
         }
+      #endif
+    }
+  }
+}
+
+void hidCommunicaitonTxTask(void *pvParameters)
+{
+  for(;;)
+  {
+    if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY) > 0) 
+    {
+      #ifdef USB_JOYSTICK
+        for(int i =0; i<3;i++)
+        {
+          if(tinyusbJoystick_.isTestConfigGet[i])
+          {
+            tinyusbJoystick_.sendData((uint8_t*)&tinyusbJoystick_.tmpConfig[i], sizeof(DAP_config_st));
+            tinyusbJoystick_.isTestConfigGet[i] = false;
+          }
+        }
+
       #endif
     }
   }

@@ -207,6 +207,7 @@ void TinyusbJoystick::ProcessFullData(uint8_t *rxBuffer, uint8_t totalLen)
             uint8_t pedalTag= tmp.payLoadHeader_.PedalTag;
             memcpy(&tmpConfig[pedalTag], &tmp,  totalLen);
             isConfigGet[pedalTag]= true;
+            isTestConfigGet[pedalTag] = true;
         }
 
     }
