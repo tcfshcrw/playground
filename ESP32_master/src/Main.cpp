@@ -362,6 +362,7 @@ void setup()
   taskScheduler.begin();
 
   ActiveSerial->println("[L]Setup end");
+  tinyusbJoystick_.printf("Setup end.");
   
   
 }
@@ -1027,12 +1028,13 @@ void serialCommunicationTxTask( void * pvParameters)
           basic_rssi_update=true;
           bridge_state_last_update=millis();
         }
+      
+        if(current_time-PedalUpdateLast>500)
+        {
+          PedalUpdateIntervalPrint_b=true;
+          PedalUpdateLast=current_time;
+        }
       #endif
-      if(current_time-PedalUpdateLast>500)
-      {
-        PedalUpdateIntervalPrint_b=true;
-        PedalUpdateLast=current_time;
-      }
       if(current_time-UARTJoystickUpdateLast>7)
       {
         UARTJoystickUpdate_b=true;
@@ -1222,28 +1224,30 @@ void serialCommunicationTxTask( void * pvParameters)
       */
 
       //debug message print
-      if(PedalUpdateIntervalPrint_b)
-      {
-        if(isBridgeInDebugMode_b)
+      #ifndef USB_JOYSTICK
+        if(PedalUpdateIntervalPrint_b)
         {
-          for(pedalIDX=0;pedalIDX<3;pedalIDX++)
+          if(isBridgeInDebugMode_b)
           {
-            if(dap_bridge_state_st.payloadBridgeState_.Pedal_availability[pedalIDX]==1)
+            for(pedalIDX=0;pedalIDX<3;pedalIDX++)
             {
-              ActiveSerial->print("[L]Pedal ");
-              ActiveSerial->print(pedalIDX);
-              ActiveSerial->print(" Update interval: ");
-              ActiveSerial->print(current_time-pedal_last_update[pedalIDX]);
-              ActiveSerial->print(" RSSI: ");
-              ActiveSerial->println(rssi[pedalIDX]);
+              if(dap_bridge_state_st.payloadBridgeState_.Pedal_availability[pedalIDX]==1)
+              {
+                ActiveSerial->print("[L]Pedal ");
+                ActiveSerial->print(pedalIDX);
+                ActiveSerial->print(" Update interval: ");
+                ActiveSerial->print(current_time-pedal_last_update[pedalIDX]);
+                ActiveSerial->print(" RSSI: ");
+                ActiveSerial->println(rssi[pedalIDX]);
+              }
+              
             }
-            
+            ActiveSerial->print("[L]sending:");
+            print_struct_hex(&dap_bridge_state_st);
           }
-          ActiveSerial->print("[L]sending:");
-          print_struct_hex(&dap_bridge_state_st);
+          PedalUpdateIntervalPrint_b=false;
         }
-        PedalUpdateIntervalPrint_b=false;
-      }
+      #endif
     }
     
     
@@ -1935,12 +1939,13 @@ void hidCommunicaitonTxTask(void *pvParameters)
           basic_rssi_update=true;
           bridge_state_last_update=millis();
         }
-        /*
+        
         if(current_time-PedalUpdateLast>500)
         {
           PedalUpdateIntervalPrint_b=true;
           PedalUpdateLast=current_time;
         }
+        /*
         if(current_time-UARTJoystickUpdateLast>7)
         {
           UARTJoystickUpdate_b=true;
@@ -2056,6 +2061,23 @@ void hidCommunicaitonTxTask(void *pvParameters)
         if (xQueueReceive(messageQueueHandle, &receivedMsg, (TickType_t)0) == pdTRUE)
         {
           tinyusbJoystick_.sendData((uint8_t*)&receivedMsg, sizeof(Dap_hidmessage_st));
+          delay(1);
+        }
+        //
+        if(PedalUpdateIntervalPrint_b)
+        {
+          if(isBridgeInDebugMode_b)
+          {
+            for(int pedalIDX=0;pedalIDX<3;pedalIDX++)
+            {
+              if(dap_bridge_state_st.payloadBridgeState_.Pedal_availability[pedalIDX]==1)
+              {
+                tinyusbJoystick_.printf("Pedal %d, Update Interval: %d, RSSI: %d", pedalIDX, (int)(millis()-pedal_last_update[pedalIDX]),rssi[pedalIDX]);
+                delay(10);
+              }
+            }
+          }
+          PedalUpdateIntervalPrint_b=false;
         }
 
       #endif

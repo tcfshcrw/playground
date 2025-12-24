@@ -1,4 +1,6 @@
 #include "TinyusbJoystick.h"
+#define ESPNOW_LOG_MAGIC_KEY 0x99
+#define ESPNOW_LOG_MAGIC_KEY_2 0x97
 TinyusbJoystick* TinyusbJoystick::instance = nullptr;
 TinyusbJoystick::TinyusbJoystick() 
 {    
@@ -96,32 +98,20 @@ void TinyusbJoystick::sendData(uint8_t* data, size_t totalLen)
     
     while (offset < totalLen) 
     {
-        uint8_t report[PACKET_SIZE]; // 假設 Report Size 是 64
-        memset(report, 0, PACKET_SIZE); // 清空 buffer
-
-        // 計算這次要傳多少 Payload
-        // 假設前 4 bytes 是 Header (ID, Type, TotalLen, ChunkLen)
+        uint8_t report[PACKET_SIZE]; 
+        memset(report, 0, PACKET_SIZE); 
         size_t chunkLen = totalLen - offset;
-        if (chunkLen > PAYLOAD_SIZE) chunkLen = PAYLOAD_SIZE; // PAYLOAD_SIZE 通常是 60 (64-4)
+        if (chunkLen > PAYLOAD_SIZE) chunkLen = PAYLOAD_SIZE; 
 
-        // 設定 Header
         uint8_t type = (offset == 0) ? PKT_TYPE_START : PKT_TYPE_CONT;
-        
-        //report[0] = HID_PAYLOAD_INPUT; // 或是你的 Report ID
         report[0] = type;
-        report[1] = (uint8_t)totalLen; // 告訴 PC 總長度
-        report[2] = (uint8_t)chunkLen; // 這次傳了多少
-
-        // 填入資料
+        report[1] = (uint8_t)totalLen; 
+        report[2] = (uint8_t)chunkLen; 
         memcpy(&report[3], &data[offset], chunkLen);
-
-        // 發送 HID Report
-        usb_hid.sendReport(HID_PAYLOAD_INPUT, report, PACKET_SIZE); // 呼叫你的底層發送函式
+        usb_hid.sendReport(HID_PAYLOAD_INPUT, report, PACKET_SIZE); 
 
         offset += chunkLen;
         delay(2);
-        // 根據 USB stack 的 buffer 情況，可能需要極短的 delay 避免塞爆
-        // delay(1); 
     }
 }
 
@@ -138,29 +128,21 @@ void TinyusbJoystick::onHIDReceived(uint8_t report_id, hid_report_type_t report_
     uint8_t type = buffer[1];
     uint8_t totallen = buffer[2];
     uint8_t len = buffer[3];
-
-    // 如果是起始封包，重置計數器並設定預期總長度
     if (type == PKT_TYPE_START) {
         rxIndex = 0;
-        rawLength = totallen; // 記住這次傳輸的總長度
+        rawLength = totallen; 
         isReceiving = true;
     }
 
     if (isReceiving) {
-        // 防止緩衝區溢位
         if (rxIndex + len > sizeof(rxBuffer)) {
             isReceiving = false; 
             return;
         }
-
-        // 複製數據
         if (len > 0) {
             memcpy(&rxBuffer[rxIndex], &buffer[HEADER_SIZE_GET], len);
             rxIndex += len;
         }
-
-        // --- 修改處：依靠長度判斷是否結束 ---
-        // 檢查是否已收到足夠的數據
         if (rxIndex >= rawLength) {
             isReceiving = false;
             ProcessFullData(rxBuffer, rawLength);
@@ -255,3 +237,35 @@ uint16_t TinyusbJoystick::checksumCal(uint8_t * data, uint16_t length)
    return (sum2 << 8) | sum1;
 }
 
+
+void TinyusbJoystick::printf(const char *log,...)
+{
+  uint8_t buffer[235];
+  uint8_t payloadType = DAP_PAYLOAD_TYPE_ESPNOW_LOG;
+  Dap_hidmessage_st message;
+  //uint8_t logLen = strlen(log); 
+  va_list args;
+  char* result = NULL;
+  int needed_size;
+  va_start(args, log); // initialized va_list
+  needed_size = vsnprintf(NULL, 0, log, args);
+  va_end(args); 
+  if (needed_size < 0) return;
+  result = (char*)malloc(needed_size + 1);
+  // malloc error
+  if (result == NULL) return;
+  va_start(args, log); 
+  vsnprintf(result, needed_size + 1, log, args);
+  va_end(args); 
+  int logLen=strlen(result);
+  if (logLen > 235) logLen = 235;
+  message.payloadType = payloadType;
+  message.magicKey1 = ESPNOW_LOG_MAGIC_KEY;
+  message.magicKey2 = ESPNOW_LOG_MAGIC_KEY_2;
+  message.length = logLen;
+  memcpy(&message.text, result, logLen);
+  sendData((uint8_t*)&message, sizeof(Dap_hidmessage_st));
+  delay(10);
+  //ESPNow.send_message(broadcast_mac, (uint8_t *)buffer, 4 + logLen);
+  free(result);
+}
