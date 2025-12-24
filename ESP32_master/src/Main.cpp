@@ -220,7 +220,7 @@ void setup()
     */
   #endif
   //create message queue
-  messageQueueHandle = xQueueCreate(10, sizeof(ESPNOW_Message));
+  messageQueueHandle = xQueueCreate(10, sizeof(Dap_hidmessage_st));
   if (messageQueueHandle == NULL)
   {
     ActiveSerial->println("[L]Error during xqueue creation.");
@@ -1203,13 +1203,15 @@ void serialCommunicationTxTask( void * pvParameters)
         }  
       }
       //print log from espnow
-      ESPNOW_Message receivedMsg;
-      if (xQueueReceive(messageQueueHandle, &receivedMsg, (TickType_t)0) == pdTRUE)
-      {
-        ActiveSerial->print("[L]");
-        ActiveSerial->println(receivedMsg.text);
-        ActiveSerial->println("");
-      }
+      #ifndef USB_JOYSTICK
+        Dap_hidmessage_st receivedMsg;
+        if (xQueueReceive(messageQueueHandle, &receivedMsg, (TickType_t)0) == pdTRUE)
+        {
+          ActiveSerial->print("[L]");
+          ActiveSerial->println(receivedMsg.text);
+          ActiveSerial->println("");
+        }
+      #endif
       /*
       if(getESPNOWLog_b)
       {
@@ -2050,7 +2052,11 @@ void hidCommunicaitonTxTask(void *pvParameters)
           tinyusbJoystick_.sendData((uint8_t*)&dap_bridge_state_st, sizeof(DAP_bridge_state_st));
           basic_rssi_update=false;
         }
-        
+        Dap_hidmessage_st receivedMsg;
+        if (xQueueReceive(messageQueueHandle, &receivedMsg, (TickType_t)0) == pdTRUE)
+        {
+          tinyusbJoystick_.sendData((uint8_t*)&receivedMsg, sizeof(Dap_hidmessage_st));
+        }
 
       #endif
     }

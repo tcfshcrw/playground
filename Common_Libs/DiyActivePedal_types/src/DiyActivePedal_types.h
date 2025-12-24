@@ -16,6 +16,7 @@
 #include "PayloadAssignmentRequest.h"
 #include "PayloadPedalConfig.h"
 #include "PayloadFooter.h"
+#include "PayloadHidMessage.h"
 
 // define the payload revision
 struct __attribute__((packed)) DAP_actions_st {
